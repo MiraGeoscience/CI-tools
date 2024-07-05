@@ -12,8 +12,6 @@ on:
       JIRA_BASIC_AUTH:
         required: true
         description: 'The base64-encoded username:password for your JIRA instance'
-      GITHUB_TOKEN:
-        required: true
 
 jobs:
   add_jira_summary:
