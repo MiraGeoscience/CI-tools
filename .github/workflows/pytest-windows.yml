@@ -2,6 +2,10 @@ name: pytest on Windows
 
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov token'
+        required: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

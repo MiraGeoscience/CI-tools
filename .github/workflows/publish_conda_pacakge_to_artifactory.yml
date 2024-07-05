@@ -2,6 +2,7 @@ name: Build and Publish Python package
 
 on:
     workflow_call:
+    
 env:
     PACKAGE_NAME: ${{ github.repository }}
     VERSION: '0.1.0'
