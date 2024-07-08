@@ -2,7 +2,7 @@ name: Build and Publish Python package
 
 on:
     workflow_call:
-    
+
 env:
     PACKAGE_NAME: ${{ github.repository }}
     VERSION: '0.1.0'
@@ -36,5 +36,3 @@ jobs:
         -   name: Publish conda package
             run: |
                 curl -u $ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD -T $output "https://mirageoscienceltd.jfrog.io/artifactory/dev/$PACKAGE_NAME/$VERSION/$ARCHIVE_NAME.tar.bz2"
-
-         
