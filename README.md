@@ -7,10 +7,7 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 ## Structure
 
 ```
-|__ .github/workflows: Containing CI-tools workflows
-|__ github-workflows: Containing reusable workflows for different project types and tasks. 
-    |__ python: workflows tailored for Python projects, including static analysis and testing.
-    |__ jira: workflow for creating JIRA issues.
+|__ .github/workflows: Containing reusable workflows for different project types and tasks.
 ```
 
 ## Usage
@@ -21,5 +18,5 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 jobs:
   call-workflow-create-jira-issue:
     uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows> 
-    # e.g.: uses: MiraGeoscience/CI-tools/github-workflows/jira/issue_to_jira.yml
+    # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/issue_to_jira.yml
 ```
