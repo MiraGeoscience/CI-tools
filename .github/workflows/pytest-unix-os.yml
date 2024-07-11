@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
+      cache_number:
+        description: 'Cache number to reset cache if poetry.lock has not changed'
+        required: false
+        type: number
+        default: 1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -52,7 +57,7 @@ jobs:
         id: cache
         env:
           # Increase this value to reset cache if poetry.lock has not changed
-          CACHE_NUMBER: 1
+          CACHE_NUMBER: ${{ inputs.cache_number }}
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ env.CACHE_NUMBER }}
