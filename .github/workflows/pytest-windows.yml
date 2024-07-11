@@ -1,0 +1,79 @@
+name: Pytest on Windows
+
+on:
+  workflow_call:
+    inputs:
+      python_ver:
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        required: false
+        type: string
+        default: "['3.10']"
+      cache_number:
+        description: 'Cache number to reset cache if poetry.lock has not changed'
+        required: false
+        type: number
+        default: 1
+      codecov_reference_python_ver:
+        description: 'Python version to use as reference for Codecov'
+        required: false
+        type: string
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov token'
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest (Windows)
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        python_ver: ${{ fromJSON(inputs.python_ver) }}
+    defaults:
+      run:
+        shell: bash
+    runs-on: windows-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: true
+      POETRY_VIRTUALENVS_IN_PROJECT: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_ver }}
+      - name: Get full Python version
+        id: full-python-version
+        run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      - name: Set up cache
+        uses: actions/cache@v4
+        id: cache
+        env:
+          # Increase this value to reset cache if poetry.lock has not changed
+          CACHE_NUMBER: ${{ inputs.cache_number }}
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ env.CACHE_NUMBER }}
+      - name: Ensure cache is healthy
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: timeout 10s poetry run pip --version || rm -rf .venv
+      - name: Install dependencies
+        run: poetry install -vvv
+      - name: pytest
+        run: poetry run pytest --cov --cov-report=xml
+      - name: Codecov
+        if:  ${{ inputs.codecov_reference_python_ver }} && ${{ steps.codecov-check.outputs.launch_codecov }} && ${{success()}} && matrix.python_ver == ${{inputs.codecov_reference_python_ver}}
+        uses: codecov/codecov-action@v4
+        with:
+          name: GitHub
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

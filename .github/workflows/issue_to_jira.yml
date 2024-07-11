@@ -1,0 +1,54 @@
+# This workflow will create a JIRA issue upon creation of a GitHub issue
+
+name: Create JIRA issue
+
+on:
+  workflow_call:
+    secrets:
+      JIRA_BASE_URL:
+        required: true
+        description: 'The base URL of your JIRA instance'
+      JIRA_API_TOKEN:
+        required: true
+        description: 'The API token for your JIRA account'
+      JIRA_USER_EMAIL:
+        required: true
+        description: 'The email address for your JIRA account'
+    inputs:
+      project_key:
+        description: 'The JIRA project key'
+        required: true
+        type: string
+      components:
+        description: 'JIRA components (eg. [{"name": "geoh5py"}])'
+        required: false
+        type: string
+
+
+jobs:
+  new_jira_issue:
+    runs-on: ubuntu-latest
+    steps:
+    - name: JIRA Login
+      uses: atlassian/gajira-login@v3.0.1
+      env:
+        JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+        JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+        JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+    - name: Jira Create issue
+      id: create_jira_issue
+      uses: atlassian/gajira-create@v3.0.1
+      with:
+        project: ${{ inputs.project_key }}
+        issuetype: Story
+        summary: ${{ github.event.issue.title }}
+        description: "_from [GitHub issue #${{ github.event.issue.number }}|${{ github.event.issue.html_url }}]_"
+        # Additional fields in JSON format
+        fields: '{"components": ${{ inputs.components }} }'
+    - name: Post JIRA link
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        # The number of the issue or pull request in which to create a comment.
+        issue-number: ${{ github.event.issue.number }}
+        # The comment body.
+        body: "JIRA issue [${{ steps.create_jira_issue.outputs.issue }}] was created."
