@@ -1,0 +1,12 @@
+name: Create JIRA issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  call-workflow-create-jira-issue:
+    uses: MiraGeoscience/CI-tools/github-workflows/jira/issue_to_jira.yml
+    secrets: inherit
+    with:
+      project_key: 'DEVOPS'
