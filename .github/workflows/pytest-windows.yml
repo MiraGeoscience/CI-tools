@@ -5,7 +5,7 @@ on:
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token'
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -56,7 +56,7 @@ jobs:
       - name: pytest
         run: poetry run pytest --cov --cov-report=xml
       - name: Codecov
-        if: ${{ success() && matrix.python_ver == '3.10' }}
+        if: ${{ secrets.CODECOV_TOKEN && success() && matrix.python_ver == '3.10' }}
         uses: codecov/codecov-action@v4
         with:
           name: GitHub
