@@ -2,13 +2,18 @@ name: Static analysis
 
 on:
   workflow_call:
+    inputs:
+      app_name:
+        description: 'Name of the app to run static analysis on'
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
-  source_dir: my_app
+  source_dir: ${{inputs.app_name}}
 
 jobs:
   pre-commit:
