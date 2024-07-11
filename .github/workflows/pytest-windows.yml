@@ -71,8 +71,17 @@ jobs:
         run: poetry install -vvv
       - name: pytest
         run: poetry run pytest --cov --cov-report=xml
+      - name: Check if codecov has to run
+        id: codecov-check
+        shell: bash
+        run: |
+          if [ "${{ secrets.CODECOV_TOKEN }}" != '' ]; then
+            echo "launch_codecov=true" >> $GITHUB_OUTPUT;
+          else
+            echo "launch_codecov=false" >> $GITHUB_OUTPUT;
+          fi
       - name: Codecov
-        if: ${{ secrets.CODECOV_TOKEN && success() && matrix.python_ver == inputs.codecov_reference_python_ver }}
+        if:  ${{ steps.codecov-check.outputs.launch_codecov }} && ${{success()}} && matrix.python_ver == ${{inputs.codecov_reference_python_ver}}
         uses: codecov/codecov-action@v4
         with:
           name: GitHub
