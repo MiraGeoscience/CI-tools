@@ -1,0 +1,10 @@
+name: Add JIRA issue summary
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  call-workflow-add-jira-issue-summary:
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable_jira_pr-add-jira-summary.yml
+    secrets: inherit
