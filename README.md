@@ -16,7 +16,7 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 ## Usage
 
 - Create a new GitHub Actions workflow in your project's `.github/workflows` directory.
-- Include the desireded reusable workflow using the `uses` keyword:
+- Include the desired reusable workflows using the `uses` keyword:
 ```yaml
 jobs:
   call-workflow-create-jira-issue:
