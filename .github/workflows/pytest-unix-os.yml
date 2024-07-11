@@ -2,6 +2,12 @@ name: Pytest on Unix OS
 
 on:
   workflow_call:
+    inputs:
+      python_ver:
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        required: false
+        type: string
+        default: "['3.10']"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -14,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_ver: ['3.10', '3.11', '3.12']
+        python_ver: ${{ fromJSON(inputs.python_ver) }}
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
