@@ -2,6 +2,12 @@ name: Pytest on Windows
 
 on:
   workflow_call:
+    inputs:
+      python_ver:
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        required: false
+        type: string
+        default: "['3.10']"
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token'
@@ -18,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_ver: ['3.10', '3.11', '3.12']
+        python_ver: ${{ fromJSON(inputs.python_ver) }}
     defaults:
       run:
         shell: bash
