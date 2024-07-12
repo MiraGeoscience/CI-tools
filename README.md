@@ -18,5 +18,5 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 jobs:
   call-workflow-create-jira-issue:
     uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows> 
-    # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/issue_to_jira.yml
+    # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml
 ```
