@@ -13,10 +13,6 @@ on:
         type: string
         default: '3.10'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 env:
   source_dir: ${{inputs.app_name}}
 

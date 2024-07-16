@@ -22,10 +22,6 @@ on:
         description: 'Codecov token'
         required: false
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   pytest:
     name: pytest (Windows)
