@@ -29,10 +29,12 @@ runs:
     - name: Get full Python version
       id: full-python-version
       run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
+      shell: ${{ inputs.shell_type }}
     - name: Install poetry
       run: |
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+      shell: ${{ inputs.shell_type }}
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
@@ -44,5 +46,7 @@ runs:
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
       run: timeout 10s poetry run pip --version || rm -rf .venv
+      shell: ${{ inputs.shell_type }}
     - name: Install dependencies
       run: poetry install -vvv
+      shell: ${{ inputs.shell_type }}
