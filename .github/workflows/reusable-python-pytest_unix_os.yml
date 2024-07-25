@@ -49,7 +49,7 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-          shell_type: 'powershell'
+          shell_type: 'bash'
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
@@ -60,7 +60,9 @@ jobs:
         
       - name: Run Pytest (with poetry)
         if : ${{ inputs.package_manager == 'poetry' }}
-        run: poetry run pytest --cov --cov-report=xml
+        run: |
+          RUNNER=$( ${{ inputs.package_manager == 'conda' }} ? '' : 'poetry run' })
+          $(${RUNNER} pytest --cov --cov-report=xml)
       - name: Run Pytest (with conda)
         if : ${{ inputs.package_manager == 'conda' }}
         run: |
