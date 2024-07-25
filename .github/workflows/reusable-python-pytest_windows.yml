@@ -3,6 +3,11 @@ name: Pytest on Windows
 on:
   workflow_call:
     inputs:
+      package_manager:
+        description: 'Package manager to use (eg. "conda", "poetry")'
+        required: true
+        type: string
+        default: 'poetry'
       python_ver:
         description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
         required: false
@@ -34,40 +39,30 @@ jobs:
       run:
         shell: bash
     runs-on: windows-latest
-    env:
-      POETRY_VIRTUALENVS_CREATE: true
-      POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_ver }}
-      - name: Get full Python version
-        id: full-python-version
-        run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      - name: Set up cache
-        uses: actions/cache@v4
-        id: cache
-        env:
-          # Increase this value to reset cache if poetry.lock has not changed
-          CACHE_NUMBER: ${{ inputs.cache_number }}
+      - uses: ./.github/actions/reusable-python-setup_conda
+        if: ${{ inputs.package_manager == 'conda' }}
         with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ env.CACHE_NUMBER }}
-      - name: Ensure cache is healthy
-        if: steps.cache.outputs.cache-hit == 'true'
-        run: timeout 10s poetry run pip --version || rm -rf .venv
-      - name: Install dependencies
-        run: poetry install -vvv
+          python_ver: ${{ matrix.python_ver }}
+          shell_type: 'powershell'
+          cache_number: ${{ inputs.cache_number }}
+          runner_os: ${{ runner.os }}
+      - uses: ./.github/actions/reusable-python-setup_poetry
+        if: ${{ inputs.package_manager == 'poetry' }}
+        with:
+          python_ver: ${{ matrix.python_ver }}
+          shell_type: 'powershell'
+          cache_number: ${{ inputs.cache_number }}
+          runner_os: ${{ runner.os }}
       - name: pytest
         run: poetry run pytest --cov --cov-report=xml
       - name: Codecov
-        if:  ${{ inputs.codecov_reference_python_ver }} && ${{ steps.codecov-check.outputs.launch_codecov }} && ${{success()}} && matrix.python_ver == ${{inputs.codecov_reference_python_ver}}
+        if:  ${{ inputs.codecov_reference_python_ver }} && matrix.python_ver == ${{inputs.codecov_reference_python_ver}}
         uses: codecov/codecov-action@v4
         with:
           name: GitHub

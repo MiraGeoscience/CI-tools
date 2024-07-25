@@ -1,0 +1,29 @@
+name: Setup conda env
+description: Setup conda environment for Python
+inputs:
+  python_ver:
+    description: 'Python version to use'
+    required: true
+    type: string
+  shell_type:
+    description: 'Shell type to use'
+    required: false
+    type: string
+    default: 'bash'
+
+env:
+  PYTHONUTF8: 1
+  CONDA_CHANNEL_PRIORITY: strict
+  PIP_NO_DEPS: 1 # all dependencies are installed from conda
+  CONDA_LOCK_ENV_FILE: environments/py-${{ inputs.python_ver }}-win-64-dev.conda.lock.yml
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup conda env
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
+        environment-name: test_env
+        init-shell: ${{ inputs.shell_type }}
+        cache-downloads: true
