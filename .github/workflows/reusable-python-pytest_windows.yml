@@ -26,7 +26,7 @@ on:
         description: 'Shell type to use'
         required: false
         type: string
-        default: 'bash'
+        default: 'powershell'
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token'
