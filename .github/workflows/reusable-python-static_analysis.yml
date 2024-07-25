@@ -69,8 +69,8 @@ jobs:
         run: poetry run pylint $source_dir tests
       
       - name: Run Pylint on modified files (with Conda)
-        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'pull_request') && env.FILES_PARAM }}
+        if: ${{ (inputs.package_manager == 'conda') && (github.event_name == 'pull_request') && env.FILES_PARAM }}
         run: pylint $FILES_PARAM
       - name: Run pylint on all files (with Conda)
-        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'push') }}
+        if: ${{ (inputs.package_manager == 'conda') && (github.event_name == 'push') }}
         run: pylint $source_dir tests
