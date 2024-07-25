@@ -9,7 +9,7 @@ inputs:
     description: 'Shell type to use'
     required: false
     type: string
-    default: 'bash -l {0}'
+    default: 'none'
 
 runs:
   using: "composite"
