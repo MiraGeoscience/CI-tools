@@ -54,7 +54,6 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-          shell_type: ${{ inputs.shell_type }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
