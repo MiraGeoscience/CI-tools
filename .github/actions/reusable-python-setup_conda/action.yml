@@ -16,8 +16,8 @@ runs:
   steps:
     - name: Echo
       run: |
-        echo: ${{ inputs.shell_type }}
-      shell: ${{ inputs.shell_type }}
+        echo "${{ inputs.shell_type }}"
+      shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
       with:
