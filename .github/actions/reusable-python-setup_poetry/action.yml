@@ -19,11 +19,12 @@ inputs:
     required: true
     type: string
 
+env:
+  POETRY_VIRTUALENVS_CREATE: true
+  POETRY_VIRTUALENVS_IN_PROJECT: true
+
 runs:
   using: "composite"
-  env:
-    POETRY_VIRTUALENVS_CREATE: true
-    POETRY_VIRTUALENVS_IN_PROJECT: true
   steps:
     - name: Get full Python version
       id: full-python-version
