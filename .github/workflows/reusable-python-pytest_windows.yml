@@ -66,6 +66,7 @@ jobs:
       - name: Run Pytest (with conda)
         if : ${{ inputs.package_manager == 'conda' }}
         run: pytest --cov --cov-report=xml
+        shell: powershell
       
       - name: Codecov
         if:  ${{ (inputs.codecov_reference_python_ver) && (matrix.python_ver == inputs.codecov_reference_python_ver) }}
