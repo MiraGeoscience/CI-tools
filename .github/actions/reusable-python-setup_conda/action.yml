@@ -9,7 +9,7 @@ inputs:
     description: 'Shell type to use'
     required: false
     type: string
-    default: 'bash'
+    default: 'bash -l {0}'
 
 runs:
   using: "composite"
@@ -19,7 +19,7 @@ runs:
       with:
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
-        init-shell: ${{ inputs.shell_type }}
+        init-shell: '${{ inputs.shell_type }}'
         cache-downloads: true
       env:
         PYTHONUTF8: 1
