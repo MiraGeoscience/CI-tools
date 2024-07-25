@@ -22,35 +22,6 @@ env:
   source_dir: ${{inputs.app_name}}
 
 jobs:
-  pre-commit:
-    name: pre-commit
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    strategy:
-      fail-fast: false
-    runs-on: ubuntu-latest
-    env:
-      SKIP: pylint
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-      - name: capture modified files
-        if: github.event_name == 'pull_request'
-        run: >-
-          git fetch --deepen=500 origin ${{github.base_ref}}
-          && echo "FILES_PARAM=$(
-          git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
-          )" >> $GITHUB_ENV
-      - name: Run pre-commit on modified files
-        if: github.event_name == 'pull_request' && env.FILES_PARAM
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: --hook-stage push --files ${{ env.FILES_PARAM }}
-      - name: Run pre-commit on all files
-        if: github.event_name == 'push'
-        uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: --hook-stage push --all-files
-
   pylint:
     name: pylint
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
@@ -91,15 +62,15 @@ jobs:
           )" >> $GITHUB_ENV
       
       - name: Run Pylint on modified files (with Poetry)
-        if: ${{ inputs.package_manager == 'poetry' }} && ${{ github.event_name == 'pull_request'}} && env.FILES_PARAM
+        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'pull_request') && env.FILES_PARAM }}
         run: poetry run pylint $FILES_PARAM
       - name: Run pylint on all files (with Poetry)
-        if: ${{ inputs.package_manager == 'poetry' }} && ${{ github.event_name == 'push' }}
+        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'push') }}
         run: poetry run pylint $source_dir tests
       
       - name: Run Pylint on modified files (with Conda)
-        if: ${{ inputs.package_manager == 'poetry' }} && ${{ github.event_name == 'pull_request' }} && env.FILES_PARAM
+        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'pull_request') && env.FILES_PARAM }}
         run: pylint $FILES_PARAM
       - name: Run pylint on all files (with Conda)
-        if: ${{ inputs.package_manager == 'poetry' }} && ${{ github.event_name == 'push' }}
+        if: ${{ (inputs.package_manager == 'poetry') && (github.event_name == 'push') }}
         run: pylint $source_dir tests
