@@ -58,6 +58,7 @@ jobs:
         with:
           python_ver: ${{ matrix.python_ver }}
           cache_number: ${{ inputs.cache_number }}
+          runner_os: ${{ runner.os }}
       
       - name: Run Pytest (with poetry)
         if : ${{ inputs.package_manager == 'poetry' }}
