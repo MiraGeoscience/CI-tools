@@ -5,11 +5,6 @@ inputs:
     description: 'Python version to use'
     required: true
     type: string
-  shell_type:
-    description: 'Shell type to use'
-    required: false
-    type: string
-    default: 'bash'
   cache_number:
     description: 'Cache number to reset cache if poetry.lock has not changed'
     required: true

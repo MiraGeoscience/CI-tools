@@ -3,6 +3,11 @@ name: Static analysis
 on:
   workflow_call:
     inputs:
+      package_manager:
+        description: 'Package manager to use (eg. "conda", "poetry")'
+        required: true
+        type: string
+        default: 'poetry'
       app_name:
         description: 'Name of the app to run static analysis on'
         required: true
@@ -62,39 +67,39 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{inputs.python_vers}}
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      - name: Set up cache
-        uses: actions/cache@v3
-        id: cache
-        env:
-          # Increase this value to reset cache if poetry.lock has not changed
-          CACHE_NUMBER: 1
+      
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-459
+        name: Setup conda env
+        if: ${{ inputs.package_manager == 'conda' }}
         with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ env.CACHE_NUMBER }}
-      - name: Ensure cache is healthy
-        if: steps.cache.outputs.cache-hit == 'true'
-        shell: bash
-        run: timeout 10s poetry run pip --version || rm -rf .venv
-      - name: Install dependencies
-        run: poetry install -vvv
-      - name: capture modified files
+          python_ver: ${{inputs.python_vers}}
+          shell_type: 'powershell'
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
+        name: Setup poetry env
+        if: ${{ inputs.package_manager == 'poetry' }}
+        with:
+          python_ver: ${{inputs.python_vers}}
+          shell_type: 'powershell'
+          cache_number: 1
+      
+      - name: Capture modified files
         if: github.event_name == 'pull_request'
         run: >-
           git fetch --deepen=500 origin ${{github.base_ref}}
           && echo "FILES_PARAM=$(
           git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
           )" >> $GITHUB_ENV
-      - name: Run pylint on modified files
-        if: github.event_name == 'pull_request' && env.FILES_PARAM
+      
+      - name: Run Pylint on modified files (with Poetry)
+        if: ${{ inputs.package_manager == 'poetry' }} && github.event_name == 'pull_request' && env.FILES_PARAM
         run: poetry run pylint $FILES_PARAM
-      - name: Run pylint on all files
-        if: github.event_name == 'push'
+      - name: Run pylint on all files (with Poetry)
+        if: ${{ inputs.package_manager == 'poetry' }} && github.event_name == 'push'
         run: poetry run pylint $source_dir tests
+      
+      - name: Run Pylint on modified files (with Conda)
+        if: ${{ inputs.package_manager == 'poetry' }} && github.event_name == 'pull_request' && env.FILES_PARAM
+        run: pylint $FILES_PARAM
+      - name: Run pylint on all files (with Conda)
+        if: ${{ inputs.package_manager == 'poetry' }} && github.event_name == 'push'
+        run: pylint $source_dir tests

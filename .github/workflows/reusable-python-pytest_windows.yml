@@ -45,20 +45,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_ver }}
+      
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-459
+        name: Setup conda env
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
           shell_type: 'powershell'
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
+        name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-          shell_type: 'powershell'
           cache_number: ${{ inputs.cache_number }}
-          runner_os: ${{ runner.os }}
-      - name: pytest
+      
+      - name: Run Pytest (with poetry)
+        if : ${{ inputs.package_manager == 'poetry' }}
         run: poetry run pytest --cov --cov-report=xml
+      - name: Run Pytest (with conda)
+        if : ${{ inputs.package_manager == 'conda' }}
+        run: pytest --cov --cov-report=xml
+      
       - name: Codecov
         if:  ${{ inputs.codecov_reference_python_ver }} && matrix.python_ver == ${{inputs.codecov_reference_python_ver}}
         uses: codecov/codecov-action@v4
