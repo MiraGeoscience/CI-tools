@@ -61,14 +61,20 @@ jobs:
           && echo "FILES_PARAM=$(
           git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
           )" >> $GITHUB_ENV
+      
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         run: |
-          RUNNER=$( ${{ inputs.package_manager == 'conda' }} ? '' : 'poetry run' })
-          $(${RUNNER} pylint $FILES_PARAM)
-      - name: Run Pylint on modified files (with Conda)
-        if: ${{ (inputs.package_manager == 'conda') && (github.event_name == 'pull_request') && env.FILES_PARAM }}
-        run: pylint $FILES_PARAM
-      - name: Run pylint on all files (with Conda)
-        if: ${{ (inputs.package_manager == 'conda') && (github.event_name == 'push') }}
-        run: pylint $source_dir tests
+          if ${{ inputs.package_manager == 'conda' }}; then
+            pylint $FILES_PARAM
+          else
+            poetry run pylint $FILES_PARAM
+          fi
+      
+      - name: Run Pylint on all files
+        run: |
+          if ${{ inputs.package_manager == 'conda' }}; then
+            pylint $source_dir tests
+          else
+            poetry run pylint $source_dir tests
+          fi
