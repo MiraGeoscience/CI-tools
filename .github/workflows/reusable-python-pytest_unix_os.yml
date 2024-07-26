@@ -64,6 +64,9 @@ jobs:
         
       - name: Run Pytest
         run: |
-          RUNNER=$( ${{ inputs.package_manager == 'conda' }} ? '' : 'poetry run' })
-          $(${RUNNER} pytest --cov --cov-report=xml)
+          if ${{ inputs.package_manager == 'conda' }}; then
+            pytest --cov --cov-report=xml
+          else
+            poetry run pytest --cov --cov-report=xml
+          fi
         

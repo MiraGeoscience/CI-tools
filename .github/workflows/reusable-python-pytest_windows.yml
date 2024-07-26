@@ -65,13 +65,6 @@ jobs:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
       
-      # - name: Run Pytest (with poetry)
-      #   if : ${{ inputs.package_manager == 'poetry' }}
-      #   run: poetry run pytest --cov --cov-report=xml
-      # - name: Run Pytest (with conda)
-      #   if : ${{ inputs.package_manager == 'conda' }}
-      #   run: pytest --cov --cov-report=xml
-      #   shell: powershell
       - name: Run Pytest
         run: |
           RUNNER=$( ${{ inputs.package_manager == 'conda' }} ? '' : 'poetry run' })
