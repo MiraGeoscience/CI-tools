@@ -16,7 +16,9 @@ runs:
   steps:
     - name: Echo
       run: |
+        echo $RUNNER_OS
         os=$( [[ "$RUNNER_OS" == "bash" ]] && "lin" || echo "lin")
+        os="lin"
       shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
@@ -24,7 +26,7 @@ runs:
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
         init-shell: '${{ inputs.shell_type }}'
-        cache-downloads: true
+        cache-downloads: false
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
