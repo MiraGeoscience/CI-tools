@@ -17,6 +17,7 @@ runs:
     - name: Echo
       run: |
         os_conda=$( [[ "$RUNNER_OS" == "linux" ]] && echo "linux" || echo "win")
+        echo $os_conda
         echo "os_conda=$os_conda" >> $GITHUB_ENV
       shell: bash
     - name: Setup conda env
@@ -30,4 +31,4 @@ runs:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        CONDA_LOCK_ENV_FILE: 'environments/conda-py-${{ inputs.python_ver }}-${{ env.os_conda }}-64-dev.lock.yml'
+        CONDA_LOCK_ENV_FILE: 'environments/conda-py-${{ inputs.python_ver }}-linux-64-dev.lock.yml'
