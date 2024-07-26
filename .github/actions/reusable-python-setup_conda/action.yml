@@ -14,11 +14,14 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/checkout@v4
     - name: Echo
       run: |
-        os_conda=$( [[ "$RUNNER_OS" == "linux" ]] && echo "linux" || echo "win")
+        os_conda=$( [[ $RUNNER_OS == "linux" ]] && echo "linux" || echo "win")
         echo $os_conda
         echo "os_conda=$os_conda" >> $GITHUB_ENV
+        echo $GITHUB_WORKSPACE
+        ls .
       shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
@@ -26,7 +29,7 @@ runs:
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
         init-shell: '${{ inputs.shell_type }}'
-        cache-downloads: false
+        cache-downloads: true
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
