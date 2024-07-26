@@ -23,6 +23,11 @@ on:
         required: false
         type: number
         default: 1
+      shell_type:
+        description: 'Shell type to use'
+        required: false
+        type: string
+        default: 'bash'
 
 jobs:
   pytest:
@@ -36,7 +41,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: bash
+        shell: ${{ inputs.shell_type }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python version

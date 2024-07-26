@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: '3.10'
+      shell_type:
+        description: 'Shell type to use'
+        required: false
+        type: string
+        default: 'bash'
 
 env:
   source_dir: ${{ inputs.app_name }}
@@ -28,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash
+        shell: ${{ inputs.shell_type }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python version
