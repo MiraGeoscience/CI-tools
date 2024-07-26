@@ -30,4 +30,4 @@ runs:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        CONDA_LOCK_ENV_FILE: 'environments/conda-py-${{ env.os_conda }}-64-dev.conda.lock.yml'
+        CONDA_LOCK_ENV_FILE: 'environments/conda-py-${{ inputs.python_ver }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
