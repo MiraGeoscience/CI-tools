@@ -22,6 +22,11 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
+      shell_type:
+        description: 'Shell type to use'
+        required: false
+        type: string
+        default: 'bash'
 
     secrets:
       CODECOV_TOKEN:
@@ -38,7 +43,7 @@ jobs:
         python_ver: ${{ fromJSON(inputs.python_ver) }}
     defaults:
       run:
-        shell: bash
+        shell: ${{ inputs.shell_type }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
