@@ -26,7 +26,7 @@ on:
         description: 'Shell type to use'
         required: false
         type: string
-        default: 'powershell'
+        default: 'bash'
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token'
@@ -56,7 +56,7 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-          shell_type: powershell
+          shell_type: bash
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
