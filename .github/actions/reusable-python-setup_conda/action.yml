@@ -15,7 +15,7 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
-    - name: Echo
+    - name: Setup CONDA_LOCK_ENV_FILE
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> $GITHUB_ENV
