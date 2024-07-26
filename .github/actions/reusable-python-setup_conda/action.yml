@@ -17,11 +17,12 @@ runs:
     - uses: actions/checkout@v4
     - name: Echo
       run: |
+        echo $RUNNER_OS
         os_conda=$( [[ $RUNNER_OS == "linux" ]] && echo "linux" || echo "win")
         echo $os_conda
         echo "os_conda=$os_conda" >> $GITHUB_ENV
         echo $GITHUB_WORKSPACE
-        ls .
+        ls environments
       shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
@@ -34,4 +35,4 @@ runs:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        CONDA_LOCK_ENV_FILE: 'environments/conda-py-${{ inputs.python_ver }}-linux-64-dev.lock.yml'
+        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python_ver }}-linux-64-dev.lock.yml'
