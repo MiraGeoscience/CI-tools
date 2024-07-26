@@ -22,11 +22,7 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
-      shell_type:
-        description: 'Shell type to use'
-        required: false
-        type: string
-        default: 'bash'
+
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov token'
@@ -42,7 +38,7 @@ jobs:
         python_ver: ${{ fromJSON(inputs.python_ver) }}
     defaults:
       run:
-        shell: ${{ inputs.shell_type }}
+        shell: bash
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +52,6 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-          shell_type: bash
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
@@ -67,11 +62,11 @@ jobs:
       
       - name: Run Pytest
         run: |
-          if (${{ inputs.package_manager == 'conda' }}) {
+          if ${{ inputs.package_manager == 'conda' }}; then
             pytest --cov --cov-report=xml
-          } else {
+          else
             poetry run pytest --cov --cov-report=xml
-          }
+          fi
       - name: Codecov
         if:  ${{ (inputs.codecov_reference_python_ver) && (matrix.python_ver == inputs.codecov_reference_python_ver) }}
         uses: codecov/codecov-action@v4

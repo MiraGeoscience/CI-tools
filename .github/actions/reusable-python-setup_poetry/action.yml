@@ -13,10 +13,6 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
-  shell:
-    description: 'Shell type to use'
-    required: false
-    type: string
 
 runs:
   using: "composite"

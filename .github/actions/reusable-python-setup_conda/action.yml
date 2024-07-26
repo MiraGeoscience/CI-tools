@@ -5,11 +5,6 @@ inputs:
     description: 'Python version to use'
     required: true
     type: string
-  shell_type:
-    description: 'Shell type to use'
-    required: false
-    type: string
-    default: 'bash'
 
 runs:
   using: "composite"
@@ -25,7 +20,7 @@ runs:
       with:
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
-        init-shell: '${{ inputs.shell_type }}'
+        init-shell: bash
         cache-downloads: true
       env:
         PYTHONUTF8: 1
