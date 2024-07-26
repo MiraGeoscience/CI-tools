@@ -64,9 +64,9 @@ jobs:
         
       - name: Run Pytest
         run: |
-          if ${{ inputs.package_manager == 'conda' }}; then
+          if (${{ inputs.package_manager == 'conda' }}) {
             pytest --cov --cov-report=xml
-          else
+          } else {
             poetry run pytest --cov --cov-report=xml
-          fi
+          }
         
