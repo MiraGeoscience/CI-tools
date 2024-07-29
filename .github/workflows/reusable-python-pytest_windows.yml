@@ -52,12 +52,12 @@ jobs:
         with:
           python-version: ${{ matrix.python_ver }}
       
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-459
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:

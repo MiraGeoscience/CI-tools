@@ -7,7 +7,9 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 ## Structure
 
 ```
-|__ .github/workflows: Containing reusable workflows for different project types and tasks.
+|_ .github
+|____ actions: Containing reusable actions for setup python env
+|____ workflows: Containing reusable workflows for different project types and tasks.
 ```
 
 ## Usage
