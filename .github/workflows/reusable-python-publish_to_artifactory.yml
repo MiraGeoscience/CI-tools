@@ -51,8 +51,8 @@ jobs:
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
             -   name: Test output
                 run: | 
-                    echo ${{ github.env.BUILD_PATH }}
-                    if test -f ${{ github.env.BUILD_PATH }}; then
+                    echo ${{ env.BUILD_PATH }}
+                    if test -f ${{ env.BUILD_PATH }}; then
                         echo "File exists"
                     else
                         echo "File does not exist"
@@ -61,7 +61,7 @@ jobs:
                 uses: actions/upload-artifact@v4
                 with:
                     name: build_package
-                    path: ${{ github.env.BUILD_PATH }}
+                    path: ${{ env.BUILD_PATH }}
             # -   name: Check package
             #     run: |
             #         conda install $BUILD_PATH
