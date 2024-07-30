@@ -22,11 +22,6 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
-      shell_type:
-        description: 'Shell type to use'
-        required: false
-        type: string
-        default: 'bash'
       extra_repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
@@ -54,7 +49,7 @@ jobs:
         python_ver: ${{ fromJSON(inputs.python_ver) }}
     defaults:
       run:
-        shell: ${{ inputs.shell_type }}
+        shell: 'bash -l {0}'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

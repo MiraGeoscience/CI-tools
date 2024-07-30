@@ -23,11 +23,6 @@ on:
         required: false
         type: number
         default: 1
-      shell_type:
-        description: 'Shell type to use'
-        required: false
-        type: string
-        default: 'bash'
       extra_repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
@@ -53,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: ${{ inputs.shell_type }}
+        shell: 'bash -l {0}'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python version
