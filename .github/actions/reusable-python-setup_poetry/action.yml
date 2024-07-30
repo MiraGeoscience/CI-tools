@@ -60,7 +60,5 @@ runs:
       run: timeout 10s poetry run pip --version || rm -rf .venv
       shell: bash
     - name: Install dependencies
-      run: |
-        
-        poetry install -vvv
+      run: poetry install -vvv
       shell: bash
