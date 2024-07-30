@@ -49,6 +49,14 @@ jobs:
                     build_path=$(conda build --output ${{ inputs.package_name }})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
+            -   name: Test output
+                run: | 
+                    echo ${{ github.env.BUILD_PATH }}
+                    if test -f ${{ github.env.BUILD_PATH }}; then
+                        echo "File exists"
+                    else
+                        echo "File does not exist"
+                    fi
             -   name: Upload build package
                 uses: actions/upload-artifact@v4
                 with:
