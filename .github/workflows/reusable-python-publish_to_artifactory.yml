@@ -42,7 +42,8 @@ jobs:
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
-                    grayskull pypi --tag ${{ inputs.version_tag }} ${{ inputs.package_name }}
+                    python -m build -s
+                    grayskull pypi --tag ${{ inputs.version_tag }} ./dist/*.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
