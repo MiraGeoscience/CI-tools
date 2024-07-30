@@ -42,7 +42,7 @@ jobs:
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
-                    python -m build -s
+                    poetry build
                     grayskull pypi --tag ${{ inputs.version_tag }} ./dist/*.tar.gz
             -   name: Build package
                 id: build_package
