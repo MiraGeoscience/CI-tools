@@ -42,7 +42,7 @@ jobs:
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
-                    grayskull pypi --tag $version_tag ${{ inputs.package_name }}
+                    grayskull pypi --tag ${{ inputs.version_tag }} ${{ inputs.package_name }}
                     conda-build check ${{ inputs.package_name }}
             -   name: Build package
                 run: |
