@@ -48,6 +48,11 @@ jobs:
                 run: |
                     build_path=$(conda build --output ${{ inputs.package_name }})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
+            -   name: Upload build package
+                uses: actions/upload-artifact@v4
+                with:
+                    name: build_package
+                    path: ${{ github.env.BUILD_PATH }}
             # -   name: Check package
             #     run: |
             #         conda install $BUILD_PATH
@@ -58,6 +63,11 @@ jobs:
         needs: build_package
         runs-on: ubuntu-latest
         steps:
+            -   name: Download build package
+                uses: actions/download-artifact@v4
+                with:
+                    name: build_package
+                uses: actions/checkout@v2
             -   name: Publish
                 run: |
                     build_name=$(basename ${{ needs.build_package.outputs.BUILD_PATH }})
