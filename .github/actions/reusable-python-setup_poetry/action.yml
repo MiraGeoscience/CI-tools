@@ -18,6 +18,14 @@ inputs:
     required: false
     type: boolean
     default: false
+  repo_user:
+    description: 'Repository username'
+    required: false
+    type: string
+  repo_token:
+    description: 'Repository token'
+    required: false
+    type: string
 
 runs:
   using: "composite"
@@ -36,7 +44,7 @@ runs:
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
         if (${{ inputs.extra_repository}}); then
-          poetry config http-basic.mira-pypi ${{ github.secrets.MIRA_ANALYST_PYPI_REPO_USER }} ${{ github.secrets.MIRA_ANALYST_PYPI_REPO_TOKEN }}
+          poetry config http-basic.mira-pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
         fi
       shell: bash
     - name: Set up cache
