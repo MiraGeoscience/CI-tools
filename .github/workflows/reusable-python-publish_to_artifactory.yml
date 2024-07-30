@@ -21,7 +21,7 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    build-package:
+    build_package:
         name: build package
         runs-on: ubuntu-latest
         env:
@@ -53,6 +53,7 @@ jobs:
                     conda install $BUILD_PATH
     publish_package:
         name: publish package on artifactory
+        needs: build_package
         runs-on: ubuntu-latest
         steps:
             -   name: Publish
