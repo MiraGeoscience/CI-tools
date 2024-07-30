@@ -38,7 +38,7 @@ jobs:
                   python_ver: '3.10'
             -   name: Install dependencies
                 run: |
-                    conda intall -y grayskull
+                    conda install -y grayskull
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
