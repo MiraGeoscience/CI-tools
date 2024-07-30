@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: 'bash'
+      extra_repository:
+        description: 'Boolean to indicate if extra repository is needed'
+        required: false
+        type: boolean
+        default: false
 
 env:
   source_dir: ${{ inputs.app_name }}
@@ -46,13 +51,14 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ inputs.python_vers }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
           python_ver: ${{inputs.python_vers}}
           cache_number: 1
           runner_os: ${{ runner.os }}
+          extra_repository: ${{ inputs.extra_repository }}
       
       - name: Capture modified files
         if: github.event_name == 'pull_request'

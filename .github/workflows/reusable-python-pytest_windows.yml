@@ -27,6 +27,11 @@ on:
         required: false
         type: string
         default: 'bash'
+      extra_repository:
+        description: 'Boolean to indicate if extra repository is needed'
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       CODECOV_TOKEN:
@@ -57,13 +62,14 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-459
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
           python_ver: ${{ matrix.python_ver }}
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
+          extra_repository: ${{ inputs.extra_repository }}
       
       - name: Run Pytest
         run: |
