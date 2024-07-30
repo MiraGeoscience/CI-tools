@@ -35,7 +35,7 @@ runs:
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        if (${{ inputs.extra_repository == true }}); then
+        if (${{ inputs.extra_repository}}); then
           poetry config http-basic.mira-pypi ${{ github.secrets.MIRA_ANALYST_PYPI_REPO_USER }} ${{ github.secrets.MIRA_ANALYST_PYPI_REPO_TOKEN }}
         fi
       shell: bash
