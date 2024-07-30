@@ -2,14 +2,19 @@ name: Publish condan package to Artifactory
 
 on:
   workflow_call:
+    inputs:
+        package_name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        version_tag:
+            description: 'Version tag of the package to build'
+            required: true
+            type: string
     secrets:
         EXTRA_REPO_TOKEN:
             description: 'Bearer token for the extra repository on JFrog Artifactory'
             required: true
-
-env:
-    PACKAGE_NAME: 'my_package'
-    VERSION_TAG: '0.1.0'
 
 defaults:
     run:
@@ -37,11 +42,11 @@ jobs:
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
-                    grayskull pypi --tag $version_tag $package_name
-                    conda-build check $package_name
+                    grayskull pypi --tag $version_tag ${{ inputs.package_name }}
+                    conda-build check ${{ inputs.package_name }}
             -   name: Build package
                 run: |
-                    build_path=$(conda build --output $package_name)
+                    build_path=$(conda build --output ${{ inputs.package_name }})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
             -   name: Check package
                 run: |
@@ -52,8 +57,8 @@ jobs:
         steps:
             -   name: Publish
                 run: |
-                    build_name=$(basename ${{env.BUILD_PATH}})
-                    curl -T ${{env.BUILD_PATH}} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ github.env.PACKAGE_NAME }}/${{ github.env.VERSION_TAG }}/${build_name}"
+                    build_name=$(basename ${{ env.BUILD_PATH }})
+                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${build_name}"
 
             
             
