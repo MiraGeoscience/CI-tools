@@ -37,6 +37,12 @@ on:
       CODECOV_TOKEN:
         description: 'Codecov token'
         required: false
+      EXTRA_PYPI_REPO_USER:
+        description: 'Extra PyPi repository username'
+        required: false
+      EXTRA_PYPI_REPO_TOKEN:
+        description: 'Extra PyPi repository token'
+        required: false
 
 jobs:
   pytest:
@@ -70,6 +76,8 @@ jobs:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
           extra_repository: ${{ inputs.extra_repository }}
+          repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+          repo_token: ${{ secrets.EXTRA_PYPI_REPO_USER }}
       
       - name: Run Pytest
         run: |
