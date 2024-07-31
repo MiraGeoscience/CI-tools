@@ -23,11 +23,18 @@ on:
         required: false
         type: number
         default: 1
-      shell_type:
-        description: 'Shell type to use'
+      extra_repository:
+        description: 'Boolean to indicate if extra repository is needed'
         required: false
-        type: string
-        default: 'bash'
+        type: boolean
+        default: false
+    secrets:
+      EXTRA_PYPI_REPO_USER:
+        description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
+        required: false
+      EXTRA_PYPI_REPO_TOKEN:
+        description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
+        required: false
 
 jobs:
   pytest:
@@ -41,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: ${{ inputs.shell_type }}
+        shell: 'bash -l {0}'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python version
@@ -61,6 +68,9 @@ jobs:
           python_ver: ${{ matrix.python_ver }}
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
+          extra_repository: ${{ inputs.extra_repository }}
+          repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+          repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
         
       - name: Run Pytest
         run: |
