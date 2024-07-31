@@ -47,7 +47,7 @@ jobs:
             -   name: Build package
                 id: build_package
                 run: |
-                    conda build ${{ inputs.package_name }}
+                    conda build --build-only ${{ inputs.package_name }}
                     build_path=$(conda build --output ${{ inputs.package_name }})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
