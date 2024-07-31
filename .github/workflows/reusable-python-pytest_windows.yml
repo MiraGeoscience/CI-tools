@@ -33,10 +33,10 @@ on:
         description: 'Codecov token'
         required: false
       EXTRA_PYPI_REPO_USER:
-        description: 'Extra PyPi repository username'
+        description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
         required: false
       EXTRA_PYPI_REPO_TOKEN:
-        description: 'Extra PyPi repository token'
+        description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
         required: false
 
 jobs:
