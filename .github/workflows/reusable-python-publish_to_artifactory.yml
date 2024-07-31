@@ -23,7 +23,7 @@ defaults:
 jobs:
     build_package:
         name: build package
-        runs-on: windows-latest
+        runs-on: ubuntu-latest
         env:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
