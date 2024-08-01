@@ -38,12 +38,12 @@ runs:
       run: |
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      shell: bash
+      shell: powershell
     - name: Config poetry
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-      shell: bash
+      shell: powershell
     - name: Config Artifactory repo
       if: ${{ inputs.extra_repository }}
       env:
@@ -71,4 +71,4 @@ runs:
       shell: bash
     - name: Install dependencies
       run: poetry install -vvv
-      shell: bash
+      shell: powershell
