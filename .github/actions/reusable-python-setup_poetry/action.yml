@@ -50,9 +50,15 @@ runs:
         POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME : ${{ inputs.repo_user }}
         POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD : ${{ inputs.repo_token }}
       run: |
-        echo %POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME%
-        echo %POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD%
-        poetry config http-basic.mira_pypi %POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME% %POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD%
+        echo "test0: $POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME"
+        echo "test1: ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}"
+        echo "test2: $env:POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME"
+        echo "test3: ${env:POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}"
+        
+        echo $POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD
+        poetry config http-basic.mira_pypi ${POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME} ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}
+
+        pip install pydensecrf --index-url https://${POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME}:${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
