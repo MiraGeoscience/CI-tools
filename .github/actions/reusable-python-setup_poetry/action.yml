@@ -38,12 +38,12 @@ runs:
       run: |
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      shell: powershell
+      shell: bash
     - name: Config poetry
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-      shell: powershell
+      shell: bash
     - name: Config Artifactory repo
       if: ${{ inputs.extra_repository }}
       env:
@@ -53,10 +53,10 @@ runs:
         echo "test0: $POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME"
         echo "test1: ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}"
         
-        poetry config http-basic.mira_pypi ${POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME} ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}
+        poetry config http-basic.mira_pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
 
-        pip install --index-url https://${POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME}:${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple pydensecrf
-      shell: powershell
+        pip install --index-url https://${{ inputs.repo_user }}:${{ inputs.repo_token }}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple pydensecrf
+      shell: bash
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
@@ -71,4 +71,4 @@ runs:
       shell: bash
     - name: Install dependencies
       run: poetry install -vvv
-      shell: powershell
+      shell: bash
