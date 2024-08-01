@@ -44,7 +44,7 @@ runs:
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
         if (${{ inputs.extra_repository}}); then
-          poetry config http-basic.mira-pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
+          poetry config http-basic.mira_pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
         fi
       shell: bash
     - name: Set up cache
