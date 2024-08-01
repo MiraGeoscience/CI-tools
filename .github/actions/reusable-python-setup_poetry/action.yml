@@ -47,9 +47,9 @@ runs:
     - name: Config Artifactory repo
       if: ${{ inputs.extra_repository }}
       env:
-        MIRA_PYPI_REPO_USER: ${{ inputs.repo_user }}
-        MIRA_PYPI_REPO_TOKEN: ${{ inputs.repo_token }}
-      run: poetry config http-basic.mira-pypi $MIRA_PYPI_REPO_USER $MIRA_PYPI_REPO_TOKEN
+        POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME : ${{ inputs.repo_user }}
+        POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD : ${{ inputs.repo_token }}
+      run: poetry config http-basic.mira-pypi $POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME $POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
