@@ -39,6 +39,18 @@ runs:
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
       shell: bash
+    - name: Set up cache
+      uses: actions/cache@v4
+      id: cache
+      env:
+        CACHE_NUMBER: ${{ inputs.cache_number }}
+      with:
+        path: .venv
+        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-${{ inputs.CACHE_NUMBER }}
+    - name: Ensure cache is healthy
+      if: steps.cache.outputs.cache-hit == 'true'
+      run: timeout 10s poetry run pip --version || rm -rf .venv
+      shell: bash
     - name: Config poetry
       run: |
         poetry config virtualenvs.create true
@@ -54,21 +66,10 @@ runs:
         echo "test1: ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}"
         
         poetry config http-basic.mira_pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
+        poetry install -vvv
 
-        pip install --index-url https://${{ inputs.repo_user }}:${{ inputs.repo_token }}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple pydensecrf
+        # pip install --index-url https://${{ inputs.repo_user }}:${{ inputs.repo_token }}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple pydensecrf
       shell: bash
-    - name: Set up cache
-      uses: actions/cache@v4
-      id: cache
-      env:
-        CACHE_NUMBER: ${{ inputs.cache_number }}
-      with:
-        path: .venv
-        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-${{ inputs.CACHE_NUMBER }}
-    - name: Ensure cache is healthy
-      if: steps.cache.outputs.cache-hit == 'true'
-      run: timeout 10s poetry run pip --version || rm -rf .venv
-      shell: bash
-    - name: Install dependencies
-      run: poetry install -vvv
-      shell: bash
+    # - name: Install dependencies
+    #   run: poetry install -vvv
+    #   shell: bash
