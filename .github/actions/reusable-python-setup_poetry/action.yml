@@ -49,7 +49,10 @@ runs:
       env:
         POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME : ${{ inputs.repo_user }}
         POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD : ${{ inputs.repo_token }}
-      run: poetry config http-basic.mira_pypi %POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME% %POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD%
+      run: |
+      echo %POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME%
+      echo %POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD%
+      poetry config http-basic.mira_pypi %POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME% %POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD%
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
