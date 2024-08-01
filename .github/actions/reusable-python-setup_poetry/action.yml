@@ -43,9 +43,13 @@ runs:
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        if (${{ inputs.extra_repository}}); then
-          poetry config http-basic.mira_pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
-        fi
+      shell: bash
+    - name: Config Artifactory repo
+      if: ${{ inputs.extra_repository }}
+      env:
+        MIRA_PYPI_REPO_USER: ${{ inputs.repo_user }}
+        MIRA_PYPI_REPO_TOKEN: ${{ inputs.repo_token }}
+      run: poetry config http-basic.mira-pypi $MIRA_PYPI_REPO_USER $MIRA_PYPI_REPO_TOKEN
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
@@ -54,7 +58,7 @@ runs:
         CACHE_NUMBER: ${{ inputs.cache_number }}
       with:
         path: .venv
-        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.CACHE_NUMBER }}
+        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-${{ inputs.CACHE_NUMBER }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
       run: timeout 10s poetry run pip --version || rm -rf .venv
