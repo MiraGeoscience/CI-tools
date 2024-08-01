@@ -62,14 +62,10 @@ runs:
         POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME : ${{ inputs.repo_user }}
         POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD : ${{ inputs.repo_token }}
       run: |
-        echo "test0: $POETRY_HTTP_BASIC_MIRA_PYPI_USERNAME"
-        echo "test1: ${POETRY_HTTP_BASIC_MIRA_PYPI_PASSWORD}"
-        
         poetry config http-basic.mira_pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
         poetry install -vvv
 
-        # pip install --index-url https://${{ inputs.repo_user }}:${{ inputs.repo_token }}@mirageoscienceltd.jfrog.io/artifactory/api/pypi/analyst-pypi/simple pydensecrf
       shell: bash
-    # - name: Install dependencies
-    #   run: poetry install -vvv
-    #   shell: bash
+    - name: Install dependencies
+      run: poetry install -vvv
+      shell: bash
