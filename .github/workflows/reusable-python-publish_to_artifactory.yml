@@ -60,8 +60,8 @@ jobs:
             -   name: Build package
                 id: build_package
                 run: |
-                    conda build ${{ inputs.package_name }}
-                    build_path=$(conda build --output ${{ inputs.package_name }})
+                    micromamba build ${{ inputs.package_name }}
+                    build_path=$(micromamba build --output ${{ inputs.package_name }})
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
@@ -73,7 +73,7 @@ jobs:
                     retention-days: 7
             -   name: Publish on Artifactory
                 run: |
-                    curl -T ${{ env.BUILD_NAME }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
 
             
             
