@@ -25,12 +25,12 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    build_package:
-        name: build package
+    release_on_artifactory:
+        name: Release package on Artifactory
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-lastest, windows-latest]
+                os: [ubuntu-latest, windows-latest]
         runs-on: ${{ matrix.os }}
         env:
             PYTHONUTF8: 1
@@ -42,6 +42,7 @@ jobs:
             -   name: Setup CONDA_LOCK_ENV_FILE
                 run: |
                     os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
+                    
                     echo "CONDA_LOCK_ENV_FILE=environments/py-${{ inputs.python_ver }}-${os_conda}-64-dev.conda.lock.yml" >> $GITHUB_ENV
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
@@ -54,8 +55,8 @@ jobs:
                     conda install -y conda-verify
             -   name: Generate conda recipe
                 run: |
-                    tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}.tar.gz .
-                    grayskull pypi ../${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
+                    tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}-${{ runner.os }}.tar.gz .
+                    grayskull pypi ../${{ inputs.package_name }}-${{ inputs.version_tag }}-${{ runner.os }}.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
@@ -72,21 +73,9 @@ jobs:
                     name: ${{ env.BUILD_NAME }}
                     path: ${{ env.BUILD_PATH }}
                     retention-days: 7
-        outputs:
-            BUILD_PATH: ${{ steps.build_package.outputs.BUILD_PATH }}
-            BUILD_NAME: ${{ steps.build_package.outputs.BUILD_NAME }}
-    publish_package:
-        name: publish package on artifactory
-        needs: build_package
-        runs-on: ubuntu-latest
-        steps:
-            -   name: Download build package
-                uses: actions/download-artifact@v4
-                with:
-                    name: ${{ needs.build_package.outputs.BUILD_NAME }}
-            -   name: Publish
+            -   name: Publish on Artifactory
                 run: |
-                    curl -T ${{ needs.build_package.outputs.BUILD_NAME }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ needs.build_package.outputs.BUILD_NAME }}"
+                    curl -T ${{ env.BUILD_NAME }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
 
             
             
