@@ -42,18 +42,22 @@ jobs:
                     conda install -y conda-build
             -   name: Generate conda recipe
                 run: |
-                    tar czf ${{inputs.package_name}}-${{inputs.version_tag}}.tar.gz .
+                    tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}.tar.gz .
                     grayskull pypi --tag ${{ inputs.version_tag }} ./${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
                     conda build ${{ inputs.package_name }}
                     build_path=$(conda build --output ${{ inputs.package_name }})
+                    build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
+                    echo "BUILD_NAME=${build_name}" >> $GITHUB_OUTPUT
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
+                    echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
             -   name: Test output
                 run: | 
                     echo ${{ env.BUILD_PATH }}
+                    echo ${{ env.BUILD_NAME }}
                     if test -f ${{ env.BUILD_PATH }}; then
                         echo "File exists"
                     else
@@ -62,7 +66,7 @@ jobs:
             -   name: Upload build package
                 uses: actions/upload-artifact@v4
                 with:
-                    name: build_package
+                    name: ${{ env.BUILD_NAME }}
                     path: ${{ env.BUILD_PATH }}
             # -   name: Check package
             #     run: |
@@ -77,11 +81,10 @@ jobs:
             -   name: Download build package
                 uses: actions/download-artifact@v4
                 with:
-                    name: build_package
+                    name: ${{ needs.build_package.outputs.BUILD_NAME }}
             -   name: Publish
                 run: |
-                    build_name=$(basename ${{ needs.build_package.outputs.BUILD_PATH }})
-                    curl -T ${{ needs.build_package.outputs.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${build_name}"
+                    curl -T ${{ needs.build_package.outputs.BUILD_NAME }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ needs.build_package.outputs.BUILD_NAME }}"
 
             
             
