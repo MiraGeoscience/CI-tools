@@ -27,11 +27,7 @@ defaults:
 jobs:
     release_on_artifactory:
         name: Release package on Artifactory
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-latest]
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-latest
         env:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
