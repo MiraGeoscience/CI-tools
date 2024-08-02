@@ -43,7 +43,7 @@ jobs:
             -   name: Generate conda recipe
                 run: |
                     tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}.tar.gz .
-                    grayskull pypi --tag ${{ inputs.version_tag }} ./${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
+                    grayskull pypi --tag ${{ inputs.version_tag }} ../${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
@@ -68,6 +68,7 @@ jobs:
                 with:
                     name: ${{ env.BUILD_NAME }}
                     path: ${{ env.BUILD_PATH }}
+                    retention-days: 7
             # -   name: Check package
             #     run: |
             #         conda install $BUILD_PATH
