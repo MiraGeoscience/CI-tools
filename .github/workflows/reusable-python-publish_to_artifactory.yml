@@ -74,6 +74,7 @@ jobs:
             #         conda install $BUILD_PATH
         outputs:
             BUILD_PATH: ${{ steps.build_package.outputs.BUILD_PATH }}
+            BUILD_NAME: ${{ steps.build_package.outputs.BUILD_NAME }}
     publish_package:
         name: publish package on artifactory
         needs: build_package
