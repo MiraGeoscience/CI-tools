@@ -7,6 +7,10 @@ on:
             description: 'Name of the package to build'
             required: true
             type: string
+        python_ver:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
         version_tag:
             description: 'Version tag of the package to build'
             required: true
@@ -23,27 +27,35 @@ defaults:
 jobs:
     build_package:
         name: build package
-        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-lastest, windows-latest]
+        runs-on: ${{ matrix.os }}
         env:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
-            CONDA_LOCK_ENV_FILE: environments/py-3.10-linux-64-dev.conda.lock.yml
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
+            -   name: Setup CONDA_LOCK_ENV_FILE
+                run: |
+                    os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
+                    echo "CONDA_LOCK_ENV_FILE=environments/py-${{ inputs.python_ver }}-${os_conda}-64-dev.conda.lock.yml" >> $GITHUB_ENV
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
                 with:
-                  python_ver: '3.10'
+                  python_ver: ${{ inputs.python_ver }}
             -   name: Install dependencies
                 run: |
                     conda install -y grayskull
                     conda install -y conda-build
+                    conda install -y conda-verify
             -   name: Generate conda recipe
                 run: |
                     tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}.tar.gz .
-                    grayskull pypi --tag ${{ inputs.version_tag }} ../${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
+                    grayskull pypi ../${{ inputs.package_name }}-${{ inputs.version_tag }}.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
@@ -54,24 +66,12 @@ jobs:
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_OUTPUT
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
-            -   name: Test output
-                run: | 
-                    echo ${{ env.BUILD_PATH }}
-                    echo ${{ env.BUILD_NAME }}
-                    if test -f ${{ env.BUILD_PATH }}; then
-                        echo "File exists"
-                    else
-                        echo "File does not exist"
-                    fi
             -   name: Upload build package
                 uses: actions/upload-artifact@v4
                 with:
                     name: ${{ env.BUILD_NAME }}
                     path: ${{ env.BUILD_PATH }}
                     retention-days: 7
-            # -   name: Check package
-            #     run: |
-            #         conda install $BUILD_PATH
         outputs:
             BUILD_PATH: ${{ steps.build_package.outputs.BUILD_PATH }}
             BUILD_NAME: ${{ steps.build_package.outputs.BUILD_NAME }}
