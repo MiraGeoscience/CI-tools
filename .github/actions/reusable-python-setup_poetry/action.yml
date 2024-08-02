@@ -13,6 +13,19 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
+  extra_repository:
+    description: 'Boolean to indicate if extra repository is needed'
+    required: false
+    type: boolean
+    default: false
+  repo_user:
+    description: 'Repository username'
+    required: false
+    type: string
+  repo_token:
+    description: 'Repository token'
+    required: false
+    type: string
 
 runs:
   using: "composite"
@@ -30,6 +43,9 @@ runs:
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
+        if (${{ inputs.extra_repository}}); then
+          poetry config http-basic.mira-pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
+        fi
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
