@@ -55,16 +55,14 @@ jobs:
                     conda install -y conda-verify
             -   name: Generate conda recipe
                 run: |
-                    tar czf ../${{inputs.package_name}}-${{inputs.version_tag}}-${{ runner.os }}.tar.gz .
-                    grayskull pypi ../${{ inputs.package_name }}-${{ inputs.version_tag }}-${{ runner.os }}.tar.gz
+                    tar czf ../${{inputs.package_name}}.tar.gz .
+                    grayskull pypi ../${{ inputs.package_name }}.tar.gz
             -   name: Build package
                 id: build_package
                 run: |
                     conda build ${{ inputs.package_name }}
                     build_path=$(conda build --output ${{ inputs.package_name }})
                     build_name=$(basename ${build_path})
-                    echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
-                    echo "BUILD_NAME=${build_name}" >> $GITHUB_OUTPUT
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
             -   name: Upload build package
