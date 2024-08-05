@@ -28,6 +28,12 @@ on:
         required: false
         type: boolean
         default: false
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
+
     secrets:
       EXTRA_PYPI_REPO_USER:
         description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
@@ -51,6 +57,8 @@ jobs:
         shell: 'bash -l {0}'
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: ${{ inputs.lfs }}
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
