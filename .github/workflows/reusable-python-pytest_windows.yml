@@ -27,6 +27,11 @@ on:
         required: false
         type: boolean
         default: false
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       CODECOV_TOKEN:
@@ -54,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: true
+          lfs: ${{ inputs.lfs }}
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
