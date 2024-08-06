@@ -68,6 +68,7 @@ jobs:
         if: ${{ inputs.package_manager == 'hatch' }}
         with:
           cache_number: 1
+          runner_os: ${{ runner.os }}
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
@@ -82,7 +83,7 @@ jobs:
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
             pylint $FILES_PARAM
-          else if ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package_manager == 'poetry' }}; then
             poetry run pylint $FILES_PARAM
           else 
             hatch run pylint $FILES_PARAM
@@ -92,7 +93,7 @@ jobs:
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
             pylint $source_dir tests
-          else if ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package_manager == 'poetry' }}; then
             poetry run pylint $source_dir tests
           else
             hatch run pylint $source_dir tests

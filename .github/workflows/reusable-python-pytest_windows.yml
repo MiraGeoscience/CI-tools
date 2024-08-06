@@ -85,12 +85,13 @@ jobs:
         if: ${{ inputs.package_manager == 'hatch' }}
         with:
           cache_number: ${{ inputs.cache_number }}
+          runner_os: ${{ runner.os }}
       
       - name: Run Pytest
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
             pytest --cov --cov-report=xml
-          else if ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package_manager == 'poetry' }}; then
             poetry run pytest --cov --cov-report=xml
           else
             hatch run pytest --cov --cov-report=xml
