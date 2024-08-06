@@ -82,14 +82,18 @@ jobs:
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
             pylint $FILES_PARAM
-          else
+          else if ${{ inputs.package_manager == 'poetry' }}; then
             poetry run pylint $FILES_PARAM
+          else 
+            hatch run pylint $FILES_PARAM
           fi
       
       - name: Run Pylint on all files
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
             pylint $source_dir tests
-          else
+          else if ${{ inputs.package_manager == 'poetry' }}; then
             poetry run pylint $source_dir tests
+          else
+            hatch run pylint $source_dir tests
           fi
