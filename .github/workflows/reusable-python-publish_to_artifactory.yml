@@ -15,8 +15,19 @@ on:
             description: 'Version tag of the package to build'
             required: true
             type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
+        MIRA_CONDA_REPO_NAME:
+            description: 'NAME of the extra repository on JFrog Artifactory'
+            required: false
+            type: string
+            default: 'analyst-dev-conda-local'
+
     secrets:
-        EXTRA_REPO_TOKEN:
+        MIRA_CONDA_REPO_TOKEN:
             description: 'Bearer token for the extra repository on JFrog Artifactory'
             required: true
 
@@ -35,6 +46,8 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
+                with:
+                    lfs: ${{ inputs.lfs }}
             -   name: Setup CONDA_LOCK_ENV_FILE
                 run: |
                     os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
@@ -45,10 +58,7 @@ jobs:
                 with:
                   python_ver: ${{ inputs.python_ver }}
             -   name: Install dependencies
-                run: |
-                    conda install -y grayskull
-                    conda install -y conda-build
-                    conda install -y conda-verify
+                run: conda install -y grayskull conda-build conda-verify
             -   name: Generate conda recipe
                 run: |
                     tar czf ../${{inputs.package_name}}.tar.gz .
@@ -69,4 +79,4 @@ jobs:
                     retention-days: 7
             -   name: Publish on Artifactory
                 run: |
-                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.EXTRA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/analyst-dev-conda-local/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.MIRA_CONDA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/${{ inputs.MIRA_CONDA_REPO_NAME }}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
