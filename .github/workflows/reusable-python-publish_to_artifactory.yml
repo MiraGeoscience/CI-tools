@@ -48,6 +48,14 @@ jobs:
                 uses: actions/checkout@v2
                 with:
                     lfs: ${{ inputs.lfs }}
+            -   name: Check if there is a conda recipe
+                run: |
+                    if [ -f ${{ inputs.package_name }}/meta.yaml ]; then
+                        echo "Conda recipe found"
+                    else
+                        echo "Conda recipe not found"
+                        exit 1
+                    fi
             -   name: Setup CONDA_LOCK_ENV_FILE
                 run: |
                     os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
@@ -58,11 +66,7 @@ jobs:
                 with:
                   python_ver: ${{ inputs.python_ver }}
             -   name: Install dependencies
-                run: conda install -y grayskull conda-build conda-verify
-            -   name: Generate conda recipe
-                run: |
-                    tar czf ../${{inputs.package_name}}.tar.gz .
-                    grayskull pypi ../${{ inputs.package_name }}.tar.gz
+                run: conda install -y conda-build conda-verify
             -   name: Build package
                 id: build_package
                 run: |
