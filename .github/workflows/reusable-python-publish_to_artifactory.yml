@@ -20,11 +20,11 @@ on:
             required: false
             type: boolean
             default: false
-        MIRA_CONDA_REPO_NAME:
-            description: 'NAME of the extra repository on JFrog Artifactory'
+        MIRA_CONDA_REPO_URL:
+            description: 'URL of the extra repository on JFrog Artifactory'
             required: false
             type: string
-            default: 'analyst-dev-conda-local'
+            default: 'https://mirageoscienceltd.jfrog.io/ui/repos/tree/General/analyst-dev-conda-local'
 
     secrets:
         MIRA_CONDA_REPO_TOKEN:
@@ -83,4 +83,4 @@ jobs:
                     retention-days: 7
             -   name: Publish on Artifactory
                 run: |
-                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.MIRA_CONDA_REPO_TOKEN }}" "https://mirageoscienceltd.jfrog.io/artifactory/${{ inputs.MIRA_CONDA_REPO_NAME }}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.MIRA_CONDA_REPO_TOKEN }}" "${{ inputs.MIRA_CONDA_REPO_URL }}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
