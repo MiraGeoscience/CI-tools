@@ -65,7 +65,7 @@ jobs:
           extra_repository: ${{ inputs.extra_repository }}
           repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-439
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package_manager == 'hatch' }}
         with:
