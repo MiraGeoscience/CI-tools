@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SKIP: pylint
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4

@@ -28,6 +28,7 @@ on:
 jobs:
   new_jira_issue:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
     - name: JIRA Login
       uses: atlassian/gajira-login@v3.0.1
