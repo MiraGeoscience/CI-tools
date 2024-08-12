@@ -16,7 +16,7 @@ on:
 jobs:
   add_jira_summary:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
     - name: Find JIRA issue key
       id: find_jira_key
