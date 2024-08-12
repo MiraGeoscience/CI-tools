@@ -43,6 +43,7 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
+        timeout-minutes: 20
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
