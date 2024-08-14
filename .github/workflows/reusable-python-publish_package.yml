@@ -95,12 +95,9 @@ jobs:
                         echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
                         exit 1
                     fi
-            -   name: Decode repo config
-                run: |
-                    MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
-                    echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish
                 run: |
+                    MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
                     repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
@@ -159,12 +156,9 @@ jobs:
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
-            -   name: Decode repo config
+            -   name: Publish
                 run: |
-                    MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
-                    echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
-            -   name: Publish on Artifactory
-                run: |
+                    MIRA_REPO_CONFIG=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
                     repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
