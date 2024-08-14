@@ -18,8 +18,9 @@ on:
             type: string
         version_tag:
             description: 'Version tag of the package to build'
-            required: true
+            required: false
             type: string
+            default: 'v0.0.0'
         lfs:
             description: 'Boolean to indicate if Github LFS is needed'
             required: false
@@ -129,6 +130,14 @@ jobs:
                 uses: actions/checkout@v2
                 with:
                     lfs: ${{ inputs.lfs }}
+            -   name: Check if the version tag is available
+                run: |
+                    if [ "${{ inputs.version_tag }}" = "v0.0.0" ]; then
+                        echo "Version tag not available"
+                        exit 1
+                    else
+                        echo "Version tag available"
+                    fi
             -   name: Check if there is a conda recipe
                 run: |
                     if [ -f ${{ inputs.package_name }}/meta.yaml ]; then
@@ -155,7 +164,7 @@ jobs:
                     build_path=$(conda build --output ${{ inputs.package_name }})
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
-                    echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
+                    echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV
             -   name: Publish
                 run: |
                     MIRA_REPO_CONFIG=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
