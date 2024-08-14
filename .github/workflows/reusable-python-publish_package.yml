@@ -97,7 +97,7 @@ jobs:
                     fi
             -   name: Decode repo config
                 run: |
-                    MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
+                    MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish
                 run: |
@@ -107,7 +107,7 @@ jobs:
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
                         if ${{ inputs.package_manager == 'poetry' }}; then
-                            poetry config repositories.${repo_name} ${repo_url}
+                            poetry config repositories.${repo_name} ${repo_url} && \
                             poetry publish -r ${repo_name} -u ${repo_user} -p ${repo_token}
                         elif ${{ inputs.package_manager == 'hatch'}}; then
                             hatch publish -r ${repo_url} -u ${repo_user} -a ${repo_token}
