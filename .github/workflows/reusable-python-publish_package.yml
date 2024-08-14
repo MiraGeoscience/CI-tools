@@ -61,7 +61,7 @@ jobs:
         if: ${{ inputs.package_manager != 'conda' }}
         env:
             cache_number: 1
-            REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
+            repository_list: ${{ fromJSON(inputs.repo_names) }}
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -103,7 +103,7 @@ jobs:
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish
                 run: |
-                    for repo_name in ${REPOSITORY_LIST}; do
+                    for repo_name in ${repository_list}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
@@ -126,7 +126,7 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
-            REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
+            repository_list: ${{ fromJSON(inputs.repo_names) }}
         timeout-minutes: 20
         if: ${{ inputs.package_manager == 'conda' }}
         steps:
@@ -167,7 +167,7 @@ jobs:
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish on Artifactory
                 run: |
-                    for repo_name in ${REPOSITORY_LIST}; do
+                    for repo_name in ${repository_list}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
                         curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
