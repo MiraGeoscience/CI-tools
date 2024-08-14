@@ -34,9 +34,8 @@ on:
         
         repo_names:
             description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
-            required: false
+            required: true
             type: string
-            default: '[]'
 
     secrets:
         EXTRA_PYPI_REPO_USER:
@@ -61,7 +60,6 @@ jobs:
         if: ${{ inputs.package_manager != 'conda' }}
         env:
             cache_number: 1
-            repository_list: ${{ fromJSON(inputs.repo_names) }}
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -103,6 +101,7 @@ jobs:
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish
                 run: |
+                    repository_list=$(echo ${{ inputs.repo_names }} | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
@@ -126,7 +125,6 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
-            repository_list: ${{ fromJSON(inputs.repo_names) }}
         timeout-minutes: 20
         if: ${{ inputs.package_manager == 'conda' }}
         steps:
@@ -167,6 +165,7 @@ jobs:
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish on Artifactory
                 run: |
+                    repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
