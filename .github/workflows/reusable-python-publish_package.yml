@@ -45,12 +45,6 @@ on:
         EXTRA_PYPI_REPO_TOKEN:
             description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
             required: false
-        repo_user:
-            description: 'Repository username'
-            required: false
-        repo_token:
-            description: 'Repository token'
-            required: false
         MIRA_REPO_SECRETS:
             description: 'Base64 encoded Yanml file content, containing all the repository secrets'
             required: true
