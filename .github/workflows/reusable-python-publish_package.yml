@@ -101,7 +101,7 @@ jobs:
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish
                 run: |
-                    repository_list=$(echo ${{ inputs.repo_names }} | jq -r '.[]')
+                    repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
