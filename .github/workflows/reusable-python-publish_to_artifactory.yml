@@ -3,11 +3,16 @@ name: Publish condan package to Artifactory
 on:
   workflow_call:
     inputs:
+        package_manager:
+            description: 'Package manager to use (eg. "conda", "poetry", "hatch")'
+            required: true
+            type: string
+            default: 'poetry'
         package_name:
             description: 'Name of the package to build'
             required: true
             type: string
-        python_ver:
+        python_version:
             description: 'Python version to use (eg: 3.10)'
             required: true
             type: string
@@ -20,15 +25,34 @@ on:
             required: false
             type: boolean
             default: false
-        MIRA_CONDA_REPO_URL:
-            description: 'URL of the extra repository on JFrog Artifactory'
+        
+        extra_repository:
+            description: 'Boolean to indicate if an extra repository is needed to manage the dependencies'
+            required: false
+            type: boolean
+            default: false
+        
+        repo_names:
+            description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
             required: false
             type: string
-            default: 'https://mirageoscienceltd.jfrog.io/ui/repos/tree/General/analyst-dev-conda-local'
+            default: '[]'
 
     secrets:
-        MIRA_CONDA_REPO_TOKEN:
-            description: 'Bearer token for the extra repository on JFrog Artifactory'
+        EXTRA_PYPI_REPO_USER:
+            description: 'Extra PyPI repository username for dependencies. Only used if `extra_repository` is True.'
+            required: false
+        EXTRA_PYPI_REPO_TOKEN:
+            description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
+            required: false
+        repo_user:
+            description: 'Repository username'
+            required: false
+        repo_token:
+            description: 'Repository token'
+            required: false
+        MIRA_REPO_SECRETS:
+            description: 'Base64 encoded Yanml file content, containing all the repository secrets'
             required: true
 
 defaults:
@@ -36,14 +60,81 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    release_on_artifactory:
-        name: Release package on Artifactory
+    release_pypi_package:
+        name: Release PyPI package
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        if: ${{ inputs.package_manager != 'conda' }}
+        env:
+            cache_number: 1
+        steps:
+            -   uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python_version }}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+                name: Setup poetry env
+                if: ${{ inputs.package_manager == 'poetry' }}
+                with:
+                    python_ver: ${{ inputs.python_version }}
+                    cache_number: ${{ env.cache_number}}
+                    runner_os: ${{ runner.os }}
+                    extra_repository: ${{ inputs.extra_repository }}
+                    repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+                    repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
+                name: Setup hatch env
+                if: ${{ inputs.package_manager == 'hatch' }}
+                with:
+                    cache_number: ${{ env.cache_number}}
+                    runner_os: ${{ runner.os }}
+            -   name: Build package
+                run: |
+                    if ${{ inputs.package_manager == 'poetry' }}; then
+                        poetry build
+                    elif ${{ inputs.package_manager == 'hatch'}}; then
+                        hatch build
+                    else
+                        echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
+                        exit 1
+                    fi
+            -   name: Decode repo config
+                run: |
+                    MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
+                    echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
+            -   name: Publish on PyPI
+                env: 
+                    REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
+                run: |
+                    for repo_name in ${REPOSITORY_LIST}; do
+                        repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
+                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
+                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
+                        if ${{ inputs.package_manager == 'poetry' }}; then
+                            poetry config repositories.${repo_name} ${repo_url}
+                            poetry publish -r ${repo_name} -u ${repo_user} -p ${repo_token}
+                        elif ${{ inputs.package_manager == 'hatch'}}; then
+                            hatch publish -r ${repo_url} -u ${repo_user} -a ${repo_token}
+                        else
+                            echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
+                            exit 1
+                        fi
+                    done
+                    
+                    
+    release_conda_package:
+        name: Release Conda package
         runs-on: ubuntu-latest
         env:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
         timeout-minutes: 20
+        if: ${{ inputs.package_manager == 'conda' }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -61,11 +152,11 @@ jobs:
                 run: |
                     os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
                     
-                    echo "CONDA_LOCK_ENV_FILE=environments/py-${{ inputs.python_ver }}-${os_conda}-64-dev.conda.lock.yml" >> $GITHUB_ENV
+                    echo "CONDA_LOCK_ENV_FILE=environments/py-${{ inputs.python_version }}-${os_conda}-64-dev.conda.lock.yml" >> $GITHUB_ENV
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
                 with:
-                  python_ver: ${{ inputs.python_ver }}
+                  python_ver: ${{ inputs.python_version }}
             -   name: Install dependencies
                 run: conda install -y conda-build conda-verify
             -   name: Build package
@@ -76,12 +167,16 @@ jobs:
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV	
-            -   name: Upload build package
-                uses: actions/upload-artifact@v4
-                with:
-                    name: ${{ env.BUILD_NAME }}
-                    path: ${{ env.BUILD_PATH }}
-                    retention-days: 7
-            -   name: Publish on Artifactory
+            -   name: Decode repo config
                 run: |
-                    curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${{ secrets.MIRA_CONDA_REPO_TOKEN }}" "${{ inputs.MIRA_CONDA_REPO_URL }}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                    MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
+                    echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
+            -   name: Publish on Artifactory
+                env: 
+                    REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
+                run: |
+                    for repo_name in ${REPOSITORY_LIST}; do
+                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
+                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
+                        curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                    done
