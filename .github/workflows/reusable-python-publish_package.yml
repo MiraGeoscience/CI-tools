@@ -61,6 +61,7 @@ jobs:
         if: ${{ inputs.package_manager != 'conda' }}
         env:
             cache_number: 1
+            REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -100,9 +101,7 @@ jobs:
                 run: |
                     MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
-            -   name: Publish on PyPI
-                env: 
-                    REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
+            -   name: Publish
                 run: |
                     for repo_name in ${REPOSITORY_LIST}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
@@ -127,6 +126,7 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
+            REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
         timeout-minutes: 20
         if: ${{ inputs.package_manager == 'conda' }}
         steps:
@@ -166,8 +166,6 @@ jobs:
                     MIRA_REPO_CONFIG_JSON=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
                     echo "MIRA_REPO_CONFIG=$MIRA_REPO_CONFIG" >> $GITHUB_ENV
             -   name: Publish on Artifactory
-                env: 
-                    REPOSITORY_LIST: ${{ fromJSON(inputs.repo_names) }}
                 run: |
                     for repo_name in ${REPOSITORY_LIST}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
