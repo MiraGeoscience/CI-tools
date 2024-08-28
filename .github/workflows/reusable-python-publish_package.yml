@@ -146,16 +146,11 @@ jobs:
                         echo "Conda recipe not found"
                         exit 1
                     fi
-            -   name: Setup CONDA_LOCK_ENV_FILE
-                run: |
-                    os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || ([[ $RUNNER_OS == "Windows" ]] && echo "win" || echo "osx"))
-                    
-                    echo "CONDA_LOCK_ENV_FILE=environments/py-${{ inputs.python_version }}-${os_conda}-64-dev.conda.lock.yml" >> $GITHUB_ENV
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
                 with:
                   python_ver: ${{ inputs.python_version }}
-            -   name: Install dependencies
+            -   name: Install conda build
                 run: conda install -y conda-build conda-verify
             -   name: Build package
                 id: build_package
