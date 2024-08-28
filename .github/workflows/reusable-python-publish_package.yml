@@ -106,9 +106,9 @@ jobs:
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
                         if ${{ inputs.package_manager == 'poetry' }}; then
                             poetry config repositories.${repo_name} ${repo_url} && \
-                            poetry publish -r ${repo_name} -u ${repo_user} -p ${repo_token}
+                            poetry publish -r ${repo_name} -u $(echo ${repo_user}) -p $(echo ${repo_token})
                         elif ${{ inputs.package_manager == 'hatch'}}; then
-                            hatch publish -r ${repo_url} -u ${repo_user} -a ${repo_token}
+                            hatch publish -r $(echo ${repo_url}) -u $(echo ${repo_user}) -a $(echo ${repo_token})
                         else
                             echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
                             exit 1
