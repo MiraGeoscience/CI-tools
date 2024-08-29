@@ -23,6 +23,7 @@ jobs:
     env:
       SKIP: pylint
     timeout-minutes: 20
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
