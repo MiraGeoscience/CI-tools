@@ -7,6 +7,11 @@ on:
         description: 'Name of the app to run pre-commit on'
         required: false
         type: string
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   pre-commit:
@@ -19,7 +24,9 @@ jobs:
       SKIP: pylint
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          lfs: ${{ inputs.lfs }}
       - uses: actions/setup-python@v4
       - name: capture modified files
         if: ${{ github.event_name == 'pull_request' }}
