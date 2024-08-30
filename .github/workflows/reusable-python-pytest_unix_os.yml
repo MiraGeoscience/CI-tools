@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      timeout_minutes:
+        description: 'Timeout in minutes for the job'
+        required: false
+        type: number
+        default: 20
 
     secrets:
       EXTRA_PYPI_REPO_USER:
@@ -55,7 +60,7 @@ jobs:
     defaults:
       run:
         shell: 'bash -l {0}'
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.timeout_minutes }}
     steps:
       - uses: actions/checkout@v4
         with:

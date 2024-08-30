@@ -37,6 +37,11 @@ on:
             description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
             required: true
             type: string
+        timeout_minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
 
     secrets:
         EXTRA_PYPI_REPO_USER:
@@ -57,7 +62,7 @@ jobs:
     release_pypi_package:
         name: Release PyPI package
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: ${{ inputs.timeout_minutes }}
         if: ${{ inputs.package_manager != 'conda' }}
         env:
             cache_number: 1
@@ -123,7 +128,7 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        timeout-minutes: 20
+        timeout-minutes: ${{ inputs.timeout_minutes }}
         if: ${{ inputs.package_manager == 'conda' }}
         steps:
             -   name: Checkout
