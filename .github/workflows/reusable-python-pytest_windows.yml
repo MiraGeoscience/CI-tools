@@ -37,8 +37,8 @@ on:
         required: false
         type: number
         default: 20
-      directory:
-        description: 'Directory to run pytest in'
+      working-directory:
+        description: 'Directory of the python package'
         required: false
         type: string
         default: '.'
@@ -76,11 +76,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_ver }}
-      - name: Go into the working directory
+      - name: Check if working directory exists
         run: |
-          IF exist ${{ inputs.directory }}
-            (cd ${{ inputs.directory }})
-          ELSE
+          IF NOT exist ${{ inputs.directory }}
             (echo "The input ${{ inputs.directory }} is not an existing directory" && exit 1)
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
@@ -88,7 +86,7 @@ jobs:
         if: ${{ inputs.package_manager == 'conda' }}
         with:
           python_ver: ${{ matrix.python_ver }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-406
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
@@ -98,12 +96,14 @@ jobs:
           extra_repository: ${{ inputs.extra_repository }}
           repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
+          working-directory: ${{ inputs.working-directory }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-406
         name: Setup hatch env
         if: ${{ inputs.package_manager == 'hatch' }}
         with:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
+          working-directory: ${{ inputs.working-directory }}
   
       - name: Run Pytest
         run: |
@@ -114,6 +114,7 @@ jobs:
           else
             hatch run pytest --cov --cov-report=xml
           fi
+        working-directory: ${{ inputs.working-directory }}
       - name: Codecov
         if:  ${{ (inputs.codecov_reference_python_ver) && (matrix.python_ver == inputs.codecov_reference_python_ver) }}
         uses: codecov/codecov-action@v4
