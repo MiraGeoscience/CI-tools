@@ -38,6 +38,11 @@ on:
         required: false
         type: number
         default: 20
+      directory:
+        description: 'Directory to run pytest in'
+        required: false
+        type: string
+        default: '.'
 
     secrets:
       EXTRA_PYPI_REPO_USER:
@@ -92,7 +97,16 @@ jobs:
         with:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
-
+      
+      - name: Go into the working directory
+        run: |
+          if test -d ${{ inputs.directory }}; then
+            cd ${{ inputs.directory }}
+          else
+            echo "The input ${{ inputs.directory }} is not an existing directory"
+            exit 1
+          fi
+      
       - name: Run Pytest
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then

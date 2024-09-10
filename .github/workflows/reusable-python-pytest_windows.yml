@@ -37,6 +37,11 @@ on:
         required: false
         type: number
         default: 20
+      directory:
+        description: 'Directory to run pytest in'
+        required: false
+        type: string
+        default: '.'
 
     secrets:
       CODECOV_TOKEN:
@@ -94,6 +99,13 @@ jobs:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
       
+      - name: Go into the working directory
+        run: |
+          IF exist ${{ inputs.directory }}
+            (cd ${{ inputs.directory }})
+          ELSE
+            (echo "The input ${{ inputs.directory }} is not an existing directory" && exit 1)
+  
       - name: Run Pytest
         run: |
           if ${{ inputs.package_manager == 'conda' }}; then
