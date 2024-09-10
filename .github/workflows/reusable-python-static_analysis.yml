@@ -27,6 +27,11 @@ on:
         required: false
         type: number
         default: 20
+      directory:
+        description: 'Directory to run pytest in'
+        required: false
+        type: string
+        default: '.'
 
     secrets:
       EXTRA_PYPI_REPO_USER:
