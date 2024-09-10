@@ -26,6 +26,11 @@ inputs:
     description: 'Repository token'
     required: false
     type: string
+  working-directory:
+    description: 'Directory to run pytest in'
+    required: false
+    type: string
+    default: '.'
 
 runs:
   using: "composite"
@@ -62,3 +67,4 @@ runs:
     - name: Install dependencies
       run: poetry install -vvv
       shell: bash
+      working-directory: ${{ inputs.working-directory }}

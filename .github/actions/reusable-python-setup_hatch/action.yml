@@ -9,6 +9,11 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
+  working-directory:
+    description: 'Directory to run pytest in'
+    required: false
+    type: string
+    default: '.'
 
 runs:
   using: "composite"
@@ -30,3 +35,4 @@ runs:
     - name: Install hatch
       run: pip install hatch
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
