@@ -75,7 +75,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_ver }}
-      
+      - name: Go into the working directory
+        run: |
+          if test -d ${{ inputs.directory }}; then
+            cd ${{ inputs.directory }}
+          else
+            echo "The input ${{ inputs.directory }} is not an existing directory"
+            exit 1
+          fi
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package_manager == 'conda' }}
@@ -97,15 +105,6 @@ jobs:
         with:
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
-      
-      - name: Go into the working directory
-        run: |
-          if test -d ${{ inputs.directory }}; then
-            cd ${{ inputs.directory }}
-          else
-            echo "The input ${{ inputs.directory }} is not an existing directory"
-            exit 1
-          fi
       
       - name: Run Pytest
         run: |
