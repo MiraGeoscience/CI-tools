@@ -18,7 +18,7 @@ inputs:
     description: 'Repository username'
     required: false
     type: string
-  repo-tokeen:
+  repo-token:
     description: 'Repository token'
     required: false
     type: string
@@ -40,7 +40,7 @@ runs:
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
         if (${{ inputs.extra-repository}}); then
-          poetry config http-basic.mira-pypi ${{ inputs.repo-user }} ${{ inputs.repo-tokeen }}
+          poetry config http-basic.mira-pypi ${{ inputs.repo-user }} ${{ inputs.repo-token }}
         fi
       shell: bash
     - name: Set up cache

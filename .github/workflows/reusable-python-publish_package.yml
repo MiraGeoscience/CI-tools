@@ -33,7 +33,7 @@ on:
             type: boolean
             default: false
         
-        repo_names:
+        repo-names:
             description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
             required: true
             type: string
@@ -75,22 +75,21 @@ jobs:
                 uses: actions/setup-python@v5
                 with:
                     python-version: ${{ inputs.python-version }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
                 name: Setup poetry env
                 if: ${{ inputs.package-manager == 'poetry' }}
                 with:
-                    python_ver: ${{ inputs.python-version }}
                     cache-number: ${{ env.cache-number}}
-                    runner_os: ${{ runner.os }}
+                    runner-os: ${{ runner.os }}
                     extra-repository: ${{ inputs.extra-repository }}
                     repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
                     repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
                 name: Setup hatch env
                 if: ${{ inputs.package-manager == 'hatch' }}
                 with:
                     cache-number: ${{ env.cache-number}}
-                    runner_os: ${{ runner.os }}
+                    runner-os: ${{ runner.os }}
             -   name: Build package
                 run: |
                     if ${{ inputs.package-manager == 'poetry' }}; then
@@ -104,7 +103,7 @@ jobs:
             -   name: Publish
                 run: |
                     MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
-                    repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
+                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
@@ -151,10 +150,10 @@ jobs:
                         echo "Conda recipe not found"
                         exit 1
                     fi
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
                 name: Setup conda env
                 with:
-                  python_ver: ${{ inputs.python-version }}
+                  python-version: ${{ inputs.python-version }}
             -   name: Install conda build
                 run: conda install -y conda-build conda-verify
             -   name: Build package
@@ -168,7 +167,7 @@ jobs:
             -   name: Publish
                 run: |
                     MIRA_REPO_CONFIG=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
-                    repository_list=$(echo '${{ inputs.repo_names }}' | jq -r '.[]')
+                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
