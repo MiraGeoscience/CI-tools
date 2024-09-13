@@ -1,7 +1,7 @@
 name: Setup conda env
 description: Setup conda environment for Python
 inputs:
-  python_ver:
+  python-version:
     description: 'Python version to use'
     required: true
     type: string
@@ -26,4 +26,4 @@ runs:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python_ver }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
+        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'

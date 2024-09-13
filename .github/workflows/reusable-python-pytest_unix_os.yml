@@ -8,7 +8,7 @@ on:
         required: true
         type: string
         default: 'poetry'
-      python_ver:
+      python-versions:
         description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
         required: false
         type: string
@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_ver: ${{ fromJSON(inputs.python_ver) }}
+        python-version: ${{ fromJSON(inputs.python-versions) }}
         os: ${{ fromJSON(inputs.os) }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -69,18 +69,18 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python_ver }}
+          python-version: ${{ matrix.python-version }}
       
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
         name: Setup conda env
         if: ${{ inputs.package_manager == 'conda' }}
         with:
-          python_ver: ${{ matrix.python_ver }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+          python-version: ${{ matrix.python-version }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
-          python_ver: ${{ matrix.python_ver }}
+          python-version: ${{ matrix.python-version }}
           cache_number: ${{ inputs.cache_number }}
           runner_os: ${{ runner.os }}
           extra_repository: ${{ inputs.extra_repository }}

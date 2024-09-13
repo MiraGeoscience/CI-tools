@@ -1,10 +1,6 @@
 name: Setup poetry env
 description: Setup poetry environment for Python
 inputs:
-  python_ver:
-    description: 'Python version to use'
-    required: true
-    type: string
   cache_number:
     description: 'Cache number to reset cache if poetry.lock has not changed'
     required: true
