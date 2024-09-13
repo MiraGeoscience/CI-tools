@@ -3,7 +3,7 @@ name: Pytest on Unix OS
 on:
   workflow_call:
     inputs:
-      package_manager:
+      package-manager:
         description: 'Package manager to use (eg. "conda", "poetry")'
         required: true
         type: string
@@ -73,31 +73,30 @@ jobs:
       
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
         name: Setup conda env
-        if: ${{ inputs.package_manager == 'conda' }}
+        if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ matrix.python-version }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
         name: Setup poetry env
-        if: ${{ inputs.package_manager == 'poetry' }}
+        if: ${{ inputs.package-manager == 'poetry' }}
         with:
-          python-version: ${{ matrix.python-version }}
           cache-number: ${{ inputs.cache-number }}
-          runner_os: ${{ runner.os }}
+          runner-os: ${{ runner.os }}
           extra-repository: ${{ inputs.extra-repository }}
           repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
         name: Setup hatch env
-        if: ${{ inputs.package_manager == 'hatch' }}
+        if: ${{ inputs.package-manager == 'hatch' }}
         with:
           cache-number: ${{ inputs.cache-number }}
-          runner_os: ${{ runner.os }}
+          runner-os: ${{ runner.os }}
 
       - name: Run Pytest
         run: |
-          if ${{ inputs.package_manager == 'conda' }}; then
+          if ${{ inputs.package-manager == 'conda' }}; then
             pytest --cov --cov-report=xml
-          elif ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pytest --cov --cov-report=xml
           else
             hatch run pytest --cov --cov-report=xml
