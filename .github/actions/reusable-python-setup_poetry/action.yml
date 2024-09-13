@@ -1,11 +1,11 @@
 name: Setup poetry env
 description: Setup poetry environment for Python
 inputs:
-  cache_number:
+  cache-number:
     description: 'Cache number to reset cache if poetry.lock has not changed'
     required: true
     type: number
-  runner_os:
+  runner-os:
     description: 'Runner OS'
     required: true
     type: string
@@ -47,10 +47,10 @@ runs:
       uses: actions/cache@v4
       id: cache
       env:
-        CACHE_NUMBER: ${{ inputs.cache_number }}
+        cache-number: ${{ inputs.cache-number }}
       with:
         path: .venv
-        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.CACHE_NUMBER }}
+        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.cache-number }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
       run: timeout 10s poetry run pip --version || rm -rf .venv

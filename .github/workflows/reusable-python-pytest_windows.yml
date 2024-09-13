@@ -13,7 +13,7 @@ on:
         required: false
         type: string
         default: "['3.10']"
-      cache_number:
+      cache-number:
         description: 'Cache number to reset cache if poetry.lock has not changed'
         required: false
         type: number
@@ -22,7 +22,7 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
-      extra_repository:
+      extra-repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
         type: boolean
@@ -32,7 +32,7 @@ on:
         required: false
         type: boolean
         default: false
-      timeout_minutes:
+      timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
         type: number
@@ -43,10 +43,10 @@ on:
         description: 'Codecov token'
         required: false
       EXTRA_PYPI_REPO_USER:
-        description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
+        description: 'Extra PyPI repository username. Only used if `extra-repository` is True.'
         required: false
       EXTRA_PYPI_REPO_TOKEN:
-        description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
+        description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
         required: false
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
     defaults:
       run:
         shell: 'bash -l {0}'
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,16 +81,16 @@ jobs:
         name: Setup poetry env
         if: ${{ inputs.package_manager == 'poetry' }}
         with:
-          cache_number: ${{ inputs.cache_number }}
+          cache-number: ${{ inputs.cache-number }}
           runner_os: ${{ runner.os }}
-          extra_repository: ${{ inputs.extra_repository }}
+          extra-repository: ${{ inputs.extra-repository }}
           repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package_manager == 'hatch' }}
         with:
-          cache_number: ${{ inputs.cache_number }}
+          cache-number: ${{ inputs.cache-number }}
           runner_os: ${{ runner.os }}
       
       - name: Run Pytest

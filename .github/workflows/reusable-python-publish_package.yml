@@ -3,20 +3,20 @@ name: Publish condan package to Artifactory
 on:
   workflow_call:
     inputs:
-        package_manager:
+        package-manager:
             description: 'Package manager to use (eg. "conda", "poetry", "hatch")'
             required: true
             type: string
             default: 'poetry'
-        package_name:
+        package-name:
             description: 'Name of the package to build'
             required: true
             type: string
-        python_version:
+        python-version:
             description: 'Python version to use (eg: 3.10)'
             required: true
             type: string
-        version_tag:
+        version-tag:
             description: 'Version tag of the package to build'
             required: false
             type: string
@@ -27,7 +27,7 @@ on:
             type: boolean
             default: false
         
-        extra_repository:
+        extra-repository:
             description: 'Boolean to indicate if an extra repository is needed to manage the dependencies'
             required: false
             type: boolean
@@ -37,7 +37,7 @@ on:
             description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
             required: true
             type: string
-        timeout_minutes:
+        timeout-minutes:
             description: 'Timeout in minutes for the job'
             required: false
             type: number
@@ -45,10 +45,10 @@ on:
 
     secrets:
         EXTRA_PYPI_REPO_USER:
-            description: 'Extra PyPI repository username for dependencies. Only used if `extra_repository` is True.'
+            description: 'Extra PyPI repository username for dependencies. Only used if `extra-repository` is True.'
             required: false
         EXTRA_PYPI_REPO_TOKEN:
-            description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
+            description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
             required: false
         MIRA_REPO_SECRETS:
             description: 'Base64 encoded Yanml file content, containing all the repository secrets'
@@ -62,10 +62,10 @@ jobs:
     release_pypi_package:
         name: Release PyPI package
         runs-on: ubuntu-latest
-        timeout-minutes: ${{ inputs.timeout_minutes }}
-        if: ${{ inputs.package_manager != 'conda' }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        if: ${{ inputs.package-manager != 'conda' }}
         env:
-            cache_number: 1
+            cache-number: 1
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -74,31 +74,31 @@ jobs:
             -   name: Set up Python version
                 uses: actions/setup-python@v5
                 with:
-                    python-version: ${{ inputs.python_version }}
+                    python-version: ${{ inputs.python-version }}
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
                 name: Setup poetry env
-                if: ${{ inputs.package_manager == 'poetry' }}
+                if: ${{ inputs.package-manager == 'poetry' }}
                 with:
-                    python_ver: ${{ inputs.python_version }}
-                    cache_number: ${{ env.cache_number}}
+                    python_ver: ${{ inputs.python-version }}
+                    cache-number: ${{ env.cache-number}}
                     runner_os: ${{ runner.os }}
-                    extra_repository: ${{ inputs.extra_repository }}
+                    extra-repository: ${{ inputs.extra-repository }}
                     repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
                     repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
                 name: Setup hatch env
-                if: ${{ inputs.package_manager == 'hatch' }}
+                if: ${{ inputs.package-manager == 'hatch' }}
                 with:
-                    cache_number: ${{ env.cache_number}}
+                    cache-number: ${{ env.cache-number}}
                     runner_os: ${{ runner.os }}
             -   name: Build package
                 run: |
-                    if ${{ inputs.package_manager == 'poetry' }}; then
+                    if ${{ inputs.package-manager == 'poetry' }}; then
                         poetry build
-                    elif ${{ inputs.package_manager == 'hatch'}}; then
+                    elif ${{ inputs.package-manager == 'hatch'}}; then
                         hatch build
                     else
-                        echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
+                        echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
                         exit 1
                     fi
             -   name: Publish
@@ -109,13 +109,13 @@ jobs:
                         repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        if ${{ inputs.package_manager == 'poetry' }}; then
+                        if ${{ inputs.package-manager == 'poetry' }}; then
                             poetry config repositories.${repo_name} ${repo_url} && \
                             poetry publish -r ${repo_name} -u $(echo ${repo_user}) -p $(echo ${repo_token})
-                        elif ${{ inputs.package_manager == 'hatch'}}; then
+                        elif ${{ inputs.package-manager == 'hatch'}}; then
                             hatch publish -r ${repo_url} -u $(echo ${repo_user}) -a $(echo ${repo_token})
                         else
-                            echo "Unknown pypi package manager. ${{ inputs.package_manager }} is not part of ['hatch', 'poetry']."
+                            echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
                             exit 1
                         fi
                     done
@@ -128,8 +128,8 @@ jobs:
             PYTHONUTF8: 1
             CONDA_CHANNEL_PRIORITY: strict
             PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        timeout-minutes: ${{ inputs.timeout_minutes }}
-        if: ${{ inputs.package_manager == 'conda' }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        if: ${{ inputs.package-manager == 'conda' }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
@@ -137,7 +137,7 @@ jobs:
                     lfs: ${{ inputs.lfs }}
             -   name: Check if the version tag is available
                 run: |
-                    if [ "${{ inputs.version_tag }}" = "v0.0.0" ]; then
+                    if [ "${{ inputs.version-tag }}" = "v0.0.0" ]; then
                         echo "Version tag not available"
                         exit 1
                     else
@@ -145,7 +145,7 @@ jobs:
                     fi
             -   name: Check if there is a conda recipe
                 run: |
-                    if [ -f ${{ inputs.package_name }}/meta.yaml ]; then
+                    if [ -f ${{ inputs.package-name }}/meta.yaml ]; then
                         echo "Conda recipe found"
                     else
                         echo "Conda recipe not found"
@@ -154,14 +154,14 @@ jobs:
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
                 with:
-                  python_ver: ${{ inputs.python_version }}
+                  python_ver: ${{ inputs.python-version }}
             -   name: Install conda build
                 run: conda install -y conda-build conda-verify
             -   name: Build package
                 id: build_package
                 run: |
-                    conda build ${{ inputs.package_name }}
-                    build_path=$(conda build --output ${{ inputs.package_name }})
+                    conda build ${{ inputs.package-name }}
+                    build_path=$(conda build --output ${{ inputs.package-name }})
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV
@@ -172,5 +172,5 @@ jobs:
                     for repo_name in ${repository_list}; do
                         repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
                         repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package_name }}/${{ inputs.version_tag }}/${{ env.BUILD_NAME }}"
+                        curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}"
                     done
