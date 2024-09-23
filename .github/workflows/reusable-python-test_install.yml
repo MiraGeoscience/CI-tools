@@ -1,0 +1,51 @@
+name: Python test package installation from a user interface
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        description: 'Name of the package'
+        required: true
+        type: string
+      package-version:
+        description: 'Version of the package'
+        required: false
+        type: string
+      package-manager:
+        description: 'Package manager used (pypi or conda)'
+        required: true
+        type: string
+      python-version:
+        description: 'Python version used'
+        required: false
+        type: string
+        default: '3.10.0'
+
+jobs:
+    container-install-test:
+        name: Check if package can be installed
+        runs-on: windows-latest
+        container: 
+            image: docker run mcr.microsoft.com/windows/servercore:ltsc2022
+        steps:
+            -   name: Install python
+                shell: powershell
+                run: |
+                    Invoke-WebRequest -Uri https://www.python.org/ftp/python/${{ inputs.python-version }}/python-${{ inputs.python-version }}-amd64.exe -OutFile python-installer.exe; Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -NoNewWindow -Wait; Remove-Item -Force python-installer.exe
+            -   name: Install pypi package
+                if: ${{ inputs.package-manager == 'pypi' }}
+                run: |
+                    if ${{ inputs.package-version }} {
+                        pip install ${{ inputs.package-name }}==${{ inputs.package-version }}
+                    } else {
+                        pip install ${{ inputs.package-name }}
+                    }
+            -   name: Install conda package
+                if: ${{ inputs.package-manager == 'conda' }}
+                run: |
+                    Invoke-WebRequest -Uri https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe -Outfile miniforge-installer.exe; Start-Process miniforge-installer.exe -ArgumentList: 'start /wait "" Miniforge3-Windows-x86_64.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%UserProfile%\Miniforge3' -NoNeWindow -Wait; Remove-Item -Force miniforge-installer.exe -Wait; Remove-Item -Force miniforge-installer.exe
+                    if ${{ inputs.package-version }} {
+                        conda install ${{ inputs.package-name }}==${{ inputs.package-version }}
+                    } else {
+                        conda install ${{ inputs.package-name }}
+                    }
