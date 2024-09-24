@@ -1,0 +1,117 @@
+name: Pytest on any OS
+
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: 'Package manager to use (eg. "conda", "poetry")'
+        required: true
+        type: string
+        default: 'poetry'
+      python-versions:
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        required: false
+        type: string
+        default: "['3.10']"
+      os:
+        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        required: false
+        type: string
+        default: "['ubuntu-latest']"
+      cache-number:
+        description: 'Cache number to reset cache if poetry.lock has not changed'
+        required: false
+        type: number
+        default: 1
+      codecov-reference-python-version:
+        description: 'Python version to use as reference for Codecov'
+        required: false
+        type: string
+      extra-repository:
+        description: 'Boolean to indicate if extra repository is needed'
+        required: false
+        type: boolean
+        default: false
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
+      timeout-minutes:
+        description: 'Timeout in minutes for the job'
+        required: false
+        type: number
+        default: 20
+
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov token'
+        required: false
+      EXTRA_PYPI_REPO_USER:
+        description: 'Extra PyPI repository username. Only used if `extra-repository` is True.'
+        required: false
+      EXTRA_PYPI_REPO_TOKEN:
+        description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
+        required: false
+
+jobs:
+  pytest:
+    name: pytest (Windows)
+    if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJson(inputs.os)}}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: 'bash -l {0}'
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: ${{ inputs.lfs }}
+          fetch-depth: 0
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
+        name: Setup conda env
+        if: ${{ inputs.package-manager == 'conda' }}
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
+        name: Setup poetry env
+        if: ${{ inputs.package-manager == 'poetry' }}
+        with:
+          cache-number: ${{ inputs.cache-number }}
+          runner-os: ${{ runner.os }}
+          extra-repository: ${{ inputs.extra-repository }}
+          repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+          repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
+        name: Setup hatch env
+        if: ${{ inputs.package-manager == 'hatch' }}
+        with:
+          cache-number: ${{ inputs.cache-number }}
+          runner-os: ${{ runner.os }}
+      
+      - name: Run Pytest
+        run: |
+          if ${{ inputs.package-manager == 'conda' }}; then
+            pytest --cov --cov-report=xml
+          elif ${{ inputs.package-manager == 'poetry' }}; then
+            poetry run pytest --cov --cov-report=xml
+          else
+            hatch run pytest --cov --cov-report=xml
+          fi
+      - name: Codecov
+        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && (matrix.os == "windows-latest") }}
+        uses: codecov/codecov-action@v4
+        with:
+          name: GitHub
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
