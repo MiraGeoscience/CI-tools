@@ -16,7 +16,7 @@ on:
         description: 'Python version used with pre-commit'
         required: false
         type: string
-        default: '3.10'
+        default: "3.10"
       timeout_minutes:
         description: 'Timeout in minutes for the job'
         required: false
