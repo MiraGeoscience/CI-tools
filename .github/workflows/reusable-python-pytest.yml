@@ -27,6 +27,11 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
+      codecov-reference-os:
+        description: 'Matrix of OS to use as reference for Codecov'
+        required: false
+        type: string
+        default: "['windows-latest']"
       extra-repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
@@ -109,7 +114,7 @@ jobs:
             hatch run pytest --cov --cov-report=xml
           fi
       - name: Codecov
-        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && (matrix.os == 'windows-latest') }}
+        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
         uses: codecov/codecov-action@v4
         with:
           name: GitHub
