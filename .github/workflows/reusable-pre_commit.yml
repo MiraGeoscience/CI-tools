@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
+      python-version:
+        description: 'Python version used with pre-commit'
+        required: false
+        type: string
+        default: '3.10'
       timeout_minutes:
         description: 'Timeout in minutes for the job'
         required: false
@@ -33,6 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
       - name: capture modified files
         if: ${{ github.event_name == 'pull_request' }}
         run: >-
