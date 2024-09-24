@@ -51,61 +51,18 @@ on:
 
 jobs:
   pytest:
-    name: pytest (Windows)
-    if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
-    defaults:
-      run:
-        shell: 'bash -l {0}'
-    timeout-minutes: ${{ inputs.timeout-minutes }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: ${{ inputs.lfs }}
-          fetch-depth: 0
-      - name: Set up Python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
-        name: Setup conda env
-        if: ${{ inputs.package-manager == 'conda' }}
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
-        name: Setup poetry env
-        if: ${{ inputs.package-manager == 'poetry' }}
-        with:
-          cache-number: ${{ inputs.cache-number }}
-          runner-os: ${{ runner.os }}
-          extra-repository: ${{ inputs.extra-repository }}
-          repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-          repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
-        name: Setup hatch env
-        if: ${{ inputs.package-manager == 'hatch' }}
-        with:
-          cache-number: ${{ inputs.cache-number }}
-          runner-os: ${{ runner.os }}
-      
-      - name: Run Pytest
-        run: |
-          if ${{ inputs.package-manager == 'conda' }}; then
-            pytest --cov --cov-report=xml
-          elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pytest --cov --cov-report=xml
-          else
-            hatch run pytest --cov --cov-report=xml
-          fi
-      - name: Codecov
-        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) }}
-        uses: codecov/codecov-action@v4
-        with:
-          name: GitHub
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+    name: Pytest (Windows)
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@DEVOPS-471
+    with:
+      package-manager: ${{ inputs.package-manager }}
+      python-versions: ${{ inputs.python-versions }}
+      os: '["windows-latest"]'
+      cache-number: ${{ inputs.cache-number }}
+      codecov-reference-python-version: ${{ inputs.codecov-reference-python-version }}
+      extra-repository: ${{ inputs.extra-repository }}
+      lfs: ${{ inputs.lfs }}
+      timeout-minutes: ${{ inputs.timeout-minutes }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      EXTRA_PYPI_REPO_USER: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+      EXTRA_PYPI_REPO_TOKEN: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
