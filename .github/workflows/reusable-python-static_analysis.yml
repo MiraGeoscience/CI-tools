@@ -27,6 +27,11 @@ on:
         required: false
         type: number
         default: 20
+      os:
+        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        required: false
+        type: string
+        default: "['ubuntu-latest']"
     secrets:
       EXTRA_PYPI_REPO_USER:
         description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
@@ -42,7 +47,10 @@ jobs:
   pylint:
     name: pylint
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ${{ fromJson(inputs.os) }}
+    runs-on: ${{ matrix. os}}
     defaults:
       run:
         shell: 'bash -l {0}'
