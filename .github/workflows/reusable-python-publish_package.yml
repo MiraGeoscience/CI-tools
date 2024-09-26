@@ -151,7 +151,7 @@ jobs:
                         echo "Conda recipe not found"
                         exit 1
                     fi
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-506
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
                 name: Setup conda env
                 with:
                   python_ver: ${{ inputs.python_version }}
