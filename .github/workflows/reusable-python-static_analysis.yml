@@ -65,7 +65,7 @@ jobs:
         with:
           python-version: ${{inputs.python_vers}}
       
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-506
         name: Setup conda env
         if: ${{ inputs.package_manager == 'conda' }}
         with:
