@@ -50,9 +50,6 @@ on:
         EXTRA_PYPI_REPO_TOKEN:
             description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
             required: false
-        MIRA_REPO_SECRETS:
-            description: 'Base64 encoded Yanml file content, containing all the repository secrets'
-            required: true
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
             required: true
