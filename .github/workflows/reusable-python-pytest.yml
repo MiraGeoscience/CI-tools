@@ -1,4 +1,4 @@
-name: Pytest on Windows
+name: Pytest on any OS
 
 on:
   workflow_call:
@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: "['3.10']"
+      os:
+        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        required: false
+        type: string
+        default: "['ubuntu-latest']"
       cache-number:
         description: 'Cache number to reset cache if poetry.lock has not changed'
         required: false
@@ -22,6 +27,11 @@ on:
         description: 'Python version to use as reference for Codecov'
         required: false
         type: string
+      codecov-reference-os:
+        description: 'Matrix of OS to use as reference for Codecov'
+        required: false
+        type: string
+        default: "['windows-latest']"
       extra-repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
@@ -51,17 +61,18 @@ on:
 
 jobs:
   pytest:
-    name: pytest (Windows)
+    name: Pytest
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJson(inputs.os)}}
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
-    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,7 +114,7 @@ jobs:
             hatch run pytest --cov --cov-report=xml
           fi
       - name: Codecov
-        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) }}
+        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
         uses: codecov/codecov-action@v4
         with:
           name: GitHub
