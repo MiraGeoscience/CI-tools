@@ -47,6 +47,11 @@ on:
         required: false
         type: number
         default: 20
+      install-cuda:
+        description: 'Boolean to indicate if CUDA is needed (for Ubuntu. Windows runners already have CUDA)'
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       CODECOV_TOKEN:
@@ -82,13 +87,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
+      - name: Install CUDA Toolkit
+        if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
+        uses: Jimver/cuda-toolkit@v0.2.17
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-1666
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@GEOPY-1666
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
@@ -97,7 +104,7 @@ jobs:
           extra-repository: ${{ inputs.extra-repository }}
           repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@GEOPY-1666
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
