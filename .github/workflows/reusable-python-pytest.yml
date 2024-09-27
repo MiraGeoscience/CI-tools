@@ -90,6 +90,9 @@ jobs:
       - name: Install CUDA Toolkit
         if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
         uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          method: network
+          sub-packages: '["cudart"]'
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-1666
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
