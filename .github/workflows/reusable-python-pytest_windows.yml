@@ -72,12 +72,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
@@ -86,7 +86,7 @@ jobs:
           extra-repository: ${{ inputs.extra-repository }}
           repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
           repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
