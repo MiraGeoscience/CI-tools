@@ -3,26 +3,26 @@ name: Static analysis
 on:
   workflow_call:
     inputs:
-      package_manager:
+      package-manager:
         description: 'Package manager to use (eg. "conda", "poetry")'
         required: true
         type: string
         default: 'poetry'
-      app_name:
+      app-name:
         description: 'Name of the app to run static analysis on'
         required: true
         type: string
-      python_vers:
+      python-version:
         description: 'Python version used with pylint'
         required: false
         type: string
         default: '3.10'
-      extra_repository:
+      extra-repository:
         description: 'Boolean to indicate if extra repository is needed'
         required: false
         type: boolean
         default: false
-      timeout_minutes:
+      timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
         type: number
@@ -34,14 +34,14 @@ on:
         default: "['ubuntu-latest']"
     secrets:
       EXTRA_PYPI_REPO_USER:
-        description: 'Extra PyPI repository username. Only used if `extra_repository` is True.'
+        description: 'Extra PyPI repository username. Only used if `extra-repository` is True.'
         required: false
       EXTRA_PYPI_REPO_TOKEN:
-        description: 'Extra PyPI repository token. Only used if `extra_repository` is True.'
+        description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
         required: false
 
 env:
-  source_dir: ${{ inputs.app_name }}
+  source_dir: ${{ inputs.app-name }}
 
 jobs:
   pylint:
@@ -54,38 +54,37 @@ jobs:
     defaults:
       run:
         shell: 'bash -l {0}'
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: ${{ inputs.lfs }}
+          lfs: false
           fetch-depth: 0
       - name: Set up Python version
         uses: actions/setup-python@v4
         with:
-          python-version: ${{inputs.python_vers}}
+          python-version: ${{inputs.python-version}}
       
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
         name: Setup conda env
-        if: ${{ inputs.package_manager == 'conda' }}
+        if: ${{ inputs.package-manager == 'conda' }}
         with:
-          python_ver: ${{ inputs.python_vers }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+          python-version: ${{ inputs.python-version }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
         name: Setup poetry env
-        if: ${{ inputs.package_manager == 'poetry' }}
+        if: ${{ inputs.package-manager == 'poetry' }}
         with:
-          python_ver: ${{inputs.python_vers}}
-          cache_number: 1
-          runner_os: ${{ runner.os }}
-          extra_repository: ${{ inputs.extra_repository }}
-          repo_user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-          repo_token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
+          cache-number: 1
+          runner-os: ${{ runner.os }}
+          extra-repository: ${{ inputs.extra-repository }}
+          repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+          repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
         name: Setup hatch env
-        if: ${{ inputs.package_manager == 'hatch' }}
+        if: ${{ inputs.package-manager == 'hatch' }}
         with:
-          cache_number: 1
-          runner_os: ${{ runner.os }}
+          cache-number: 1
+          runner-os: ${{ runner.os }}
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
@@ -98,9 +97,9 @@ jobs:
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         run: |
-          if ${{ inputs.package_manager == 'conda' }}; then
+          if ${{ inputs.package-manager == 'conda' }}; then
             pylint $FILES_PARAM
-          elif ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pylint $FILES_PARAM
           else 
             hatch run pylint $FILES_PARAM
@@ -108,9 +107,9 @@ jobs:
       
       - name: Run Pylint on all files
         run: |
-          if ${{ inputs.package_manager == 'conda' }}; then
+          if ${{ inputs.package-manager == 'conda' }}; then
             pylint $source_dir tests
-          elif ${{ inputs.package_manager == 'poetry' }}; then
+          elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pylint $source_dir tests
           else
             hatch run pylint $source_dir tests

@@ -1,28 +1,24 @@
 name: Setup poetry env
 description: Setup poetry environment for Python
 inputs:
-  python_ver:
-    description: 'Python version to use'
-    required: true
-    type: string
-  cache_number:
+  cache-number:
     description: 'Cache number to reset cache if poetry.lock has not changed'
     required: true
     type: number
-  runner_os:
+  runner-os:
     description: 'Runner OS'
     required: true
     type: string
-  extra_repository:
+  extra-repository:
     description: 'Boolean to indicate if extra repository is needed'
     required: false
     type: boolean
     default: false
-  repo_user:
+  repo-user:
     description: 'Repository username'
     required: false
     type: string
-  repo_token:
+  repo-token:
     description: 'Repository token'
     required: false
     type: string
@@ -43,18 +39,18 @@ runs:
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        if (${{ inputs.extra_repository}}); then
-          poetry config http-basic.mira-pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
+        if (${{ inputs.extra-repository}}); then
+          poetry config http-basic.mira-pypi ${{ inputs.repo-user }} ${{ inputs.repo-token }}
         fi
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
       env:
-        CACHE_NUMBER: ${{ inputs.cache_number }}
+        cache-number: ${{ inputs.cache-number }}
       with:
         path: .venv
-        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.CACHE_NUMBER }}
+        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.cache-number }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
       run: timeout 10s poetry run pip --version || rm -rf .venv
