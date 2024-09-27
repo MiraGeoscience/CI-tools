@@ -53,6 +53,12 @@ on:
         MIRA_REPO_SECRETS:
             description: 'Base64 encoded Yanml file content, containing all the repository secrets'
             required: true
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
 
 defaults:
     run:
@@ -100,23 +106,17 @@ jobs:
                         echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
                         exit 1
                     fi
-            -   name: Publish
+            -   name: Setup JFrog CLI
+                uses: jfrog/setup-jfrog-cli@v4.4.1
+                env:
+                    JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to Artifactory
                 run: |
-                    MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
+                    jf poetry-config
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
-                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
-                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        if ${{ inputs.package-manager == 'poetry' }}; then
-                            poetry config repositories.${repo_name} ${repo_url} && \
-                            poetry publish -r ${repo_name} -u $(echo ${repo_user}) -p $(echo ${repo_token})
-                        elif ${{ inputs.package-manager == 'hatch'}}; then
-                            hatch publish -r ${repo_url} -u $(echo ${repo_user}) -a $(echo ${repo_token})
-                        else
-                            echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
-                            exit 1
-                        fi
+                        jf rt upload dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
                     done
                     
                     
@@ -164,12 +164,15 @@ jobs:
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV
-            -   name: Publish
+            
+            -   name: Setup JFrog CLI
+                uses: jfrog/setup-jfrog-cli@v4.4.1
+                env:
+                    JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to Artifactory
                 run: |
-                    MIRA_REPO_CONFIG=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
-                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}"
+                        jf rt upload ${{ env.BUILD_PATH }} ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}
                     done
