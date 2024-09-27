@@ -92,7 +92,7 @@ jobs:
         uses: Jimver/cuda-toolkit@v0.2.16
         with:
           method: network
-          sub-packages: '["cudart"]'
+          sub-packages: '["cudart", "npp", "nvcc"]'
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-1666
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
