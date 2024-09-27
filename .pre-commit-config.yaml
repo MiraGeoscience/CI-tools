@@ -1,0 +1,43 @@
+
+default_language_version:
+    python: python3
+default_stages: [commit,push]
+fail_fast: false
+
+ci:
+    auto_update_branch: develop
+    auto_update_schedule: monthly
+
+repos:
+-   repo: https://github.com/MiraGeoscience/pre-commit-hooks
+    rev: v1.0.1
+    hooks:
+    -   id: prepare-commit-msg
+    -   id: check-commit-msg
+-   repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+    -   id: codespell
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    -   id: trailing-whitespace
+        exclude: \.mdj$
+    -   id: check-json
+        exclude_types: [jupyter]
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: debug-statements
+    -   id: detect-private-key
+    -   id: end-of-file-fixer
+        exclude: \.mdj$
+    -   id: mixed-line-ending
+    -   id: name-tests-test
+    -   id: pretty-format-json
+        args:
+            - --autofix
+            - --indent=4
+            - --no-sort-keys
+        exclude_types: [jupyter]

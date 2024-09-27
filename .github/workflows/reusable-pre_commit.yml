@@ -43,7 +43,7 @@ jobs:
       - name: capture modified files
         if: ${{ github.event_name == 'pull_request' }}
         run: >-
-          git fetch --deepen=500 origin ${{github.base_ref}} && 
+          git fetch --deepen=500 origin ${{github.base_ref}} &&
           if [ -n "${{ inputs.app-name}}"]; then
             echo "FILES_PARAM=$(
               git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${{ inputs.app-name }}|tests)/.*\.py$" | xargs
@@ -53,7 +53,7 @@ jobs:
               git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | xargs
             )" >> $GITHUB_ENV
           fi
-          
+
       - name: Run pre-commit on modified files
         if: ${{ (github.event_name == 'pull_request') && (env.FILES_PARAM) }}
         uses: pre-commit/action@v3.0.0

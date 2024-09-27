@@ -9,7 +9,7 @@ on:
         type: string
         default: 'poetry'
       python-versions:
-        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'
         required: false
         type: string
         default: "['3.10']"
@@ -110,7 +110,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
-      
+
       - name: Run Pytest
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
