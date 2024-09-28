@@ -94,7 +94,7 @@ jobs:
         with:
           method: network
           sub-packages: '["cudart", "nvcc", "cupti"]'
-          cuda: '11.8.0'
+          cuda: '12.4.0'
       - name: Check CUDA Toolkit
         if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
         run: |
