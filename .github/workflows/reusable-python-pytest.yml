@@ -98,7 +98,6 @@ jobs:
         if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
         run: |
           nvcc --version
-          nvidia-smi
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-1666
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
