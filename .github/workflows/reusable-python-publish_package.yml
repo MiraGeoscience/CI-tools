@@ -65,6 +65,9 @@ jobs:
     release_pypi_package:
         name: Release PyPI package
         runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         if: ${{ inputs.package-manager != 'conda' }}
         env:
