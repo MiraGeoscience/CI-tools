@@ -47,6 +47,6 @@ runs:
         -   name: Archive build artifact
             uses: actions/upload-artifact@v4
             with:
-                name: build
+                name: package-build-conda
                 path: dist
                 retention-days: 7

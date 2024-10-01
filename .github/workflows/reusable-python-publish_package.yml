@@ -110,9 +110,7 @@ jobs:
                     echo "Repository list: ${repository_list}"
                     echo repository_list
                     for repo_name in ${repository_list}; do
-                        echo "Uploading to repository: ${repo_name}"
-                        if [[ ${repo_names} == *${{ matrix.package-manager }}* ]]; then
-
+                        if [[ ${repo_name} == *${{ matrix.package-manager }}* ]]; then
                             echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/"
                             jf rt u dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
                         fi
