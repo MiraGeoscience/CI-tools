@@ -110,20 +110,19 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Artifactory
                 run: |
-                    jf poetry-config
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
+                    echo "Repository list: ${repository_list}"
+                    echo repository_list
                     for repo_name in ${repository_list}; do
-                        jf rt upload dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
+                        echo "Uploading to repository: ${repo_name}"
+                        echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/"
+                        jf rt u dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
                     done
                     
                     
     release_conda_package:
         name: Release Conda package
         runs-on: ubuntu-latest
-        env:
-            PYTHONUTF8: 1
-            CONDA_CHANNEL_PRIORITY: strict
-            PIP_NO_DEPS: 1 # all dependencies are installed from conda
         timeout-minutes: ${{ inputs.timeout-minutes }}
         if: ${{ inputs.package-manager == 'conda' }}
         steps:
@@ -179,5 +178,5 @@ jobs:
                 run: |
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        jf rt upload ${{ env.BUILD_PATH }} ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}
+                        jf rt u ${{ env.BUILD_PATH }} ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}
                     done
