@@ -40,11 +40,11 @@ runs:
         -   name: Build package
             id: build_package
             run: |
-                    conda build .
-                    build_path=$(conda build --output .)
+                    conda build . --output-folder dist
+                    build_path=$(conda build --output . --output-folder dist)
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
             shell: bash
-        -   name: Archive production artifacts
+        -   name: Archive build artifact
             uses: actions/upload-artifact@v4
             with:
                 name: build

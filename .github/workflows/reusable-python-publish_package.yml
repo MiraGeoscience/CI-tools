@@ -79,11 +79,21 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
+            
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
                 name: Build conda package
                 if: ${{ matrix.package-manager == 'conda' }}
                 with:
                     python-version: ${{ inputs.python-version }}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@DEVOPS-504
+                name: Build poetry package
+                if: ${{ matrix.package-manager == 'poetry' }}
+                with:
+                    python-version: ${{ inputs.python-version }}
+                    extra-repository: ${{ inputs.extra-repository }}
+                    repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+                    repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+
             -   name: Check if there is some artifact
                 run: |
                     ls .
