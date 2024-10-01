@@ -65,6 +65,7 @@ jobs:
     build_package:
         name: Build package
         strategy:
+            fail-fast: false
             matrix:
                 package-manager: ${{ fromJSON(inputs.package-managers) }}
         runs-on: ubuntu-latest
