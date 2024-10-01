@@ -139,14 +139,15 @@ jobs:
                     else
                         echo "Version tag available"
                     fi
-            -   name: Check if there is a conda recipe
-                run: |
-                    if [ -f ${{ inputs.package-name }}/meta.yaml || -f ./meta.yaml ]; then
-                        echo "Conda recipe found"
-                    else
-                        echo "Conda recipe not found"
-                        exit 1
-                    fi
+            # -   name: Check if there is a conda recipe
+            #     run: |
+            #         ls .
+            #         if [ -f meta.yaml ]; then
+            #             echo "Conda recipe found"
+            #         else
+            #             echo "Conda recipe not found"
+            #             exit 1
+            #         fi
             -   name: Setup conda env
                 uses: mamba-org/setup-micromamba@v1
                 with:
