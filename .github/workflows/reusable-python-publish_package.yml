@@ -73,7 +73,7 @@ jobs:
                 shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         steps:
-            -   uses: MiraGeoscience/CI-tools/.github/workflow/reusable-python-build_conda.yml@DEVOPS-504
+            -   uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_conda.yml@DEVOPS-504
                 name: Build conda package
                 if: ${{ matrix.package-manager == 'conda' }}
                 with:
@@ -97,8 +97,11 @@ jobs:
                     echo repository_list
                     for repo_name in ${repository_list}; do
                         echo "Uploading to repository: ${repo_name}"
-                        echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/"
-                        jf rt u dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
+                        if [[ ${repo_names} == *${{ matrix.package-manager }}* ]]; then
+
+                            echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/"
+                            jf rt u dist/* ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/
+                        fi
                     done
 
     # release_pypi_package:
