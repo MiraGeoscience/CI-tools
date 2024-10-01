@@ -65,13 +65,8 @@ jobs:
     release_pypi_package:
         name: Release PyPI package
         runs-on: ubuntu-latest
-        defaults:
-            run:
-                shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         if: ${{ inputs.package-manager != 'conda' }}
-        env:
-            cache-number: 1
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -81,11 +76,12 @@ jobs:
                 uses: actions/setup-python@v5
                 with:
                     python-version: ${{ inputs.python-version }}
+            
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
                 name: Setup poetry env
                 if: ${{ inputs.package-manager == 'poetry' }}
                 with:
-                    cache-number: ${{ env.cache-number}}
+                    cache-number: 1
                     runner-os: ${{ runner.os }}
                     extra-repository: ${{ inputs.extra-repository }}
                     repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
@@ -94,8 +90,9 @@ jobs:
                 name: Setup hatch env
                 if: ${{ inputs.package-manager == 'hatch' }}
                 with:
-                    cache-number: ${{ env.cache-number}}
+                    cache-number: 1
                     runner-os: ${{ runner.os }}
+            
             -   name: Build package
                 run: |
                     if ${{ inputs.package-manager == 'poetry' }}; then
@@ -150,10 +147,17 @@ jobs:
                         echo "Conda recipe not found"
                         exit 1
                     fi
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
-                name: Setup conda env
+            -   name: Setup conda env
+                uses: mamba-org/setup-micromamba@v1
                 with:
-                  python-version: ${{ inputs.python-version }}
+                    micromamba-version: 1.5.8-0
+                    environment-name: test_env
+                    init-shell: bash
+                    cache-downloads: true
+                env:
+                    PYTHONUTF8: 1
+                    CONDA_CHANNEL_PRIORITY: strict
+                    PIP_NO_DEPS: 1 # all dependencies are installed from conda
             -   name: Install conda build
                 run: conda install -y conda-build conda-verify
             -   name: Build package
