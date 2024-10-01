@@ -1,0 +1,72 @@
+name: Publish condan package to Artifactory 
+
+on:
+  workflow_call:
+    inputs:
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
+
+jobs:             
+    release_conda_package:
+        name: Release Conda package
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: 'bash -l {0}'
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python-version }}
+            -   name: Check if there is a conda recipe
+                run: |
+                    if [ -f meta.yaml ]; then
+                        echo "Conda recipe found"
+                    else
+                        echo "Conda recipe not found"
+                        exit 1
+                    fi
+            -   name: Setup conda env
+                uses: mamba-org/setup-micromamba@v1
+                with:
+                    micromamba-version: 1.5.8-0
+                    environment-name: test_env
+                    init-shell: bash
+                    cache-downloads: true
+                env:
+                    PYTHONUTF8: 1
+                    CONDA_CHANNEL_PRIORITY: strict
+                    PIP_NO_DEPS: 1 # all dependencies are installed from conda
+            -   name: Install conda build
+                run: conda install -y conda-build conda-verify
+            -   name: Build package
+                id: build_package
+                run: |
+                    conda build .
+                    build_path=$(conda build --output .)
+                    echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
+            -   name: Archive production artifacts
+                uses: actions/upload-artifact@v4
+                with:
+                    name: build
+                    path: |
+                        dist
+                    retention-days: 7
