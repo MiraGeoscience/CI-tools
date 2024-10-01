@@ -141,7 +141,7 @@ jobs:
                     fi
             -   name: Check if there is a conda recipe
                 run: |
-                    if [ -f ${{ inputs.package-name }}/meta.yaml ]; then
+                    if [ -f ${{ inputs.package-name }}/meta.yaml || -f ./meta.yaml ]; then
                         echo "Conda recipe found"
                     else
                         echo "Conda recipe not found"
@@ -163,8 +163,8 @@ jobs:
             -   name: Build package
                 id: build_package
                 run: |
-                    conda build ${{ inputs.package-name }}
-                    build_path=$(conda build --output ${{ inputs.package-name }})
+                    conda build .
+                    build_path=$(conda build --output .)
                     build_name=$(basename ${build_path})
                     echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
                     echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV
