@@ -78,12 +78,11 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda.yml@DEVOPS-504
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
                 name: Build conda package
                 if: ${{ matrix.package-manager == 'conda' }}
                 with:
                     python-version: ${{ inputs.python-version }}
-                    timeout-minutes: ${{ inputs.timeout-minutes }}
             -   name: Check if there is some artifact
                 run: |
                     ls .
