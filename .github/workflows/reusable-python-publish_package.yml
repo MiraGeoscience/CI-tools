@@ -62,8 +62,8 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    release_package:
-        name: Release package
+    build_package:
+        name: Build package
         strategy:
             matrix:
                 package-manager: ${{ fromJSON(inputs.package-managers) }}
@@ -73,12 +73,16 @@ jobs:
                 shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         steps:
-            -   uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_conda.yml@DEVOPS-504
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda.yml@DEVOPS-504
                 name: Build conda package
                 if: ${{ matrix.package-manager == 'conda' }}
                 with:
                     python-version: ${{ inputs.python-version }}
-                    lfs: ${{ inputs.lfs }}
                     timeout-minutes: ${{ inputs.timeout-minutes }}
             -   name: Check if there is some artifact
                 run: |
