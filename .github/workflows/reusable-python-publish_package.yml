@@ -110,9 +110,9 @@ jobs:
                 id: define-build-path
                 run: |
                     if [[ ${{ matrix.package-manager }} == "conda" ]]; then
-                        DIR_PATH=${{ steps.build-conda-package.outputs.dir-path }}
+                        DIR_PATH="${{ steps.build-conda-package.outputs.dir-path }}"
                     else
-                        DIR_PATH=${{ steps.build-poetry-package.outputs.dir-path }}
+                        DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
                     fi
                     if [[ -z "${DIR_PATH}" ]]; then
                         echo "No build path found"
