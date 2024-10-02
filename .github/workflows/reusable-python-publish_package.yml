@@ -80,17 +80,20 @@ jobs:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
             -   name: Get version
+                id: get-version
                 run: |
                     if [ "${{ inputs.version-tag }}" = "v0.0.0" ]; then
                         echo "Version tag not available"
                         exit 1
-                    else
-                        echo "Version tag available"
-                        version=$(echo "$version_tag" | sed 's/^v//')
-                        echo "VERSION=$version" >> $GITHUB_ENV
                     fi
+                    VERSION=$(echo "${{ inputs.version-tag }}" | sed 's/v//')
+                    echo "version: ${VERSION}"
+                    if [ -z "${VERSION}" ]; then
+                        echo "Version is not available"
+                        exit 1
+                    fi
+                    echo "version=${VERSION}" >> $GITHUB_OUTPUT
                     
-            
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
                 name: Build conda package
                 id: build-conda-package
@@ -106,6 +109,7 @@ jobs:
                     extra-repository: ${{ inputs.extra-repository }}
                     repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
                     repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+
             -   name: Define build path
                 id: define-build-path
                 run: |
@@ -114,11 +118,11 @@ jobs:
                     else
                         DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
                     fi
-                    # if [[ -z ${DIR_PATH} ]]; then
-                    #     echo "No build path found"
-                    #     exit 1
-                    # fi
                     echo "dir-path: ${DIR_PATH}"
+                    if [[ -z ${DIR_PATH} ]]; then
+                        echo "No build path found"
+                        exit 1
+                    fi
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
             -   uses: jfrog/setup-jfrog-cli@v4.4.1
                 name: Setup JFrog CLI
@@ -133,8 +137,8 @@ jobs:
                         if [[ ${repo_name} == *${repo_type}* ]]; then
                             for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
                                 filename=$(basename "${file}") 
-                                echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}: $filename"
-                                jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${filename}
+                                echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
+                                jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
                             done
                         fi
                     done
