@@ -20,6 +20,12 @@ inputs:
         required: false
         type: string
 
+outputs:
+    dir-path:
+        description: 'Path to the directory containing the built package'
+        type: string
+        value: ${{ steps.define-path.outputs.dir-path }}
+
 runs:
     using: "composite"
     steps:
@@ -40,6 +46,11 @@ runs:
             id: build_package
             run: |
                     poetry build
+            shell: bash
+        -   name: Define path
+            id: define-path
+            run: |
+                echo "dir-path=dist" >> $GITHUB_OUTPUT
             shell: bash
         -   name: Archive production artifacts
             uses: actions/upload-artifact@v4

@@ -6,6 +6,11 @@ inputs:
         description: 'Python version to use (eg: 3.10)'
         required: true
         type: string
+outputs:
+    dir-path:
+        description: 'Path to the directory containing the built package'
+        type: string
+        value: ${{ steps.build_package.outputs.dir-path }}
 
 runs:
     using: "composite"
@@ -42,11 +47,13 @@ runs:
             run: |
                     conda build . --output-folder dist
                     build_path=$(conda build --output . --output-folder dist)
-                    echo "BUILD_PATH=${build_path}" >> $GITHUB_OUTPUT
+                    dir_path=$(dirname "${build_path}")
+                    echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
+                    echo "dir-path=${dir_path}" >> $GITHUB_OUTPUT
             shell: bash
         -   name: Archive build artifact
             uses: actions/upload-artifact@v4
             with:
                 name: package-build-conda
-                path: dist
+                path: ${{ env.BUILD_PATH }}
                 retention-days: 7
