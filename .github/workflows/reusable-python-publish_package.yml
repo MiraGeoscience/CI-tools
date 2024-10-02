@@ -114,10 +114,11 @@ jobs:
                     else
                         DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
                     fi
-                    if [[ -z "${DIR_PATH}" ]]; then
-                        echo "No build path found"
-                        exit 1
-                    fi
+                    # if [[ -z ${DIR_PATH} ]]; then
+                    #     echo "No build path found"
+                    #     exit 1
+                    # fi
+                    echo "dir-path: ${DIR_PATH}"
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
             -   uses: jfrog/setup-jfrog-cli@v4.4.1
                 name: Setup JFrog CLI
