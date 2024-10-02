@@ -23,7 +23,6 @@ inputs:
 outputs:
     dir-path:
         description: 'Path to the directory containing the built package'
-        type: string
         value: ${{ steps.define-path.outputs.dir-path }}
 
 runs:
