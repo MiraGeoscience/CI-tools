@@ -3,11 +3,11 @@ name: Publish condan package to Artifactory
 on:
   workflow_call:
     inputs:
-        package-manager:
-            description: 'Package manager to use (eg. "conda", "poetry", "hatch")'
+        package-managers:
+            description: 'Matrix of Package manager to use (eg. ["conda", "poetry", "hatch"])'
             required: true
             type: string
-            default: 'poetry'
+            default: '["poetry"]'
         package-name:
             description: 'Name of the package to build'
             required: true
@@ -50,8 +50,11 @@ on:
         EXTRA_PYPI_REPO_TOKEN:
             description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
             required: false
-        MIRA_REPO_SECRETS:
-            description: 'Base64 encoded Yanml file content, containing all the repository secrets'
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
             required: true
 
 defaults:
@@ -59,117 +62,83 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    release_pypi_package:
-        name: Release PyPI package
+    build_package:
+        name: Build package
+        strategy:
+            fail-fast: false
+            matrix:
+                package-manager: ${{ fromJSON(inputs.package-managers) }}
         runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
-        if: ${{ inputs.package-manager != 'conda' }}
-        env:
-            cache-number: 1
         steps:
-            -   uses: actions/checkout@v4
+            -   name: Checkout
+                uses: actions/checkout@v4
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
-            -   name: Set up Python version
-                uses: actions/setup-python@v5
-                with:
-                    python-version: ${{ inputs.python-version }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
-                name: Setup poetry env
-                if: ${{ inputs.package-manager == 'poetry' }}
-                with:
-                    cache-number: ${{ env.cache-number}}
-                    runner-os: ${{ runner.os }}
-                    extra-repository: ${{ inputs.extra-repository }}
-                    repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-                    repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
-                name: Setup hatch env
-                if: ${{ inputs.package-manager == 'hatch' }}
-                with:
-                    cache-number: ${{ env.cache-number}}
-                    runner-os: ${{ runner.os }}
-            -   name: Build package
-                run: |
-                    if ${{ inputs.package-manager == 'poetry' }}; then
-                        poetry build
-                    elif ${{ inputs.package-manager == 'hatch'}}; then
-                        hatch build
-                    else
-                        echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
-                        exit 1
-                    fi
-            -   name: Publish
-                run: |
-                    MIRA_REPO_CONFIG=$(echo '${{ secrets.MIRA_REPO_SECRETS }}' | base64 -d)
-                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
-                    for repo_name in ${repository_list}; do
-                        repo_user=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .username')
-                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
-                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        if ${{ inputs.package-manager == 'poetry' }}; then
-                            poetry config repositories.${repo_name} ${repo_url} && \
-                            poetry publish -r ${repo_name} -u $(echo ${repo_user}) -p $(echo ${repo_token})
-                        elif ${{ inputs.package-manager == 'hatch'}}; then
-                            hatch publish -r ${repo_url} -u $(echo ${repo_user}) -a $(echo ${repo_token})
-                        else
-                            echo "Unknown pypi package manager. ${{ inputs.package-manager }} is not part of ['hatch', 'poetry']."
-                            exit 1
-                        fi
-                    done
-                    
-                    
-    release_conda_package:
-        name: Release Conda package
-        runs-on: ubuntu-latest
-        env:
-            PYTHONUTF8: 1
-            CONDA_CHANNEL_PRIORITY: strict
-            PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        timeout-minutes: ${{ inputs.timeout-minutes }}
-        if: ${{ inputs.package-manager == 'conda' }}
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v2
-                with:
-                    lfs: ${{ inputs.lfs }}
-            -   name: Check if the version tag is available
+            -   name: Get version
+                id: get-version
                 run: |
                     if [ "${{ inputs.version-tag }}" = "v0.0.0" ]; then
                         echo "Version tag not available"
                         exit 1
-                    else
-                        echo "Version tag available"
                     fi
-            -   name: Check if there is a conda recipe
-                run: |
-                    if [ -f ${{ inputs.package-name }}/meta.yaml ]; then
-                        echo "Conda recipe found"
-                    else
-                        echo "Conda recipe not found"
+                    VERSION=$(echo "${{ inputs.version-tag }}" | sed 's/v//')
+                    echo "version: ${VERSION}"
+                    if [ -z "${VERSION}" ]; then
+                        echo "Version is not available"
                         exit 1
                     fi
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
-                name: Setup conda env
+                    echo "version=${VERSION}" >> $GITHUB_OUTPUT
+                    
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
+                name: Build conda package
+                id: build-conda-package
+                if: ${{ matrix.package-manager == 'conda' }}
                 with:
-                  python-version: ${{ inputs.python-version }}
-            -   name: Install conda build
-                run: conda install -y conda-build conda-verify
-            -   name: Build package
-                id: build_package
+                    python-version: ${{ inputs.python-version }}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@DEVOPS-504
+                name: Build poetry package
+                id: build-poetry-package
+                if: ${{ matrix.package-manager == 'poetry' }}
+                with:
+                    python-version: ${{ inputs.python-version }}
+                    extra-repository: ${{ inputs.extra-repository }}
+                    repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
+                    repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+
+            -   name: Define build path
+                id: define-build-path
                 run: |
-                    conda build ${{ inputs.package-name }}
-                    build_path=$(conda build --output ${{ inputs.package-name }})
-                    build_name=$(basename ${build_path})
-                    echo "BUILD_PATH=${build_path}" >> $GITHUB_ENV
-                    echo "BUILD_NAME=${build_name}" >> $GITHUB_ENV
-            -   name: Publish
+                    if [[ ${{ matrix.package-manager }} == "conda" ]]; then
+                        DIR_PATH="${{ steps.build-conda-package.outputs.dir-path }}"
+                    else
+                        DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
+                    fi
+                    echo "dir-path: ${DIR_PATH}"
+                    if [[ -z ${DIR_PATH} ]]; then
+                        echo "No build path found"
+                        exit 1
+                    fi
+                    echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to Artifactory
                 run: |
-                    MIRA_REPO_CONFIG=$(echo ${{ secrets.MIRA_REPO_SECRETS }} | base64 -d)
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
+                    repo_type=$( [[ ${{ matrix.package-manager }} == "conda" ]] && echo "conda" || echo "pypi" )
                     for repo_name in ${repository_list}; do
-                        repo_token=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .token')
-                        repo_url=$(echo ${MIRA_REPO_CONFIG} | jq -r --arg repo_name "$repo_name" '.repositories[] | select(.name == $repo_name) | .url')
-                        curl -T ${{ env.BUILD_PATH }} -H "Authorization: Bearer ${repo_token}" "${repo_url}/${{ inputs.package-name }}/${{ inputs.version-tag }}/${{ env.BUILD_NAME }}"
+                        if [[ ${repo_name} == *${repo_type}* ]]; then
+                            for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
+                                filename=$(basename "${file}") 
+                                echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
+                                jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
+                            done
+                        fi
                     done
