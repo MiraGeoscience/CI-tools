@@ -43,20 +43,17 @@ runs:
 
         -   name: Build package
             id: build_package
-            run: |
-                    poetry build
             shell: bash
+            run: poetry build
         -   name: Define path
             id: define-path
+            shell: bash
             run: |
                 DIR_PATH=$(echo "dist")
-                echo "dir-path: ${DIR_PATH}"
                 echo "dir-path=$( echo $DIR_PATH)" >> $GITHUB_OUTPUT
-                echo "dir-path=$( echo $DIR_PATH)" >> $GITHUB_ENV
-            shell: bash
         -   name: Archive production artifacts
             uses: actions/upload-artifact@v4
             with:
                 name: package-build-poetry
-                path: ${{ env.dir-path }}
+                path: ${{ steps.define-path.outputs.dir-path }}
                 retention-days: 7
