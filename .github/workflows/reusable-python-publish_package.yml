@@ -94,13 +94,13 @@ jobs:
                     fi
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
                     
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@main
                 name: Build conda package
                 id: build-conda-package
                 if: ${{ matrix.package-manager == 'conda' }}
                 with:
                     python-version: ${{ inputs.python-version }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@DEVOPS-504
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@main
                 name: Build poetry package
                 id: build-poetry-package
                 if: ${{ matrix.package-manager == 'poetry' }}
