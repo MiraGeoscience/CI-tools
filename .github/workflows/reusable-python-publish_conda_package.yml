@@ -59,8 +59,13 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Add conda channel
                 run: |
-                    TOKEN=$(jf atc github --access-token ${{ secrets.JFROG_ARTIFACTORY_TOKEN }} --expiry 10 --url ${{ secrets.JFROG_ARTIFACTORY_URL }} | jq -r '.access_token')
+                    TOKEN=$(jf atc github --access-token ${{ secrets.JFROG_ARTIFACTORY_TOKEN }} --expiry 10 --url https://${{ secrets.JFROG_ARTIFACTORY_URL }} | jq -r '.access_token')
                     echo "::add-mask::$TOKEN"
+
+                    if [[ -z ${TOKEN} ]]; then
+                        echo "No JFrog temporary token found"
+                        exit 1
+                    fi
 
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
@@ -71,7 +76,7 @@ jobs:
                 id: build-conda-package
                 with:
                     python-version: ${{ inputs.python-version }}
-
+                
             -   name: Define build path
                 id: define-build-path
                 run: |
