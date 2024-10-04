@@ -1,13 +1,13 @@
-name: Publish condan package to Artifactory 
+name: Publish pypi package to Artifactory 
 
 on:
   workflow_call:
     inputs:
-        package-managers:
-            description: 'Matrix of Package manager to use (eg. ["conda", "poetry", "hatch"])'
+        package-manager:
+            description: 'Name of the package manager (eg. "poetry")'
             required: true
             type: string
-            default: '["poetry"]'
+            default: 'poetry'
         package-name:
             description: 'Name of the package to build'
             required: true
@@ -64,10 +64,6 @@ defaults:
 jobs:
     build_package:
         name: Build package
-        strategy:
-            fail-fast: false
-            matrix:
-                package-manager: ${{ fromJSON(inputs.package-managers) }}
         runs-on: ubuntu-latest
         defaults:
             run:
@@ -94,16 +90,10 @@ jobs:
                     fi
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
                     
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@main
-                name: Build conda package
-                id: build-conda-package
-                if: ${{ matrix.package-manager == 'conda' }}
-                with:
-                    python-version: ${{ inputs.python-version }}
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@main
                 name: Build poetry package
                 id: build-poetry-package
-                if: ${{ matrix.package-manager == 'poetry' }}
+                if: ${{ inputs.package-manager == 'poetry' }}
                 with:
                     python-version: ${{ inputs.python-version }}
                     extra-repository: ${{ inputs.extra-repository }}
@@ -113,9 +103,7 @@ jobs:
             -   name: Define build path
                 id: define-build-path
                 run: |
-                    if [[ ${{ matrix.package-manager }} == "conda" ]]; then
-                        DIR_PATH="${{ steps.build-conda-package.outputs.dir-path }}"
-                    else
+                    if [[ ${{ inputs.package-manager }} == "poetry" ]]; then
                         DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
                     fi
                     echo "dir-path: ${DIR_PATH}"
@@ -132,13 +120,10 @@ jobs:
             -   name: Publish package to Artifactory
                 run: |
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
-                    repo_type=$( [[ ${{ matrix.package-manager }} == "conda" ]] && echo "conda" || echo "pypi" )
                     for repo_name in ${repository_list}; do
-                        if [[ ${repo_name} == *${repo_type}* ]]; then
-                            for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
-                                filename=$(basename "${file}") 
-                                echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
-                                jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
-                            done
-                        fi
+                        for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
+                            filename=$(basename "${file}") 
+                            echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
+                            jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
+                        done
                     done

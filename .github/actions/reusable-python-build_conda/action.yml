@@ -7,9 +7,9 @@ inputs:
         required: true
         type: string
 outputs:
-    dir-path:
-        description: 'Path to the directory containing the built package'
-        value: ${{ steps.build-package.outputs.dir-path }}
+    build-path:
+        description: 'Path to the built package'
+        value: ${{ steps.build-package.outputs.build-path }}
 
 runs:
     using: "composite"
@@ -40,15 +40,14 @@ runs:
         -   name: Install conda build
             run: conda install -y conda-build conda-verify
             shell: bash
+
         -   name: Build package
             id: build-package
             shell: bash
             run: |
                     conda build . --output-folder dist
                     BUILD_PATH=$(conda build --output . --output-folder dist)
-                    DIR_PATH=$(dirname "${BUILD_PATH}")
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
-                    echo "dir-path=$( echo $DIR_PATH)" >> $GITHUB_OUTPUT
         -   name: Archive build artifact
             uses: actions/upload-artifact@v4
             with:

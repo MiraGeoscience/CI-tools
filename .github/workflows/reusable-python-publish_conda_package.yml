@@ -1,0 +1,86 @@
+name: Publish conda package to Artifactory 
+
+on:
+  workflow_call:
+    inputs:
+        package-name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
+        repo-names:
+            description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
+            required: true
+            type: string
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    build_package:
+        name: Build package
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: 'bash -l {0}'
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
+                name: Build conda package
+                id: build-conda-package
+                with:
+                    python-version: ${{ inputs.python-version }}
+
+            -   name: Define build path
+                id: define-build-path
+                run: |
+                    BUILD_PATH="${{ steps.build-conda-package.outputs.build-path }}"
+                    echo "build-path: ${BUILD_PATH}"
+                    if [[ -z ${BUILD_PATH} ]]; then
+                        echo "No build path found"
+                        exit 1
+                    fi
+                    echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
+
+            -   name: Publish package to Artifactory
+                run: |
+                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
+                    for repo_name in ${repository_list}; do
+                        for file in ${{ steps.define-build-path.outputs.build-path }}/*; do
+                            filename=$(basename "${file}") 
+                            echo "Uploading in: ${repo_name}/noarch: $filename"
+                            jf rt u $file ${repo_name}/noarch/${filename}
+                        done
+                    done
