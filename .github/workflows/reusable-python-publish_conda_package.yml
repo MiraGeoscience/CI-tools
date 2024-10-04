@@ -78,7 +78,7 @@ jobs:
                 run: |
                     repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        for file in ${{ steps.define-build-path.outputs.build-path }}/*; do
+                            file="${{ steps.define-build-path.outputs.build-path }}"
                             filename=$(basename "${file}") 
                             echo "Uploading in: ${repo_name}/noarch: $filename"
                             jf rt u $file ${repo_name}/noarch/${filename}
