@@ -59,7 +59,7 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Add conda channel
                 run: |
-                    TOKEN=$(jf atc github --access-token ${{ secrets.JFROG_ARTIFACTORY_TOKEN }} --expiry 10 --url https://${{ secrets.JFROG_ARTIFACTORY_URL }} | jq -r '.access_token')
+                    TOKEN=$(jf atc github --access-token ${{ secrets.JFROG_ARTIFACTORY_TOKEN }} --expiry 600 --url https://${{ secrets.JFROG_ARTIFACTORY_URL }} | jq -r '.access_token')
                     echo "::add-mask::$TOKEN"
 
                     if [[ -z ${TOKEN} ]]; then
