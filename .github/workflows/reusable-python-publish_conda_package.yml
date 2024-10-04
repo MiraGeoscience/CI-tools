@@ -57,6 +57,12 @@ jobs:
                 env:
                     JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Add conda channel
+                run: |
+                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
+                    for repo_name in ${repository_list}; do
+                        conda config --add channels ${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                    done
             -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
                 name: Build conda package
                 id: build-conda-package
@@ -82,5 +88,4 @@ jobs:
                             filename=$(basename "${file}") 
                             echo "Uploading in: ${repo_name}/noarch: $filename"
                             jf rt u $file ${repo_name}/noarch/${filename}
-                        done
                     done
