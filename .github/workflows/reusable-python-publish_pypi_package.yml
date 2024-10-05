@@ -33,8 +33,8 @@ on:
             type: boolean
             default: false
         
-        repo-names:
-            description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
+        repo-name:
+            description: 'Names of the virtual repositories to publish on (eg. "analyst-dev-pypi")'
             required: true
             type: string
         timeout-minutes:
@@ -69,6 +69,7 @@ jobs:
             run:
                 shell: 'bash -l {0}'
         timeout-minutes: ${{ inputs.timeout-minutes }}
+        if: ${{ inputs.package-manager }} == 'poetry'
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
@@ -94,22 +95,29 @@ jobs:
                 env:
                     JF_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_poetry@main
-                name: Build poetry package
-                id: build-poetry-package
-                if: ${{ inputs.package-manager == 'poetry' }}
+        
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
                 with:
                     python-version: ${{ inputs.python-version }}
-                    extra-repository: ${{ inputs.extra-repository }}
-                    repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-                    repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+            -   name: Install poetry
+                run: |
+                    curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
+                    echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+            -   name: Configure poetry 
+                run: |
+                    poetry config virtualenvs.create true
+                    poetry config virtualenvs.in-project true
+                    jf poetry-config --repo-resolve=${{ inputs.repo-name }} 
+            -   name: Poetry install env
+                run: poetry install -vvv
+            -   name: Poetry build
+                run: poetry build
 
             -   name: Define build path
                 id: define-build-path
                 run: |
-                    if [[ ${{ inputs.package-manager }} == "poetry" ]]; then
-                        DIR_PATH="${{ steps.build-poetry-package.outputs.dir-path }}"
-                    fi
+                    DIR_PATH="dist"
                     echo "dir-path: ${DIR_PATH}"
                     if [[ -z ${DIR_PATH} ]]; then
                         echo "No build path found"
@@ -118,11 +126,8 @@ jobs:
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
             -   name: Publish package to Artifactory
                 run: |
-                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
-                    for repo_name in ${repository_list}; do
-                        for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
-                            filename=$(basename "${file}") 
-                            echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
-                            jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
-                        done
+                    for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
+                        filename=$(basename "${file}") 
+                        echo "Uploading in: ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
+                        jf rt u $file ${repo_name}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/${filename}
                     done
