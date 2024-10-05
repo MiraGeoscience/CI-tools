@@ -136,6 +136,6 @@ jobs:
                 run: |
                     for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
                         filename=$(basename "${file}") 
-                        echo "Uploading in: ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${VERSION}: $filename"
-                        jf rt u ${file} ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${VERSION}/$filename
+                        echo "Uploading in: ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}: $filename"
+                        jf rt u ${file} ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${{ steps.get-version.outputs.version }}/$filename
                     done
