@@ -16,10 +16,15 @@ on:
             required: false
             type: boolean
             default: false
-        repo-names:
-            description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
+        virtual-repo-name:
+            description: 'Name of the virtual repository to publish on (eg. "public-dev-conda")'
             required: true
             type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: false
+            type: string
+            default: 'ubuntu-latest'
         timeout-minutes:
             description: 'Timeout in minutes for the job'
             required: false
@@ -41,10 +46,7 @@ defaults:
 jobs:
     build_package:
         name: Build package
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                shell: 'bash -l {0}'
+        runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         steps:
             -   name: Checkout
@@ -52,48 +54,58 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
+            -   name: Check if there is a conda recipe
+                run: |
+                    if [ -f meta.yaml ]; then
+                        echo "Conda recipe found"
+                    else
+                        echo "Conda recipe not found"
+                        exit 1
+                    fi
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python-version }}
             -   uses: jfrog/setup-jfrog-cli@v4.4.1
                 name: Setup JFrog CLI
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Add conda channel
-                run: |
-                    TOKEN=$(jf atc github --access-token ${{ secrets.JFROG_ARTIFACTORY_TOKEN }} --expiry 600 --url https://${{ secrets.JFROG_ARTIFACTORY_URL }} | jq -r '.access_token')
-                    echo "::add-mask::$TOKEN"
-
-                    if [[ -z ${TOKEN} ]]; then
-                        echo "No JFrog temporary token found"
-                        exit 1
-                    fi
-
-                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
-                    for repo_name in ${repository_list}; do
-                        conda config --add channels https://github:${TOKEN}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
-                    done
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-build_conda@DEVOPS-504
-                name: Build conda package
-                id: build-conda-package
+            
+            -   name: Setup conda env
+                uses: mamba-org/setup-micromamba@v1
                 with:
-                    python-version: ${{ inputs.python-version }}
-                
-            -   name: Define build path
-                id: define-build-path
+                    micromamba-version: 1.5.8-0
+                    environment-name: test_env
+                    init-shell: bash
+                    cache-downloads: true
+                env:
+                    PYTHONUTF8: 1
+                    CONDA_CHANNEL_PRIORITY: strict
+            -   name: Add conda channel
+                run: conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${{ inputs.virtual-repo-name}}
+            -   name: Install conda build
+                run: conda install -y conda-build conda-verify
+            -   name: Build package
+                id: build-package
                 run: |
-                    BUILD_PATH="${{ steps.build-conda-package.outputs.build-path }}"
-                    echo "build-path: ${BUILD_PATH}"
+                    conda build . --output-folder dist
+                    BUILD_PATH=$(conda build --output .)
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
                         exit 1
                     fi
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
-
+            
+            -   name: Archive build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: package-build-conda
+                    path: ${{ steps.build-package.outputs.build-path }}
+                    retention-days: 7
             -   name: Publish package to Artifactory
                 run: |
-                    repository_list=$(echo '${{ inputs.repo-names }}' | jq -r '.[]')
-                    for repo_name in ${repository_list}; do
-                            file="${{ steps.define-build-path.outputs.build-path }}"
-                            filename=$(basename "${file}") 
-                            echo "Uploading in: ${repo_name}/noarch: $filename"
-                            jf rt u $file ${repo_name}/noarch/${filename}
-                    done
+                    file="${{ steps.build-package.outputs.build-path }}"
+                    filename=$(basename "${file}") 
+                    echo "Uploading in ${{ inputs.virtual-repo-name }}/noarch: $filename"
+                    jf rt u $file ${{ inputs.virtual-repo-name }}/noarch/${filename}

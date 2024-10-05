@@ -33,10 +33,15 @@ on:
             type: boolean
             default: false
         
-        repo-name:
-            description: 'Names of the virtual repositories to publish on (eg. "analyst-dev-pypi")'
+        virtual-repo-name:
+            description: 'Name of the virtual repository to publish on (eg. "public-dev-pypi")'
             required: true
             type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: false
+            type: string
+            default: 'ubuntu-latest'
         timeout-minutes:
             description: 'Timeout in minutes for the job'
             required: false
@@ -64,10 +69,7 @@ defaults:
 jobs:
     build_package:
         name: Build package
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                shell: 'bash -l {0}'
+        runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         if: ${{ inputs.package-manager }} == 'poetry'
         steps:
@@ -108,7 +110,7 @@ jobs:
                 run: |
                     poetry config virtualenvs.create true
                     poetry config virtualenvs.in-project true
-                    jf poetry-config --repo-resolve=${{ inputs.repo-name }} 
+                    jf poetry-config --repo-resolve=${{ inputs.virtual-repo-name }} 
             -   name: Poetry install env
                 run: poetry install -vvv
             -   name: Poetry build
@@ -124,10 +126,16 @@ jobs:
                         exit 1
                     fi
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
+            -   name: Archive build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: package-build-pypi
+                    path: ${{ steps.define-build-path.outputs.dir-path }}
+                    retention-days: 7
             -   name: Publish package to Artifactory
                 run: |
                     for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
                         filename=$(basename "${file}") 
-                        echo "Uploading in: ${{ inputs.repo-name }}/${{ inputs.package-name }}/${VERSION}: $filename"
-                        jf rt u ${file} ${{ inputs.repo-name }}/${{ inputs.package-name }}/${VERSION}/$filename
+                        echo "Uploading in: ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${VERSION}: $filename"
+                        jf rt u ${file} ${{ inputs.virtual-repo-name }}/${{ inputs.package-name }}/${VERSION}/$filename
                     done
