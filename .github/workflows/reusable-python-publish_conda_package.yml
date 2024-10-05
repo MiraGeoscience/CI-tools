@@ -89,7 +89,7 @@ jobs:
             -   name: Build package
                 id: build-package
                 run: |
-                    conda build . --output-folder dist
+                    conda build .
                     BUILD_PATH=$(conda build --output .)
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
@@ -108,4 +108,4 @@ jobs:
                     file="${{ steps.build-package.outputs.build-path }}"
                     filename=$(basename "${file}") 
                     echo "Uploading in ${{ inputs.virtual-repo-name }}/noarch: $filename"
-                    jf rt u $file ${{ inputs.virtual-repo-name }}/noarch/${filename}
+                    jf rt u ${file} ${{ inputs.virtual-repo-name }}/noarch/${filename}
