@@ -129,5 +129,5 @@ jobs:
                     for file in ${{ steps.define-build-path.outputs.dir-path }}/*; do
                         filename=$(basename "${file}") 
                         echo "Uploading in: ${{ inputs.repo-name }}/${{ inputs.package-name }}/${VERSION}: $filename"
-                        jf rt u ${filename} ${{ inputs.repo-name }}/${{ inputs.package-name }}/${VERSION}/$filename
+                        jf rt u ${file} ${{ inputs.repo-name }}/${{ inputs.package-name }}/${VERSION}/$filename
                     done
