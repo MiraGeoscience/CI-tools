@@ -112,9 +112,9 @@ jobs:
                     poetry config virtualenvs.in-project true
                     jf poetry-config --repo-resolve=${{ inputs.virtual-repo-name }} 
             -   name: Poetry install env
-                run: poetry install -vvv
+                run: jf poetry install -vvv
             -   name: Poetry build
-                run: poetry build
+                run: jf poetry build
 
             -   name: Define build path
                 id: define-build-path
