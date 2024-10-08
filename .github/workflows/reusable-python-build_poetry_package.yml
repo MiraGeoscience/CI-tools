@@ -1,0 +1,99 @@
+name: Build poetry package with Artifactory 
+
+on:
+  workflow_call:
+    inputs:
+        package-name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
+        
+        virtual-repo-name:
+            description: 'virtual repository names to publish on (eg. "public-dev-pypi")'
+            required: true
+            type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: false
+            type: string
+            default: 'ubuntu-latest'
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    build_package:
+        name: Build poetry package
+        runs-on: ${{ inputs.os }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        outputs:
+            build-dir-path: ${{ steps.define-build-path.outputs.dir-path }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+        
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python-version }}
+            -   name: Install poetry
+                run: |
+                    curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
+                    echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+            -   name: Configure poetry 
+                run: |
+                    poetry config virtualenvs.create true
+                    poetry config virtualenvs.in-project true
+                    
+                    jf poetry-config --repo-resolve=${{ inputs.virtual-repo-name }} 
+            -   name: Poetry install env
+                run: jf poetry install -vvv
+            -   name: Poetry build
+                run: jf poetry build
+
+            -   name: Define build path
+                id: define-build-path
+                run: |
+                    DIR_PATH="dist"
+                    echo "dir-path: ${DIR_PATH}"
+                    if [[ -z ${DIR_PATH} ]]; then
+                        echo "No build path found"
+                        exit 1
+                    fi
+                    echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
+            -   name: Archive build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: package-build-pypi
+                    path: ${{ steps.define-build-path.outputs.dir-path }}
