@@ -100,14 +100,14 @@ jobs:
                     
                     repo_list=$(echo ${{ inputs.virtual-repo-names }} | jq -r '.[0]')
                     for repo_name in $repo_list; do
+                        echo "Adding repo: $repo_name"
                         poetry source add --priority=supplemental ${repo_name} https://${{ secrets.JFROG_ARTIFACTORY_URL }}//artifactory/api/${repo_name}/simple/
                         poetry config http-basic.${repo_name} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                     done
-                    jf poetry-config --repo-resolve=${repo_name}
             -   name: Poetry install env
-                run: jf poetry install -vvv
+                run: poetry install -vvv
             -   name: Poetry build
-                run: jf poetry build
+                run: poetry build
 
             -   name: Define build path
                 id: define-build-path
