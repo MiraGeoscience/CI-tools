@@ -32,7 +32,13 @@ on:
             description: 'Timeout in minutes for the job'
             required: true
             type: number
-
+    outputs:
+        build-dir-path: 
+            description: 'Path to the build directory'
+            value: ${{ jobs.build_package.outputs.build-dir-path }}
+        version:
+            description: 'Version of the package'
+            value: ${{ jobs.build_package.outputs.version }}
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
