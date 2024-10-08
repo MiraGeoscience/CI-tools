@@ -98,7 +98,12 @@ jobs:
                     poetry config virtualenvs.create true
                     poetry config virtualenvs.in-project true
                     
-                    jf poetry-config --repo-resolve=${{ inputs.virtual-repo-name }} 
+                    repo_list=$(echo ${{ inputs.virtual-repo-names }} | jq -r '.[0]')
+                    for repo_name in $repo_list; do
+                        poetry source add --priority=supplemental ${repo_name} https://${{ secrets.JFROG_ARTIFACTORY_URL }}//artifactory/api/${repo_name}/simple/
+                        poetry config http-basic.${repo_name} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+                    done
+                    jf poetry-config --repo-resolve=${repo_name}
             -   name: Poetry install env
                 run: jf poetry install -vvv
             -   name: Poetry build
