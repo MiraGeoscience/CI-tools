@@ -72,6 +72,7 @@ jobs:
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: build_poetry_package
+        if: ${{ needs.build_poetry_package.result == 'success' }}
         strategy:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
@@ -88,8 +89,6 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Artifactory
                 run: |
-                    ls .
-                    ls ${{ needs.build_poetry_package.outputs.build-dir-path }}
                     for file in ${{ needs.build_poetry_package.outputs.build-dir-path }}/*; do
                         filename=$(basename "${file}") 
                         echo "Uploading in: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ needs.build_poetry_package.outputs.version }}: $filename"
