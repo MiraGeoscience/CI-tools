@@ -111,7 +111,7 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Artifactory
                 run: |
-                    for file in ${{ env.buid-dir-path }}/*; do
+                    for file in ${{ env.build-dir-path }}/*; do
                         filename=$(basename "${file}") 
                         echo "Uploading in: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}: $filename"
                         jf rt u ${file} ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}/$filename
