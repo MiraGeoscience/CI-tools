@@ -99,11 +99,9 @@ jobs:
                     poetry config virtualenvs.in-project true
                     
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
-                    echo "Repo list: $repository_list"
                     for repo_name in ${repository_list}; do
-                        echo "Adding repo: $repo_name"
-                        first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:lower:]' '[:upper:]')
-                        echo "First part: $first_part"
+                        first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
+                        echo "Adding repository $repo_name under $first_part"
                         poetry source add --priority=supplemental ${first_part} https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/${repo_name}/simple
                         poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                     done
