@@ -87,7 +87,7 @@ jobs:
                 run: |                   
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"
+                        PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"
                     done
                     export PIP_EXTRA_INDEX_URL
                     pip install .
