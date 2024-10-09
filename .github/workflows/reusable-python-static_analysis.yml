@@ -32,9 +32,6 @@ on:
         type: string
         default: "['ubuntu-latest']"
     secrets:
-      JFROG_ARTIFACTORY_URL:
-        description: 'JFrog Artifactory URL'
-        required: false
       JFROG_ARTIFACTORY_TOKEN:
         description: 'JFrog Artifactory Token'
         required: false
@@ -76,7 +73,6 @@ jobs:
           cache-number: 1
           runner-os: ${{ runner.os }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
-          JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
