@@ -81,7 +81,7 @@ jobs:
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: [ build_poetry_package, build_setuptools_package ]
-        if: ${{ needs.build_poetry_package.result == 'success' || need.build_setuptools_package.result == 'success' }}
+        if: ${{ needs.build_poetry_package.result == 'success' || needs.build_setuptools_package.result == 'success' }}
         strategy:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
