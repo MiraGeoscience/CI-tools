@@ -13,10 +13,6 @@ inputs:
     description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
     required: false
     type: string
-  JFROG_ARTIFACTORY_URL:
-    description: 'JFrog Artifactory URL'
-    required: true
-    type: string
   JFROG_ARTIFACTORY_TOKEN:
     description: 'JFrog Artifactory Token'
     required: true
@@ -43,7 +39,7 @@ runs:
         for repo_name in ${repository_list}; do
           first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
           echo "Adding repository $repo_name under $first_part"
-          poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+          poetry config -- http-basic.${first_part} github ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
         done
       shell: bash
     - name: Set up cache
