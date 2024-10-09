@@ -102,7 +102,7 @@ jobs:
                     for repo_name in ${repository_list}; do
                         first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
                         echo "Adding repository $repo_name under $first_part"
-                        poetry source add --priority=supplemental ${first_part} https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/${repo_name}/simple
+                        poetry source add --priority=supplemental ${first_part} https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple
                         poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                     done
             -   name: Poetry install env
