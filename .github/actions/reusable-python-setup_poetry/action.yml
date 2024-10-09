@@ -9,18 +9,17 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
-  extra-repository:
-    description: 'Boolean to indicate if extra repository is needed'
-    required: false
-    type: boolean
-    default: false
-  repo-user:
-    description: 'Repository username'
+  virtual-repo-names:
+    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
     required: false
     type: string
-  repo-token:
-    description: 'Repository token'
-    required: false
+  JFROG_ARTIFACTORY_URL:
+    description: 'JFrog Artifactory URL'
+    required: true
+    type: string
+  JFROG_ARTIFACTORY_TOKEN:
+    description: 'JFrog Artifactory Token'
+    required: true
     type: string
 
 runs:
@@ -39,9 +38,13 @@ runs:
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        if (${{ inputs.extra-repository}}); then
-          poetry config http-basic.mira-pypi ${{ inputs.repo-user }} ${{ inputs.repo-token }}
-        fi
+
+        repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+        for repo_name in ${repository_list}; do
+          first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
+          echo "Adding repository $repo_name under $first_part"
+          poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+        done
       shell: bash
     - name: Set up cache
       uses: actions/cache@v4
