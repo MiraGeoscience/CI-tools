@@ -90,10 +90,10 @@ jobs:
                 id: select-build-outputs
                 run: |
                     if [[ "${{ needs.build_poetry_package.result }}" == "success" ]]; then
-                        echo "build-dir-paht=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
+                        echo "build-dir-path=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
                         echo "version=${{ needs.build_poetry_package.outputs.version }}" >> $GITHUB_ENV
                     elif [[ "${{ needs.build_setuptools_package.result }}" == "success" ]]; then
-                        echo "build-dir-paht=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
+                        echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
                         echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
                     else
                         echo "No sucessful build found"

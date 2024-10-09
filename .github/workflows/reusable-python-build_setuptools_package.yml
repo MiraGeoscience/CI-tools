@@ -49,7 +49,7 @@ defaults:
 
 jobs:
     build_package:
-        name: Build poetry package
+        name: Build setuptools package
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         outputs:
@@ -83,7 +83,7 @@ jobs:
                 uses: actions/setup-python@v5
                 with:
                     python-version: ${{ inputs.python-version }}
-            -   name: Verify package name can be installed
+            -   name: Verify package name works
                 run: |                   
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
@@ -91,7 +91,7 @@ jobs:
                     done
                     export PIP_EXTRA_INDEX_URL
                     pip install .
-            -   name: Install build dependencies
+            -   name: Pip install build
                 run: pip install build
             -   name: Build package
                 run: python -m build
