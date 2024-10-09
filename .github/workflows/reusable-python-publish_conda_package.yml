@@ -16,8 +16,8 @@ on:
             required: false
             type: boolean
             default: false
-        virtual-repo-name:
-            description: 'Name of the virtual repository to publish on (eg. "public-dev-conda")'
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-conda"])'
             required: true
             type: string
         os:
@@ -44,10 +44,12 @@ defaults:
         shell: 'bash -l {0}'
 
 jobs:
-    build_package:
+    build_conda_package:
         name: Build package
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
+        outputs:
+            build-path: ${{ steps.build-package.outputs.build-path }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
@@ -83,7 +85,11 @@ jobs:
                     PYTHONUTF8: 1
                     CONDA_CHANNEL_PRIORITY: strict
             -   name: Add conda channel
-                run: conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${{ inputs.virtual-repo-name}}
+                run: |
+                    repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+                    for repo_name in ${repository_list}; do
+                        conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                    done
             -   name: Install conda build
                 run: conda install -y conda-build conda-verify
             -   name: Build package
@@ -103,9 +109,27 @@ jobs:
                     name: package-build-conda
                     path: ${{ steps.build-package.outputs.build-path }}
                     retention-days: 7
+    publish_package_on_artifactory:
+        name: Publish package on artifactory
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        needs: build_conda_package
+        strategy:
+            matrix:
+                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        steps:
+            -   name: Download build artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: package-build-conda
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Artifactory
                 run: |
-                    file="${{ steps.build-package.outputs.build-path }}"
+                    file ="${{ needs.build_conda_package.outputs.build-path }}"
                     filename=$(basename "${file}") 
-                    echo "Uploading in ${{ inputs.virtual-repo-name }}/noarch: $filename"
-                    jf rt u ${file} ${{ inputs.virtual-repo-name }}/noarch/${filename}
+                    echo "Uploading in: ${{ matrix.virtual-repo-name }}/noarch : $filename"
+                    jf rt u ${file} ${{matrix.virtual-repo-name}}/noarch/${filename}
