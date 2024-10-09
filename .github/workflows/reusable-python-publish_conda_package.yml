@@ -129,8 +129,7 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Artifactory
                 run: |
-                    file ="${{ needs.build_conda_package.outputs.build-path }}"
-                    filename=$(basename "${file}")
+                    filename=$(basename "${{ needs.build_conda_package.outputs.build-path }}")
                     ls .
                     echo "Uploading in: ${{ matrix.virtual-repo-name }}/noarch : $filename"
                     jf rt u ${filename} ${{ matrix.virtual-repo-name }}/noarch/${filename}
