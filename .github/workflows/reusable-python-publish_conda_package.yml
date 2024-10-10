@@ -101,6 +101,10 @@ jobs:
                         echo "No build path found"
                         exit 1
                     fi
+                    if [[ ! -e ${BUILD_PATH} ]]; then
+                        echo "No build at ${BUILD_PATH}"
+                        exit 1
+                    fi
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
             
             -   name: Archive build artifact
