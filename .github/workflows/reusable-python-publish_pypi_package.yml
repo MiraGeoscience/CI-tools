@@ -51,7 +51,7 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@DEVOPS-504
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
@@ -65,7 +65,7 @@ jobs:
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@DEVOPS-504
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
