@@ -1,0 +1,118 @@
+name: Publish pypi package to Artifactory 
+
+on:
+  workflow_call:
+    inputs:
+        package-manager:
+            description: 'Name of the package manager (eg. "poetry")'
+            required: true
+            type: string
+            default: 'poetry'
+        package-name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        version-tag:
+            description: 'Version tag of the package to build'
+            required: true
+            type: string
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
+            required: true
+            type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: false
+            type: string
+            default: 'ubuntu-latest'
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    build_poetry_package:
+        name: Build poetry package
+        if: ${{ inputs.package-manager == 'poetry' }}
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
+        with:
+            package-name: ${{ inputs.package-name }}
+            python-version: ${{ inputs.python-version }}
+            version-tag: ${{ inputs.version-tag }}
+            virtual-repo-names: ${{ inputs.virtual-repo-names }}
+            os: ${{ inputs.os }}
+            timeout-minutes: ${{ inputs.timeout-minutes }}
+        secrets:
+            JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+            JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+    build_setuptools_package:
+        name: Build setuptools package
+        if: ${{ inputs.package-manager == 'setuptools' }}
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
+        with:
+            package-name: ${{ inputs.package-name }}
+            python-version: ${{ inputs.python-version }}
+            version-tag: ${{ inputs.version-tag }}
+            virtual-repo-names: ${{ inputs.virtual-repo-names }}
+            os: ${{ inputs.os }}
+            timeout-minutes: ${{ inputs.timeout-minutes }}
+        secrets:
+            JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+            JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+    publish_package_on_artifactory:
+        name: Publish package on artifactory
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        needs: [ build_poetry_package, build_setuptools_package ]
+        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') }}
+        strategy:
+            matrix:
+                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        steps:
+            -   name: Select build outputs form the correct job
+                id: select-build-outputs
+                run: |
+                    if [[ "${{ needs.build_poetry_package.result }}" == "success" ]]; then
+                        echo "build-dir-path=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
+                        echo "version=${{ needs.build_poetry_package.outputs.version }}" >> $GITHUB_ENV
+                    elif [[ "${{ needs.build_setuptools_package.result }}" == "success" ]]; then
+                        echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
+                        echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
+                    else
+                        echo "No sucessful build found"
+                        exit 1
+                    fi
+            -   name: Download build artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: package-build-pypi
+                    path: ${{ env.build-dir-path }}
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to Artifactory
+                run: |
+                    for file in ${{ env.build-dir-path }}/*; do
+                        filename=$(basename "${file}") 
+                        echo "Uploading in: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}: $filename"
+                        jf rt u ${file} ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}/$filename
+                    done

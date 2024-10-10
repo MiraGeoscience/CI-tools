@@ -32,11 +32,10 @@ on:
         required: false
         type: string
         default: "['windows-latest']"
-      extra-repository:
-        description: 'Boolean to indicate if extra repository is needed'
+      virtual-repo-names:
+        description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
         required: false
-        type: boolean
-        default: false
+        type: string
       lfs:
         description: 'Boolean to indicate if Github LFS is needed'
         required: false
@@ -52,11 +51,8 @@ on:
       CODECOV_TOKEN:
         description: 'Codecov token'
         required: false
-      EXTRA_PYPI_REPO_USER:
-        description: 'Extra PyPI repository username. Only used if `extra-repository` is True.'
-        required: false
-      EXTRA_PYPI_REPO_TOKEN:
-        description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
+      JFROG_ARTIFACTORY_TOKEN:
+        description: 'JFrog Artifactory Token'
         required: false
 
 jobs:
@@ -94,9 +90,8 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
-          extra-repository: ${{ inputs.extra-repository }}
-          repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-          repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
