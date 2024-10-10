@@ -19,7 +19,7 @@ on:
         default: '3.10'
       virtual-repo-names:
         description: 'Matrix of virtual repository names to resolve on (eg. ["public-dev-pypi"])'
-        required: true
+        required: false
         type: string
       timeout-minutes:
         description: 'Timeout in minutes for the job'
