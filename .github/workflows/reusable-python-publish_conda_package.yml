@@ -97,13 +97,18 @@ jobs:
             -   name: Install conda build
                 run: |
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        micromamba activate test_env
+                        micromamba install -y conda-build conda-verify
+                    else
+                        conda install -y conda-build conda-verify
                     fi
-                    conda install -y conda-build conda-verify
             -   name: Build package
                 id: build-package
                 run: |
-                    conda build .
+                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                        conda-build .
+                    else
+                        conda build .
+                    fi
                     BUILD_PATH=$(conda build --output .)
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
