@@ -88,7 +88,11 @@ jobs:
                 run: |
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                        if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                            micromamba config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                        else
+                            conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                        fi
                     done
             -   name: Install conda build
                 run: conda install -y conda-build conda-verify
