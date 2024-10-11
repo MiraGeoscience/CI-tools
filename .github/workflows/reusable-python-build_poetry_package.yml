@@ -1,4 +1,4 @@
-name: Build poetry package with Artifactory 
+name: Build poetry package
 
 on:
   workflow_call:
