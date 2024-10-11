@@ -89,7 +89,7 @@ jobs:
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                            micromamba config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
+                            micromamba config append channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
                         else
                             conda config --add channels https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}
                         fi
