@@ -85,14 +85,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install CUDA Toolkit
         id: cuda-toolkit
-        if: ${{ inputs.install-cuda-version != '' && matrix.os == 'ubuntu-latest'}}
+        if: ${{ inputs.install-cuda-version != '' && startsWith(matrix.os, 'ubuntu-') }}
         uses: Jimver/cuda-toolkit@v0.2.16
         with:
           method: network
           sub-packages: '["cudart", "nvcc", "cupti"]'
           cuda: ${{ inputs.install-cuda-version }}
       - name: Check CUDA Toolkit
-        if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
+        if: ${{ inputs.install-cuda-version != '' && startsWith(matrix.os, 'ubuntu-') }}
         run: |
           echo "CUDA_HOME=$CUDA_PATH">> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$CUDA_PATH/lib64:$CUDA_PATH/extras/CUPTI/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
