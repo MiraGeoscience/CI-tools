@@ -17,11 +17,10 @@ on:
         required: false
         type: string
         default: '3.10'
-      extra-repository:
-        description: 'Boolean to indicate if extra repository is needed'
+      virtual-repo-names:
+        description: 'Matrix of virtual repository names to resolve on (eg. ["public-dev-pypi"])'
         required: false
-        type: boolean
-        default: false
+        type: string
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
@@ -33,11 +32,8 @@ on:
         type: string
         default: "['ubuntu-latest']"
     secrets:
-      EXTRA_PYPI_REPO_USER:
-        description: 'Extra PyPI repository username. Only used if `extra-repository` is True.'
-        required: false
-      EXTRA_PYPI_REPO_TOKEN:
-        description: 'Extra PyPI repository token. Only used if `extra-repository` is True.'
+      JFROG_ARTIFACTORY_TOKEN:
+        description: 'JFrog Artifactory Token'
         required: false
 
 env:
@@ -65,21 +61,20 @@ jobs:
         with:
           python-version: ${{inputs.python-version}}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ inputs.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-466
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
           cache-number: 1
           runner-os: ${{ runner.os }}
-          extra-repository: ${{ inputs.extra-repository }}
-          repo-user: ${{ secrets.EXTRA_PYPI_REPO_USER }}
-          repo-token: ${{ secrets.EXTRA_PYPI_REPO_TOKEN }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@DEVOPS-466
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
