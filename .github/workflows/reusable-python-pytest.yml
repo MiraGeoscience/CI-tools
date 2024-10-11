@@ -46,11 +46,11 @@ on:
         required: false
         type: number
         default: 20
-      install-cuda:
-        description: 'Boolean to indicate if CUDA is needed (for Ubuntu. Windows runners already have CUDA)'
+      install-cuda-version:
+        description: 'The version of CUDA to install. Applies to Ubuntu only (Windows runners already have CUDA)'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
 
     secrets:
       CODECOV_TOKEN:
@@ -85,12 +85,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install CUDA Toolkit
         id: cuda-toolkit
-        if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
+        if: ${{ inputs.install-cuda-version != '' && matrix.os == 'ubuntu-latest'}}
         uses: Jimver/cuda-toolkit@v0.2.16
         with:
           method: network
           sub-packages: '["cudart", "nvcc", "cupti"]'
-          cuda: '12.4.0'
+          cuda: ${{ inputs.install-cuda-version }}
       - name: Check CUDA Toolkit
         if: ${{ inputs.install-cuda && matrix.os == 'ubuntu-latest'}}
         run: |
