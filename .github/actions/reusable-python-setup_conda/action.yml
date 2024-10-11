@@ -25,6 +25,6 @@ runs:
         cache-downloads: true
       env:
         PYTHONUTF8: 1
-        CONDA_CHANNEL_PRIORITY: strict
+        CONDA_CHANNEL_PRIORITY: flexible
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
         CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
