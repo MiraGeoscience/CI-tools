@@ -76,7 +76,7 @@ jobs:
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-    publish_package_on_artifactory:
+    publish_package:
         name: Publish package on artifactory
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
@@ -85,6 +85,8 @@ jobs:
         strategy:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        permissions:
+            id-token: write
         steps:
             -   name: Select build outputs form the correct job
                 id: select-build-outputs
@@ -116,5 +118,5 @@ jobs:
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
                     verbose: true
-                    package-dir: ${{ env.build-dir-path }}/
+                    packages-dir: ${{ env.build-dir-path }}/
                     repository-url: https://test.pypi.org/legacy/
