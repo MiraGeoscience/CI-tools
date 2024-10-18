@@ -1,4 +1,4 @@
-name: Publish pypi package to Artifactory 
+name: Publish pypi package
 
 on:
   workflow_call:
@@ -80,7 +80,7 @@ jobs:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     publish_package:
-        name: Publish package on artifactory
+        name: Publish
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: [ build_poetry_package, build_setuptools_package ]
@@ -112,7 +112,7 @@ jobs:
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
-                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Pypi
                 if: ${{ matrix.virtual-repo-name == 'pypi' }}
