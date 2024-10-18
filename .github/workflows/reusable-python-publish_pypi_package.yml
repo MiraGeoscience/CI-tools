@@ -104,15 +104,17 @@ jobs:
                 with:
                     name: package-build-pypi
                     path: ${{ env.build-dir-path }}
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
-                name: Setup JFrog CLI
-                env:
-                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
-                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Publish package to Artifactory
-                run: |
-                    for file in ${{ env.build-dir-path }}/*; do
-                        filename=$(basename "${file}") 
-                        echo "Uploading in: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}: $filename"
-                        jf rt u ${file} ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}/$filename
-                    done
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@DEVOPS-511
+                if: ${{ matrix.virtual-repo-name != 'pypi'}}
+                with:
+                    build-dir-path: ${{ env.build-dir-path }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to Pypi
+                if: ${{ matrix.virtual-repo-name == 'pypi' }}
+                uses: pypa/gh-action-pypi-publish@release/v1
+                with:
+                    verbose: true
+                    package-dir: ${{ env.build-dir-path }}/
+                    repository-url: https://test.pypi.org/legacy/
