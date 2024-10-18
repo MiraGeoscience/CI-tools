@@ -42,6 +42,9 @@ on:
         JFROG_ARTIFACTORY_TOKEN:
             description: 'JFrog Artifactory Token'
             required: true
+        PYPI_TOKEN:
+            description: 'PyPi Token'
+            required: false
 
 defaults:
     run:
@@ -85,8 +88,6 @@ jobs:
         strategy:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
-        permissions:
-            id-token: write
         steps:
             -   name: Select build outputs form the correct job
                 id: select-build-outputs
@@ -120,3 +121,4 @@ jobs:
                     verbose: true
                     packages-dir: ${{ env.build-dir-path }}/
                     repository-url: https://test.pypi.org/legacy/
+                    password: ${{ secrets.PYPI_TOKEN }}
