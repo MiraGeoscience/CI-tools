@@ -143,5 +143,5 @@ jobs:
                 with:
                     build-dir-path: ${{ needs.build_conda_package.outputs.build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
-                    JFROG_ARTIFACTORY_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
