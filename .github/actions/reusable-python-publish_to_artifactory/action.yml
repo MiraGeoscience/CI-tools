@@ -1,5 +1,5 @@
 name: Publish to Artifactory
-description: Publish pip package to JFrog Artifactory
+description: Publish package to JFrog Artifactory
 inputs:
   build-dir-path:
     description: 'Path to the build directory'
