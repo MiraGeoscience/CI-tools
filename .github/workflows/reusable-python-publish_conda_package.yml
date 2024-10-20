@@ -49,7 +49,7 @@ jobs:
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         outputs:
-            build-path: ${{ steps.build-package.outputs.build-path }}
+            build-dir-path: ${{ steps.build-package.outputs.build-dir-path }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
@@ -118,7 +118,7 @@ jobs:
                         echo "No build at ${BUILD_PATH}"
                         exit 1
                     fi
-                    echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
+                    echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
             
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
@@ -139,13 +139,9 @@ jobs:
                 uses: actions/download-artifact@v4
                 with:
                     name: package-build-conda
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
-                name: Setup JFrog CLI
-                env:
-                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
-                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Publish package to Artifactory
-                run: |
-                    filename=$(basename "${{ needs.build_conda_package.outputs.build-path }}")
-                    echo "Uploading in: ${{ matrix.virtual-repo-name }}/noarch : $filename"
-                    jf rt u ./${filename} ${{ matrix.virtual-repo-name }}/noarch/${filename}
+            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                with:
+                    build-dir-path: ${{ needs.build_conda_package.outputs.build-dir-path }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
