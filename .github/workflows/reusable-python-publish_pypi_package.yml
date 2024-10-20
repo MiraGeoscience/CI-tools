@@ -115,10 +115,10 @@ jobs:
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to Pypi
-                if: ${{ matrix.virtual-repo-name == 'pypi' }}
+                if: ${{ matrix.virtual-repo-name == 'pypi'  || matrix.virtual-repo-name == 'test-pypi'}}
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
                     verbose: true
                     packages-dir: ${{ env.build-dir-path }}/
-                    repository-url: https://test.pypi.org/legacy/
+                    repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'pypi'}}.org/legacy/
                     password: ${{ secrets.PYPI_TOKEN }}
