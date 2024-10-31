@@ -107,8 +107,9 @@ jobs:
                 with:
                     name: package-build-pypi
                     path: ${{ env.build-dir-path }}
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
-                if: ${{ matrix.virtual-repo-name != 'pypi'}}
+            -   name: Publish package to Artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
