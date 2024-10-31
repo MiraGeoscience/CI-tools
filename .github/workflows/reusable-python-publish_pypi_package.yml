@@ -86,6 +86,7 @@ jobs:
         needs: [ build_poetry_package, build_setuptools_package ]
         if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') }}
         strategy:
+            fail-fast: false
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
         steps:
