@@ -140,7 +140,9 @@ jobs:
                 uses: actions/download-artifact@v4
                 with:
                     name: package-build-conda
-            -   uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                    path: ${{ needs.build_conda_package.outputs.build-dir-path }}
+            -   name: Publish package to Artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
                     build-dir-path: ${{ needs.build_conda_package.outputs.build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
