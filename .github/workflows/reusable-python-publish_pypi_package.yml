@@ -120,5 +120,5 @@ jobs:
                 with:
                     verbose: true
                     packages-dir: ${{ env.build-dir-path }}/
-                    repository-url: https://upload.${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'pypi'}}.org/legacy/
+                    repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
                     password: ${{ secrets.PYPI_TOKEN }}
