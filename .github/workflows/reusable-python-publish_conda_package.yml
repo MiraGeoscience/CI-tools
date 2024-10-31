@@ -118,6 +118,7 @@ jobs:
                         echo "No build at ${BUILD_PATH}"
                         exit 1
                     fi
+                    echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
                     echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
             
             -   name: Archive build artifact
