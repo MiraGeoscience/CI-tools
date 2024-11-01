@@ -53,7 +53,7 @@ defaults:
 jobs:
     build_poetry_package:
         name: Build poetry package
-        if: ${{ inputs.package-manager == 'poetry' }}
+        if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
@@ -67,7 +67,7 @@ jobs:
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     build_setuptools_package:
         name: Build setuptools package
-        if: ${{ inputs.package-manager == 'setuptools' }}
+        if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
@@ -80,11 +80,11 @@ jobs:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     publish_package:
-        name: Publish
+        name: Publish package
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: [ build_poetry_package, build_setuptools_package ]
-        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') }}
+        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' }}
         strategy:
             fail-fast: false
             matrix:

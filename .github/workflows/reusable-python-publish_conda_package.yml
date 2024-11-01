@@ -1,4 +1,4 @@
-name: Publish conda package to Artifactory 
+name: Publish conda package
 
 on:
   workflow_call:
@@ -46,6 +46,7 @@ defaults:
 jobs:
     build_conda_package:
         name: Build package
+        if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         outputs:
@@ -128,7 +129,8 @@ jobs:
                     path: ${{ steps.build-package.outputs.build-path }}
                     retention-days: 7
     publish_package_on_artifactory:
-        name: Publish package on artifactory
+        name: Publish package
+        if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: build_conda_package
