@@ -22,6 +22,11 @@ on:
         required: false
         type: number
         default: 20
+      skip:
+        description: 'comma separated list of hooks to skip'
+        required: false
+        type: string
+        default: "pylint"
 
 jobs:
   pre-commit:
@@ -33,7 +38,7 @@ jobs:
         os: ${{ fromJson(inputs.os) }}
     runs-on: ${{ matrix.os }}
     env:
-      SKIP: pylint
+      SKIP: ${{ inputs.skip }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@v3
