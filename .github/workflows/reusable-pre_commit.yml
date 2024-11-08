@@ -49,7 +49,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: >-
           git fetch --deepen=500 origin ${{github.base_ref}} && 
-          if [ -n "${{ inputs.app-name}}"]; then
+          if [ -n "${{ inputs.app-name}}" ]; then
             echo "FILES_PARAM=$(
               git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${{ inputs.app-name }}|tests)/.*\.py$" | xargs
             )" >> $GITHUB_ENV
