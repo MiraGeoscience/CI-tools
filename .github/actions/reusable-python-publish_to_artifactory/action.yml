@@ -30,7 +30,7 @@ runs:
       shell: bash
       run: |
         for file in ${{ inputs.build-dir-path }}/*; do
-          filename=$(basename "${file}") 
+          filename=$(basename "${file}")
           echo "Uploading in: ${{ inputs.artifactory-dir-path }}: $filename"
           jf rt u ${file} ${{ inputs.artifactory-dir-path}}/$filename
         done

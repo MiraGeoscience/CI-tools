@@ -1,4 +1,4 @@
-name: Publish conda package
+name: Publish conda package to Artifactory
 
 on:
   workflow_call:
@@ -74,7 +74,7 @@ jobs:
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            
+
             -   name: Setup conda env
                 uses: mamba-org/setup-micromamba@v1
                 with:
@@ -121,7 +121,7 @@ jobs:
                     fi
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
                     echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
-            
+
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
                 with:
