@@ -37,28 +37,16 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@v4
+      - run: git fetch --deepen=500 origin ${{github.base_ref}}
+        if: ${{ (github.event_name == 'pull_request') }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: capture modified files
-        if: ${{ github.event_name == 'pull_request' }}
-        run: >-
-          git fetch --deepen=500 origin ${{github.base_ref}} && 
-          if [ -n "${{ inputs.app-name}}"]; then
-            echo "FILES_PARAM=$(
-              git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${{ inputs.app-name }}|tests)/.*\.py$" | xargs
-            )" >> $GITHUB_ENV
-          else
-            echo "FILES_PARAM=$(
-              git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | xargs
-            )" >> $GITHUB_ENV
-          fi
-          
       - name: Run pre-commit on modified files
-        if: ${{ (github.event_name == 'pull_request') && (env.FILES_PARAM) }}
+        if: ${{ (github.event_name == 'pull_request') }}
         uses: pre-commit/action@v3.0.1
         with:
-          extra_args: --hook-stage pre-push --files ${{ env.FILES_PARAM }}
+          extra_args: --hook-stage pre-push --from-ref origin/${{github.base_ref}} --to-ref .
       - name: Run pre-commit on all files
         if: ${{ github.event_name == 'push' }}
         uses: pre-commit/action@v3.0.1
