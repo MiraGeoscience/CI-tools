@@ -36,8 +36,8 @@ jobs:
       SKIP: pylint
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
       - name: capture modified files
@@ -56,11 +56,11 @@ jobs:
           
       - name: Run pre-commit on modified files
         if: ${{ (github.event_name == 'pull_request') && (env.FILES_PARAM) }}
-        uses: pre-commit/action@v3.0.0
+        uses: pre-commit/action@v3.0.1
         with:
-          extra_args: --hook-stage push --files ${{ env.FILES_PARAM }}
+          extra_args: --hook-stage pre-push --files ${{ env.FILES_PARAM }}
       - name: Run pre-commit on all files
         if: ${{ github.event_name == 'push' }}
-        uses: pre-commit/action@v3.0.0
+        uses: pre-commit/action@v3.0.1
         with:
-          extra_args: --hook-stage push --all-files
+          extra_args: --hook-stage pre-push --all-files
