@@ -100,7 +100,7 @@ jobs:
                         echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
                         echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
                     else
-                        echo "No sucessful build found"
+                        echo "No successful build found"
                         exit 1
                     fi
             -   name: Download build artifact
