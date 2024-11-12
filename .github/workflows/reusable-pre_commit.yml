@@ -51,7 +51,7 @@ jobs:
         if: ${{ (github.event_name == 'pull_request') }}
         uses: pre-commit/action@v3.0.1
         with:
-          extra_args: --hook-stage pre-push --from-ref origin/${{github.base_ref}} --to-ref .
+          extra_args: --hook-stage pre-push --from-ref refs/remotes/origin/${{github.base_ref}} --to-ref .
       - name: Run pre-commit on all files
         if: ${{ github.event_name == 'push' }}
         uses: pre-commit/action@v3.0.1
