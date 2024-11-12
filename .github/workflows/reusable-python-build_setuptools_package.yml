@@ -15,7 +15,7 @@ on:
             description: 'Version tag of the package to build'
             required: true
             type: string
-        
+
         virtual-repo-names:
             description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
             required: true
@@ -29,7 +29,7 @@ on:
             required: true
             type: number
     outputs:
-        build-dir-path: 
+        build-dir-path:
             description: 'Path to the build directory'
             value: ${{ jobs.build_package.outputs.build-dir-path }}
         version:
@@ -84,7 +84,7 @@ jobs:
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Verify package installation
-                run: |                   
+                run: |
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"

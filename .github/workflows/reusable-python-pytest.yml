@@ -9,7 +9,7 @@ on:
         type: string
         default: 'poetry'
       python-versions:
-        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'	
+        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'
         required: false
         type: string
         default: "['3.10']"
@@ -78,7 +78,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
@@ -98,7 +98,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
-      
+
       - name: Run Pytest
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then

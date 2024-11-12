@@ -15,7 +15,7 @@ on:
             description: 'Version tag of the package to build'
             required: true
             type: string
-        
+
         virtual-repo-names:
             description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
             required: true
@@ -29,7 +29,7 @@ on:
             required: true
             type: number
     outputs:
-        build-dir-path: 
+        build-dir-path:
             description: 'Path to the build directory'
             value: ${{ jobs.build_package.outputs.build-dir-path }}
         version:
@@ -79,7 +79,7 @@ jobs:
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-        
+
             -   name: Set up Python version
                 uses: actions/setup-python@v5
                 with:
@@ -88,11 +88,11 @@ jobs:
                 run: |
                     curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
                     echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-            -   name: Configure poetry 
+            -   name: Configure poetry
                 run: |
                     poetry config virtualenvs.create true
                     poetry config virtualenvs.in-project true
-                    
+
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
