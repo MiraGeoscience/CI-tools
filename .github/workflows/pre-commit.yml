@@ -25,3 +25,9 @@ jobs:
   call-workflow-pre-commmit:
     name: Pre-Commit
     uses: MiraGeoscience/CI-tools/.github/workflows/reusable-pre_commit.yml@DEVOPS-565-fixup2
+  git-remotes:
+    name: List git remotes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git remote -v
