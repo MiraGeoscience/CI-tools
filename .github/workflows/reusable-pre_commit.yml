@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@v4
-      - run: git fetch --depth=500 origin ${{github.base_ref}}
+      - run: git fetch --deepen=500 origin ${{github.base_ref}}
         if: ${{ (github.event_name == 'pull_request') }}
       - uses: actions/setup-python@v5
         with:
