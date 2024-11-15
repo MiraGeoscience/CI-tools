@@ -1,4 +1,4 @@
-name: Publish pypi package
+name: Publish PyPI package
 
 on:
   workflow_call:
@@ -21,7 +21,7 @@ on:
             required: true
             type: string
         virtual-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-pypi-dev"])'
             required: true
             type: string
         os:
@@ -124,3 +124,23 @@ jobs:
                     packages-dir: ${{ env.build-dir-path }}/
                     repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
                     password: ${{ secrets.PYPI_TOKEN }}
+    add_release_asset:
+        name: Add release asset
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        needs: [ publish_package ]
+        steps:
+            -   name: Get draft release
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                id: get-draft-release
+            -   name: Download build artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: package-build-pypi
+                    path: download-artifact
+            -   name: Upload release asset
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                run: |
+                    gh --version
+                    gh release upload --clobber ${{ steps.get-draft-release.outputs.release-name }} download-artifact/*
