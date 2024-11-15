@@ -145,4 +145,4 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
-                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-name }} download-artifact/*
+                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-tag }} download-artifact/*

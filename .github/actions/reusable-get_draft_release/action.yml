@@ -5,38 +5,46 @@ inputs:
     description: "The GitHub token (secret)"
     required: true
     type: string
+  existing-release:
+    description: "The tag corresponding to the desired release. If empty, will get it from github.ref"
+    required: false
+    type: string
+
 outputs:
-  release-name:
-    description: "The release name: newly created or existing one at the current tag"
-    value: ${{ steps.get-or-draft-release.outputs.release-name}}
-  version-tag:
-    description: "The name of the current version tag"
-    value: ${{ steps.get-or-draft-release.outputs.version-tag}}
+  release-tag:
+    description: "The tag for the newly created or existing release (same value as `inputs.existing-release` if provided)"
+    value: ${{ steps.get-or-draft-release.outputs.release-tag || steps.get-existing-release.outputs.release-tag }}
 
 runs:
   using: "composite"
   steps:
-    - name: Get or Draft Release
+    - run: gh --version
+    - name: Get existing release
+      id: get-existing-release
+      if: ${{ inputs.existing-release }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}
+      run: >
+        gh release view ${{ inputs.release-tag }}
+        && echo "release-tag=${{ inputs.existing-release }}" >> $GITHUB_OUTPUT
+    - name: Get or Draft release
       id: get-or-draft-release
+      if: ${{ !inputs.existing-release }}
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
       run: >
         [[ "$GITHUB_REF" != refs/tags/v* ]]
         && { echo "Error: workflow is not running on a version tag" >&2; exit 1; }
+        || tag_name=${GITHUB_REF#refs/tags/}
 
-        gh --version
-
-        tag_name=${GITHUB_REF#refs/tags/}
+        # if no release is found, draft a new one (as pre-release if the tag says to)
 
         gh release view $tag_name 2> /dev/null
-        || new_release_url=$( gh release create --draft
+        || gh release create --draft
         $( echo $tag_name | grep -i -q '^v[0-9]\+\(\.[0-9]\+\)\+-[a-z]' && echo --prerelease )
-        -t $tag_name
-        $tag_name )
+        $tag_name
 
-        [[ $new_release_url ]] && (echo "release-name=${new_release_url##https*/}" >> $GITHUB_OUTPUT)
-        || (echo "release-name=$tag_name" >> $GITHUB_OUTPUT)
-
-        echo "version-tag=$tag_name" >> $GITHUB_OUTPUT
+        echo "release-tag=$tag_name" >> $GITHUB_OUTPUT
       shell: bash

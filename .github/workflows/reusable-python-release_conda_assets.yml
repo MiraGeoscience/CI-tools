@@ -7,6 +7,10 @@ on:
             description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-prod"])'
             required: true
             type: string
+        release-tag:
+            description: 'Tag for the existing (draft) release to download assets from'
+            required: true
+            type: string
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -35,11 +39,12 @@ jobs:
                 id: get-draft-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    existing-release: ${{ inputs.release-tag }}
             -   name: Download release assets
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
-                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.version-tag }}
+                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.release-tag }}
                 run: |
                     mkdir -p download-assets
                     cd download-assets
