@@ -1,5 +1,10 @@
 name: Get or Draft Release
 description: Find or create a new draft release for the current tag
+inputs:
+  GITHUB_TOKEN:
+    description: "The GitHub token (secret)"
+    required: true
+    type: string
 outputs:
   release-name:
     description: "The release name: newly created or existing one at the current tag"
@@ -14,7 +19,7 @@ runs:
     - name: Get or Draft Release
       id: get-or-draft-release
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
       run: >
         [[ "$GITHUB_REF" != refs/tags/v* ]]
         && { echo "Error: workflow is not running on a version tag" >&2; exit 1; }
