@@ -25,6 +25,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
+      shell: bash
       run: >
         gh release view ${{ inputs.release-tag }}
         && echo "release-tag=${{ inputs.existing-release }}" >> $GITHUB_OUTPUT
