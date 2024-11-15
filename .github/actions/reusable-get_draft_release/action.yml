@@ -30,13 +30,13 @@ runs:
         tag_name=${GITHUB_REF#refs/tags/}
 
         gh release view $tag_name 2> /dev/null
-        || new_release_url=$(gh release create --draft
+        || new_release_url=$( gh release create --draft
         $( echo $tag_name | grep -i -q '^v[0-9]\+\(\.[0-9]\+\)\+-[a-z]' && echo --prerelease )
         -t $tag_name
-        $tag_name)
+        $tag_name )
 
         [[ $new_release_url ]] && (echo "release-name=${new_release_url##https*/}" >> $GITHUB_OUTPUT)
         || (echo "release-name=$tag_name" >> $GITHUB_OUTPUT)
 
-        echo "version-tag=$tag_name" >> $GITHUB_OUTPUT)
+        echo "version-tag=$tag_name" >> $GITHUB_OUTPUT
       shell: bash
