@@ -11,10 +11,10 @@ runs:
   steps:
     - uses: actions/checkout@v4
     - name: Setup CONDA_LOCK_ENV_FILE
+      shell: bash
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> $GITHUB_ENV
-      shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
       with:

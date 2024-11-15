@@ -15,8 +15,8 @@ runs:
   steps:
     - name: Get full Python version
       id: full-python-version
-      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
       shell: bash
+      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
@@ -25,8 +25,8 @@ runs:
         key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('piproject.toml') }}-${{ inputs.cache-number }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
       run: timeout 10s poetry run pip --version || rm -rf .venv
-      shell: bash
     - name: Install hatch
-      run: pip install hatch
       shell: bash
+      run: pip install hatch
