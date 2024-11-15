@@ -43,7 +43,7 @@ jobs:
                 run: |
                     mkdir -p download-assets
                     cd download-assets
-                    gh release download ${RELEASE_TAG} -p '.tar.bz2'
+                    gh release download ${RELEASE_TAG} -p '*.tar.bz2'
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
