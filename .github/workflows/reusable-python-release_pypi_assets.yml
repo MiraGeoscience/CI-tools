@@ -1,0 +1,65 @@
+name: Publish PyPI package from release assets
+
+on:
+  workflow_call:
+    inputs:
+        package-name:
+            description: 'Name of the package to publish'
+            required: true
+            type: string
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-pypi-prod"])'
+            required: true
+            type: string
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    publish_pypi_assets:
+        name: Publish PyPI assets
+        if: ${{ github.repository_owner == 'MiraGeoscience' }}
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        strategy:
+            fail-fast: false
+            matrix:
+                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        steps:
+            -   name: Get draft release
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                id: get-draft-release
+            -   name: Download release assets
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.version-tag }}
+                run: |
+                    gh --version
+                    mkdir -p download-assets
+                    cd download-assets
+                    gh release download ${RELEASE_TAG} -p '*.tar.gz' -p '*.whl'
+            -   name: Publish package to Artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
+                with:
+                    build-dir-path: download-assets
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Publish package to PyPI
+                if: ${{ matrix.virtual-repo-name == 'pypi'  || matrix.virtual-repo-name == 'test-pypi'}}
+                uses: pypa/gh-action-pypi-publish@release/v1
+                with:
+                    verbose: true
+                    packages-dir: download-assets/
+                    repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
+                    password: ${{ secrets.PYPI_TOKEN }}
