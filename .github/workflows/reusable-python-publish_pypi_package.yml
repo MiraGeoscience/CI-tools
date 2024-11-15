@@ -127,11 +127,11 @@ jobs:
     add_release_asset:
         name: Add release asset
         runs-on: 'ubuntu-latest'
-        timeout-minutes: ${{ inputs.timeout-minutes }}
+        timeout-minutes: 5
         needs: [ publish_package ]
         steps:
             -   name: Get draft release
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@feature/DEVOPS-571
                 id: get-draft-release
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
