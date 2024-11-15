@@ -18,7 +18,8 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - run: gh --version
+    - shell: bash
+      run: gh --version
     - name: Get existing release
       id: get-existing-release
       if: ${{ inputs.existing-release }}
