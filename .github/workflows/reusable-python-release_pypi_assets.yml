@@ -19,6 +19,9 @@ on:
         JFROG_ARTIFACTORY_TOKEN:
             description: 'JFrog Artifactory Token'
             required: true
+        PYPI_TOKEN:
+            description: 'PyPI Token'
+            required: false
 
 defaults:
     run:
