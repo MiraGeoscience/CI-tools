@@ -43,7 +43,7 @@ on:
             description: 'JFrog Artifactory Token'
             required: true
         PYPI_TOKEN:
-            description: 'PyPi Token'
+            description: 'PyPI Token'
             required: false
 
 defaults:
@@ -116,7 +116,7 @@ jobs:
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Publish package to Pypi
+            -   name: Publish package to PyPI
                 if: ${{ matrix.virtual-repo-name == 'pypi'  || matrix.virtual-repo-name == 'test-pypi'}}
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
