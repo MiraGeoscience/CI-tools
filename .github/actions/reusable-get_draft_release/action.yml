@@ -20,9 +20,12 @@ runs:
       id: get-or-draft-release
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}
       run: >
         [[ "$GITHUB_REF" != refs/tags/v* ]]
         && { echo "Error: workflow is not running on a version tag" >&2; exit 1; }
+
+        gh --version
 
         tag_name=${GITHUB_REF#refs/tags/}
 

@@ -43,9 +43,9 @@ jobs:
             -   name: Download release assets
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GH_REPO: ${{ github.repository }}
                     RELEASE_TAG: ${{ steps.get-draft-release.outputs.version-tag }}
                 run: |
-                    gh --version
                     mkdir -p download-assets
                     cd download-assets
                     gh release download ${RELEASE_TAG} -p '*.tar.gz' -p '*.whl'

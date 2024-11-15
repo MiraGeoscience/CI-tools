@@ -169,6 +169,5 @@ jobs:
             -   name: Upload release asset
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                run: |
-                    gh --version
-                    gh release upload --clobber ${{ steps.get-draft-release.outputs.release-name }} download-artifact/*
+                    GH_REPO: ${{ github.repository }}
+                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-name }} download-artifact/*
