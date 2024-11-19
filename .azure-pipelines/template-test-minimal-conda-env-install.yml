@@ -39,12 +39,13 @@ stages:
       - job: InstallPackageWithEnvFile
         variables:
           envFile: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
-        strategy:
-          matrix:
-            envFile: $(matrix)
+        # strategy:
+        #   matrix:
+        #     envFile: $(matrix)
         displayName: 'Install packages with environment file'
         steps:
           - script: |
+              echo $(matrix)
               micromamba.exe create -y --verify-artifacts -f $(envFile)
 
 
