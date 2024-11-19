@@ -1,46 +1,21 @@
-name: Build python
-
-on: push
-
-pool:
-  vmImage: 'windows-2022'
-
-container: 'mcr.microsoft.com/windows/servercore:ltsc2022'
-
-variables:
-  pythonVersion: '3.10.0'
-  packageVersion: '1.0.0'
+# File: template-test-minimal-conda-env-install.yml
 
 stages:
-  - stage: SetupEnv
-    displayName: Setup Environment
+  - stage: TestInstallationOnMinimalCondaEnv
+    displayName: Test installation on minimal conda environment
     jobs:
       - job: InstallPythonEnv
         displayName: 'Install python and miniforge'
+        pool: 
+          vmImage: 'windows-2022'
+        container: 'mcr.microsoft.com/windows/servercore:ltsc2022'
         steps:
-          - task: PowerShell@2
-            displayName: 'Install python'
-            inputs:
-              targetType: 'inline'
-              script: |
-                Invoke-WebRequest -Uri https://www.python.org/ftp/python/$(pythonVersion)/python-$(pythonVersion)-amd64.exe -OutFile python-installer.exe; Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -NoNewWindow -Wait; Remove-Item -Force python-installer.exe
           - task: PowerShell@2
             displayName: 'Install miniforge'
             inputs:
               targetType: 'inline'
               script: |
                 Invoke-WebRequest -Uri https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe -Outfile miniforge-installer.exe; Start-Process miniforge-installer.exe -ArgumentList: 'start /wait "" Miniforge3-Windows-x86_64.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%UserProfile%\Miniforge3' -NoNeWindow -Wait; Remove-Item -Force miniforge-installer.exe -Wait; Remove-Item -Force miniforge-installer.exe
-          
-          - task: Cache@2
-            inputs:
-              key: '"yarn" | "$(Agent.OS)" | $(pythonVersion) | yarn.lock'
-              restoreKeys: |
-                "yarn" | "$(Agent.OS)" | $(pythonVersion)
-                "yarn"
-              path: "test"
-  - stage: InstallPackage
-    displayName: Install Package
-    jobs:
       - job: DiscoverFiles
         displayName: 'Discover environment files package'
         steps:
@@ -49,6 +24,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
+                $envFolder = environments
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
                 if ($files.Count -eq 0) {
                   Write-Error "No environment files found in $envFolder"
