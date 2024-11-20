@@ -61,7 +61,7 @@ jobs:
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: download-assets
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ inputs.release-tag }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to PyPI
