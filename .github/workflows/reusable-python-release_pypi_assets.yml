@@ -42,9 +42,9 @@ jobs:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
         steps:
-            -   name: Get draft release
+            -   name: Find release from tag
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
-                id: get-draft-release
+                id: find-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     existing-release: ${{ inputs.release-tag }}
@@ -52,11 +52,10 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
-                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.release-tag }}
                 run: |
                     mkdir -p download-assets
                     cd download-assets
-                    gh release download ${RELEASE_TAG} -p '*.tar.gz' -p '*.whl'
+                    gh release download ${{ inputs.release-tag }} -p '*.tar.gz' -p '*.whl'
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
