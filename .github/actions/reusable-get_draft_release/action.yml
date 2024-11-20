@@ -28,7 +28,7 @@ runs:
         GH_REPO: ${{ github.repository }}
       shell: bash
       run: >
-        gh release view ${{ inputs.release-tag }}
+        gh release view ${{ inputs.existing-release }}
         && echo "release-tag=${{ inputs.existing-release }}" >> $GITHUB_OUTPUT
     - name: Get or Draft release
       id: get-or-draft-release
