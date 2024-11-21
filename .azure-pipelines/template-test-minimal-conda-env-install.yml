@@ -4,14 +4,6 @@ stages:
   - stage: TestInstallationOnMinimalCondaEnv
     displayName: Test installation on minimal conda environment
     jobs:
-      - job: DownloadDockerImage
-        displayName: 'Download docker image from Artifactory'
-        steps:
-          - task: JFrogDocker@1
-            inputs:
-              command: 'Pull'
-              artifactoryConnection: 'Artifactory'
-              imageName: 'windows-servercore-ltsc2022-miniforge:latest'
       - job: DiscoverFiles
         displayName: 'Discover environment files package'
         steps:
@@ -20,7 +12,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $envFolder = geopy-distrib/environments
+                ls . $ #TODO: Debug
+                $envFolder = "geopy-distrib/environments"
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
                 if ($files.Count -eq 0) {
                   Write-Error "No environment files found in $envFolder"
@@ -37,7 +30,8 @@ stages:
           envFile: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
         displayName: 'Install packages with environment file'
         container:
-          image: windows-servercore-ltsc2022-miniforge:latest
+          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
+          endpoint: Artifactory
         steps:
           - script: |
               echo $(matrix)
