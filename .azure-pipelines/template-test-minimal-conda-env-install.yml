@@ -23,14 +23,14 @@ stages:
                     New-Item -ItemType Directory -Path '$(Build.ArtifactStagingDirectory)/$artifactFolder' | Out-Null
                 }
                 foreach ($file in $files) {
-                  $key = [IO.Path]::GetFileNameWithoutExtension($file.FullName)
-                  $matrix[$key] = @{ envFile = $file.FullName }
+                  $key = [IO.Path]::GetFileNameWithoutExtension($file.Name)
+                  $matrix[$key] = @{ envFile = $file.Name }
                   Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
                 }
-                echo "##vso[task.setvariable variable=matrix;]$matrix"
+                echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
                 echo "You can use $matrix"
                 $matrix | ConvertTo-Json -Depth 2 | Write-Host
-          - publish: '$(DiscoverFiles.ArtifactStagingDirectory)'
+          - publish: 'artifact_envFiles'
             artifact: envFiles
             displayName: 'Publish environment files'
 
@@ -39,13 +39,11 @@ stages:
           image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
           endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
+        strategy:
+          matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
         steps:
           - checkout: none
           - download: current
             artifact: envFiles
           - script: |
-              ls '$(Pipeline.Workspace)/envFiles'
-              echo $(matrix)
               conda create -y --verify-artifacts -f $(envFile)
-
-
