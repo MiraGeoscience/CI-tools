@@ -13,7 +13,7 @@ stages:
               targetType: 'inline'
               script: |
                 ls . #TODO: Debug
-                $envFolder = "geopy-distrib/environments"
+                $envFolder = "environments"
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
                 if ($files.Count -eq 0) {
                   Write-Error "No environment files found in $envFolder"
