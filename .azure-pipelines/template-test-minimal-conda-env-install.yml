@@ -4,18 +4,15 @@ stages:
   - stage: TestInstallationOnMinimalCondaEnv
     displayName: Test installation on minimal conda environment
     jobs:
-      - job: InstallPythonEnv
-        displayName: 'Install python and miniforge'
-        pool: 
-          vmImage: 'windows-2022'
-        container: 'mcr.microsoft.com/windows/servercore:ltsc2022'
+      - job: DownloadDockerImage
+        displayName: 'Download docker image from Artifactory'
         steps:
-          - task: PowerShell@2
-            displayName: 'Install miniforge'
+          - task: ArtifactoryDocker@1
             inputs:
-              targetType: 'inline'
-              script: |
-                Invoke-WebRequest -Uri https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe -Outfile miniforge-installer.exe; Start-Process miniforge-installer.exe -ArgumentList: 'start /wait "" Miniforge3-Windows-x86_64.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%UserProfile%\Miniforge3' -NoNeWindow -Wait; Remove-Item -Force miniforge-installer.exe -Wait; Remove-Item -Force miniforge-installer.exe
+              command: 'pull'
+              artifactoryService: 'Artifactory'
+              sourceRepo: 'mira-docker-local'
+              imageName: 'windows-servercore-ltsc2022-miniforge:latest'
       - job: DiscoverFiles
         displayName: 'Discover environment files package'
         steps:
@@ -24,7 +21,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $envFolder = environments
+                $envFolder = geopy-distrib/environments
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
                 if ($files.Count -eq 0) {
                   Write-Error "No environment files found in $envFolder"
@@ -35,17 +32,16 @@ stages:
                   $matrix[$key] = @{ envFile = $file.FullName }
                 }
                 echo "##vso[task.setvariable variable=matrix;]$matrix"
-                echo "You can use $(matrix)"
+                echo "You can use $matrix"
       - job: InstallPackageWithEnvFile
         variables:
           envFile: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
-        # strategy:
-        #   matrix:
-        #     envFile: $(matrix)
         displayName: 'Install packages with environment file'
+        container:
+          image: windows-servercore-ltsc2022-miniforge:latest
         steps:
           - script: |
               echo $(matrix)
-              micromamba.exe create -y --verify-artifacts -f $(envFile)
+              conda create -y --verify-artifacts -f $(envFile)
 
 
