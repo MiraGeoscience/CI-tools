@@ -1,7 +1,4 @@
 # File: template-test-minimal-conda-env-install.yml
-pool:
-  vmImage: 'windows-2022'
-
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
     displayName: Test installation on minimal conda environment
