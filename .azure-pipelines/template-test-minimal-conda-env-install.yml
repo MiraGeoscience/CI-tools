@@ -12,7 +12,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                ls . $ #TODO: Debug
+                ls . #TODO: Debug
                 $envFolder = "geopy-distrib/environments"
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
                 if ($files.Count -eq 0) {
@@ -31,7 +31,7 @@ stages:
         displayName: 'Install packages with environment file'
         container:
           image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
-          endpoint: Artifactory
+          endpoint: Docker-Artifactory
         steps:
           - script: |
               echo $(matrix)
