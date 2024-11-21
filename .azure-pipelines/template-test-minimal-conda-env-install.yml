@@ -7,11 +7,10 @@ stages:
       - job: DownloadDockerImage
         displayName: 'Download docker image from Artifactory'
         steps:
-          - task: ArtifactoryDocker@1
+          - task: JFrogDocker@1
             inputs:
-              command: 'pull'
-              artifactoryService: 'Artifactory'
-              sourceRepo: 'mira-docker-local'
+              command: 'Pull'
+              artifactoryConnection: 'Artifactory'
               imageName: 'windows-servercore-ltsc2022-miniforge:latest'
       - job: DiscoverFiles
         displayName: 'Discover environment files package'
