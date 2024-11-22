@@ -75,13 +75,14 @@ stages:
           - download: current
             artifact: envFiles
           - script: |
-              Write-Host "matrix: $(matrix)"
-              Write-Host "matrix - repositories: $(repositories) - envFile: $(envFile)"
-              if ($repositories.count -gt 0) {
-                foreach ($repo in $repositories) {
-                  pip config set global.index-url $(Get-Variable -Name "MIRA_$repo_PYPI_URL").Value
-                }
-              } 
+              echo "matrix: $(matrix)"
+              echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
+              for %%R in (%repositories%) do (
+                for /f "tokens=*" %%P in ('echo %%MIRA_%%R_PYPI_URL%%') do (
+                  echo Config %%R and %%P
+                  pip config set global.index-url %%P
+                )
+              )
           - script: |
               cd envFiles
               conda create -y -f $(envFile) -n testEnv
