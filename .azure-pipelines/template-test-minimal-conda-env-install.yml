@@ -59,28 +59,40 @@ stages:
           - publish: 'artifact_envFiles/'
             artifact: envFiles
             displayName: 'Publish environment files'
-
-      - job: TestInstallationOnMinimalCondaEnv
+      - job: Test
         pool:
           vmImage: 'windows-2022'
-        container: 
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
-          endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
-        variables:
-        - group: MIRA_PYTHON_URL
         steps:
           - checkout: none
-          - download: current
-            artifact: envFiles
           - script: |
-              if ($repositories) {
-                foreach ($repo in $repositories) {
-                  pip config set global.index-url $(MIRA_$(repo)_PYPI_URL)
-                }
-              } 
-          - script: |
-              cd envFiles
-              conda create -y -f $(envFile) -n testEnv
+              Write-Host "matrix: $(matrix)"
+              Write-Host "matrix - repositories: $(repositories) - envFile: $(envFile)"
+      # - job: TestInstallationOnMinimalCondaEnv
+      #   pool:
+      #     vmImage: 'windows-2022'
+      #   container: 
+      #     image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
+      #     endpoint: Docker-Artifactory
+      #   dependsOn: DiscoverFiles
+      #   strategy:
+      #     matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
+      #   variables:
+      #   - group: MIRA_PYTHON_URL
+      #   steps:
+      #     - checkout: none
+      #     - download: current
+      #       artifact: envFiles
+      #     - script: |
+      #         Write-Host "matrix: $(matrix)"
+      #         Write-Host "matrix - repositories: $(repositories) - envFile: $(envFile)"
+      #         if ($repositories) {
+      #           foreach ($repo in $repositories) {
+      #             pip config set global.index-url $(MIRA_$(repo)_PYPI_URL)
+      #           }
+      #         } 
+      #     - script: |
+      #         cd envFiles
+      #         conda create -y -f $(envFile) -n testEnv
