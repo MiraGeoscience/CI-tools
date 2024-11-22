@@ -23,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = "['GEOLOGY']"
-                    "geophysics"    = "['GEOPHYSICS']"
-                    "all_deps_only" = "['GEOLOGY', 'GEOPHYSICS']"
-                    "all"           = "['GEOLOGY', 'GEOPHYSICS']"
-                    "interop"       = "['PUBLIC']"
-                    "simpeg"        = "['GEOPHYSICS']"
+                    "geology"       = "GEOLOGY"
+                    "geophysics"    = "GEOPHYSICS"
+                    "all_deps_only" = "GEOLOGY, GEOPHYSICS"
+                    "all"           = "GEOLOGY', GEOPHYSICS"
+                    "interop"       = "PUBLIC"
+                    "simpeg"        = "GEOPHYSICS"
                 }
 
                 foreach ($file in $files) {
@@ -75,13 +75,11 @@ stages:
           - download: current
             artifact: envFiles
           - script: |
+              setlocal enabledelayedexpansion
               echo "matrix: $(matrix)"
               echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
               for %%R in (%repositories%) do (
                 set "repo=%%R"
-                set "repo=!repo:'=!"
-                set "repo=!repo:[=!"
-                set "repo=!repo:]=!"
                 call set "pip_url=%%MIRA_!repo!_PYPI_URL%%"
                 pip config set global.index-url !pip_url!
                 echo "pip_url: !pip_url! repo: !repo!" 
