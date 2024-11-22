@@ -26,7 +26,7 @@ stages:
                     "geology"       = "GEOLOGY"
                     "geophysics"    = "GEOPHYSICS"
                     "all_deps_only" = "GEOLOGY, GEOPHYSICS"
-                    "all"           = "GEOLOGY', GEOPHYSICS"
+                    "all"           = "GEOLOGY, GEOPHYSICS"
                     "interop"       = "PUBLIC"
                     "simpeg"        = "GEOPHYSICS"
                 }
