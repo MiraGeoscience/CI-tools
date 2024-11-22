@@ -39,14 +39,17 @@ stages:
                     
                     $matchKey = $null
                     foreach ($pipKey in $pipUrlMappings.Keys) {
-                        if ($file.Name -match $pipKey) {
+                        Write-Host "Checking $pipKey in $($file.Name)"
+                        if ($file.Name -match '$pipKey') {
                             $matchKey = $pipKey
                             break
                         }
                     }
 
-                    if ($matchedKey) {
-                        $matrix[$key] = @( repositories = $matchedKey )
+                    if ($matchKey) {
+                        $matrix[$key].repositories = $matchedKey
+                    } else {
+                        $matrix[$key].repositories = "[]"
                     }
                   }
                   Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
