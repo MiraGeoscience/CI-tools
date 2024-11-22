@@ -27,9 +27,10 @@ stages:
                   $matrix[$key] = @{ envFile = $file.Name }
                   Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
                 }
-                echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
-                echo "You can use $matrix"
-                $matrix | ConvertTo-Json -Depth 2 | Write-Host
+                
+                $matrixJson = $matrix | ConvertTo-Json -Depth 2 -Compress
+                echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrixJson"
+                Write-Host matrix $matrixJson
           - publish: 'artifact_envFiles/'
             artifact: envFiles
             displayName: 'Publish environment files'
@@ -42,7 +43,7 @@ stages:
           endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
-          matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
+          matrix: $[ fromJson(dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix']) ]
         steps:
           - checkout: none
           - download: current
