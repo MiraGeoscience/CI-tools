@@ -65,11 +65,14 @@ stages:
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
+        variables:
+        - group: MIRA_PYTHON_URL
         steps:
           - checkout: none
           - script: |
               echo "matrix: $(matrix)"
-              echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
+              $repo = "GEOLOGY"
+              echo "matrix - repositories: $(repositories) - envFile: $(envFile) - url: $(MIRA_$repo_PYPI_URL)"
       # - job: TestInstallationOnMinimalCondaEnv
       #   pool:
       #     vmImage: 'windows-2022'
@@ -88,9 +91,9 @@ stages:
       #     - script: |
       #         Write-Host "matrix: $(matrix)"
       #         Write-Host "matrix - repositories: $(repositories) - envFile: $(envFile)"
-      #         if ($repositories) {
+      #         if ($repositories.count -gt 0) {
       #           foreach ($repo in $repositories) {
-      #             pip config set global.index-url $(MIRA_$(repo)_PYPI_URL)
+      #             pip config set global.index-url $(Get-Variable -Name "MIRA_$repo_PYPI_URL").Value
       #           }
       #         } 
       #     - script: |
