@@ -41,14 +41,14 @@ stages:
                     foreach ($pipKey in $pipUrlMappings.Keys) {
                         Write-Host "Checking $pipKey in $($file.Name)"
                         if ($($file.Name) -match $pipKey) {
-                            Write-Host "-- Matched $pipKey in $($file.Name) --"
-                            $matchKey = $pipUrlMappings[$pipKey]
+                            Write-Host "-- Matched $pipKey in $($file.Name) : $pipUrlMappings[$pipKey] --"
+                            $matchKey = $pipKey
                             break
                         }
                     }
 
                     if ($matchKey) {
-                        $matrix[$key].repositories = $matchedKey
+                        $matrix[$key].repositories = $pipUrlMappings[$matchKey]
                     } else {
                         $matrix[$key].repositories = "[]"
                     }
