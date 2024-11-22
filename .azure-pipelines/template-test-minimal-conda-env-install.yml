@@ -23,8 +23,10 @@ stages:
                     New-Item -ItemType Directory -Path $artifactFolder | Out-Null
                 }
                 foreach ($file in $files) {
-                  $key = [IO.Path]::GetFileNameWithoutExtension($file.Name)
-                  $matrix[$key] = @{ envFile = $file.Name }
+                  if ($file.Name -match 'conda\.lock\.yml$') {
+                    $key = [IO.Path]::GetFileNameWithoutExtension($file.Name)
+                    $matrix[$key] = @{ envFile = $file.Name }
+                  }
                   Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
                 }
                 
@@ -49,4 +51,5 @@ stages:
           - download: current
             artifact: envFiles
           - script: |
-              conda create -y --verify-artifacts -f $(envFile)
+              cd envFiles
+              conda create -y -f $(envFile)
