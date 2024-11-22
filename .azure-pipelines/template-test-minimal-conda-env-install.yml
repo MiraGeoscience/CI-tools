@@ -68,8 +68,8 @@ stages:
         steps:
           - checkout: none
           - script: |
-              Write-Host "matrix: $(matrix)"
-              Write-Host "matrix - repositories: $(repositories) - envFile: $(envFile)"
+              echo "matrix: $(matrix)"
+              echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
       # - job: TestInstallationOnMinimalCondaEnv
       #   pool:
       #     vmImage: 'windows-2022'
