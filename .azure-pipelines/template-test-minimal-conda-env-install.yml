@@ -40,8 +40,9 @@ stages:
                     $matchKey = $null
                     foreach ($pipKey in $pipUrlMappings.Keys) {
                         Write-Host "Checking $pipKey in $($file.Name)"
-                        if ($file.Name -match '$pipKey') {
-                            $matchKey = $pipKey
+                        if ($file.Name -match $pipKey) {
+                            Write-Host "-- Matched $pipKey in $($file.Name) --"
+                            $matchKey = $pipUrlMappings[$pipKey]
                             break
                         }
                     }
