@@ -11,7 +11,6 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                ls . #TODO: Debug
                 $envFolder = "environments"
                 $artifactFolder = "artifact_envFiles"
                 $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
@@ -24,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = "GEOLOGY"
-                    "geophysics"    = "geophysics"
+                    "geology"       = "['GEOLOGY']"
+                    "geophysics"    = "['GEOPHYSICS']"
                     "all_deps_only" = "['GEOLOGY', 'GEOPHYSICS']"
                     "all"           = "['GEOLOGY', 'GEOPHYSICS']"
-                    "interop"       = "PUBLIC"
-                    "simpeg"        = "GEOPHYSICS"
+                    "interop"       = "['PUBLIC']"
+                    "simpeg"        = "['GEOPHYSICS']"
                 }
 
                 foreach ($file in $files) {
@@ -39,9 +38,7 @@ stages:
                     
                     $matchKey = $null
                     foreach ($pipKey in $pipUrlMappings.Keys) {
-                        Write-Host "Checking $pipKey in $($file.Name)"
                         if ($($file.Name) -match $pipKey) {
-                            Write-Host "-- Matched $pipKey in $($file.Name) : $pipUrlMappings[$pipKey] --"
                             $matchKey = $pipKey
                             break
                         }
@@ -79,7 +76,6 @@ stages:
           - download: current
             artifact: envFiles
           - script: |
-              # IF REPOSITORIES NOT NULL
               if ($repositories) {
                 foreach ($repo in $repositories) {
                   pip config set global.index-url $(MIRA_$(repo)_PYPI_URL)
