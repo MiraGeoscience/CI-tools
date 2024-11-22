@@ -38,9 +38,9 @@ stages:
                     $matrix[$key] = @{ envFile = $file.Name }
                     
                     $matchKey = $null
-                    foreach ($key in $pipUrlMappings.Keys) {
-                        if ($file.Name -match $key) {
-                            $matchKey = $key
+                    foreach ($pipKey in $pipUrlMappings.Keys) {
+                        if ($file.Name -match $pipKey) {
+                            $matchKey = $pipKey
                             break
                         }
                     }
@@ -78,7 +78,7 @@ stages:
               # IF REPOSITORIES NOT NULL
               if ($repositories) {
                 foreach ($repo in $repositories) {
-                  pip config set global.index-url MIRA_$(repo)_PYPI_URL $PYPI_INDEX_URL
+                  pip config set global.index-url $(MIRA_$(repo)_PYPI_URL)
                 }
               } 
           - script: |
