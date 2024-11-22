@@ -78,10 +78,13 @@ stages:
               echo "matrix: $(matrix)"
               echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
               for %%R in (%repositories%) do (
-                for /f "tokens=*" %%P in ('echo %%MIRA_%%R_PYPI_URL%%') do (
-                  echo Config %%R and %%P
-                  pip config set global.index-url %%P
-                )
+                set "repo=%%R"
+                set "repo=!repo:'=!"
+                set "repo=!repo:[=!"
+                set "repo=!repo:]=!"
+                call set "pip_url=%%MIRA_!repo!_PYPI_URL%%"
+                pip config set global.index-url !pip_url!
+                echo "pip_url: !pip_url! repo: !repo!" 
               )
           - script: |
               cd envFiles
