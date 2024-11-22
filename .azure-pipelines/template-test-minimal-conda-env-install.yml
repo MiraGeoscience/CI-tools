@@ -43,7 +43,7 @@ stages:
           endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
-          matrix: $[ fromJson(dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix']) ]
+          matrix: $[ convertToJson(dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix']) ]
         steps:
           - checkout: none
           - download: current
