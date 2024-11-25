@@ -23,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = "GEOLOGY"
-                    "geophysics"    = "GEOPHYSICS"
-                    "all_deps_only" = "GEOLOGY, GEOPHYSICS"
-                    "all"           = "GEOLOGY, GEOPHYSICS"
-                    "interop"       = "PUBLIC"
-                    "simpeg"        = "GEOPHYSICS"
+                    "geology"       = "['GEOLOGY']"
+                    "geophysics"    = "['GEOPHYSICS']"
+                    "all_deps_only" = "['GEOLOGY', 'GEOPHYSICS']"
+                    "all"           = "['GEOLOGY', 'GEOPHYSICS']"
+                    "interop"       = "['PUBLIC']"
+                    "simpeg"        = "['GEOPHYSICS']"
                 }
 
                 foreach ($file in $files) {
@@ -74,15 +74,23 @@ stages:
           - checkout: none
           - download: current
             artifact: envFiles
-          - script: |
-              setlocal enabledelayedexpansion
-              echo "matrix: $(matrix)"
-              echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
-              for %%R in (%repositories%) do (
-                set "repo=%%R"
-                pip config set global.index-url %repo%
-                echo "pip_url: %repo%" 
-              )
+          - task: PowerShell@2
+            name: ConfigurePypiSources
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "matrix: $(matrix)"
+                $array = $inputString -replace '\[|\]|\'\'' -split ',\s*'
+                echo "array: $(array)"
+                echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
+                for ($repo in $repositories) {
+                  $element = $element.Trim("'").Trim()
+                  echo "Adding repository $element"
+
+                  $variableValue = Get-Variable -Name  $element
+
+                  pip config set global.extra-index-url $variableValue
+                }
           - script: |
               cd envFiles
               conda create -y -f $(envFile) -n testEnv
