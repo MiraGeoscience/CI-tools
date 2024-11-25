@@ -45,7 +45,7 @@ stages:
                     }
 
                     if ($matchKey) {
-                        $matrix[$key].repositories = "MIRA_$pipUrlMappings[$matchKey]_PYPI_URL"
+                        $matrix[$key].repositories = "MIRA_$($pipUrlMappings[$matchKey])_PYPI_URL"
                     } else {
                         $matrix[$key].repositories = "[]"
                     }
