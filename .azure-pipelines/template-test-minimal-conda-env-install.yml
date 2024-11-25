@@ -45,7 +45,7 @@ stages:
                     }
 
                     if ($matchKey) {
-                        $matrix[$key].repositories = $pipUrlMappings[$matchKey]
+                        $matrix[$key].repositories = MIRA_$pipUrlMappings[$matchKey]_PYPI_URL
                     } else {
                         $matrix[$key].repositories = "[]"
                     }
@@ -80,9 +80,8 @@ stages:
               echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
               for %%R in (%repositories%) do (
                 set "repo=%%R"
-                call set "pip_url=%%MIRA_!repo!_PYPI_URL%%"
-                pip config set global.index-url !pip_url!
-                echo "pip_url: !pip_url! repo: !repo!" 
+                pip config set global.index-url %repo%
+                echo "pip_url: %repo%" 
               )
           - script: |
               cd envFiles
