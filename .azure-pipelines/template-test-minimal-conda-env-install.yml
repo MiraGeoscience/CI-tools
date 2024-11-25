@@ -23,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = @("GEOLOGY")
-                    "geophysics"    = @("GEOPHYSICS")
-                    "all_deps_only" = @("GEOLOGY", "GEOPHYSICS")
-                    "all"           = @("GEOLOGY", "GEOPHYSICS")
-                    "interop"       = @("PUBLIC")
-                    "simpeg"        = @("GEOPHYSICS")
+                    "geology"       = "['GEOLOGY']"
+                    "geophysics"    = "['GEOPHYSICS']"
+                    "all_deps_only" = "['GEOLOGY', 'GEOPHYSICS']"
+                    "all"           = "['GEOLOGY', 'GEOPHYSICS']"
+                    "interop"       = "['PUBLIC']"
+                    "simpeg"        = "['GEOPHYSICS']"
                 }
 
                 foreach ($file in $files) {
@@ -47,7 +47,7 @@ stages:
                     if ($matchKey) {
                         $matrix[$key].repositories = $($pipUrlMappings[$matchKey])
                     } else {
-                        $matrix[$key].repositories = @()
+                        $matrix[$key].repositories = "[]"
                     }
                   }
                   Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
@@ -83,7 +83,7 @@ stages:
                 $array = $inputString -replace '\[|\]|\'\'' -split ',\s*'
                 echo "array: $(array)"
                 echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
-                for ($repo in $repositories) {
+                for ($repo in $array) {
                   $element = $element.Trim("'").Trim()
                   echo "Adding repository $element"
                   $variableName = "MIRA_$element_PYPI_URL"
