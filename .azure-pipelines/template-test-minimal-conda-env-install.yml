@@ -85,7 +85,7 @@ stages:
                 $extra_index_url = ""
                 foreach ($repo in $array) {
                   echo "Adding repository $repo"
-                  $variableName = "MIRA_$repo_PYPI_URL"
+                  $variableName = "MIRA_${repo}_PYPI_URL"
                   $variableValue = Get-Variable -Name  $variableName
                   $extra_index_url += $variableValue
                 }
