@@ -80,7 +80,8 @@ stages:
               targetType: 'inline'
               script: |
                 echo "repositories: $(repositories) - envFile: $(envFile)"
-                $array = $(repositories).Split(" ")
+                $string = "$(repositories)"
+                $array = $string.Split(" ")
                 echo "array: $(array)"
                 $extra_index_url = ""
                 foreach ($repo in $array) {
