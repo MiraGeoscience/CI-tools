@@ -23,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = "['GEOLOGY']"
-                    "geophysics"    = "['GEOPHYSICS']"
-                    "all_deps_only" = "['GEOLOGY', 'GEOPHYSICS']"
-                    "all"           = "['GEOLOGY', 'GEOPHYSICS']"
-                    "interop"       = "['PUBLIC']"
-                    "simpeg"        = "['GEOPHYSICS']"
+                    "geology"       = "GEOLOGY"
+                    "geophysics"    = "GEOPHYSICS"
+                    "all_deps_only" = "GEOLOGY GEOPHYSICS"
+                    "all"           = "GEOLOGY GEOPHYSICS"
+                    "interop"       = "PUBLIC"
+                    "simpeg"        = "GEOPHYSICS"
                 }
 
                 foreach ($file in $files) {
@@ -80,11 +80,10 @@ stages:
               targetType: 'inline'
               script: |
                 echo "matrix: $(matrix)"
-                $array = $inputString -replace '\[|\]|\'\'' -split ',\s*'
+                $array = $inputString.Split("")
                 echo "array: $(array)"
                 echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
                 for ($repo in $array) {
-                  $element = $element.Trim("'").Trim()
                   echo "Adding repository $element"
                   $variableName = "MIRA_$element_PYPI_URL"
                   $variableValue = Get-Variable -Name  $variableName
