@@ -86,7 +86,9 @@ stages:
                 foreach ($repo in $array) {
                   echo "Adding repository $repo"
                   $variableName = "MIRA_${repo}_PYPI_URL"
-                  $variableValue = Get-Variable -Name  $variableName
+                  echo "$(MIRA_${repo}_PYPI_URL) - Test"
+                  $variableValue = $($variableName)
+                  echo "variableValue $variableValue"
                   $extra_index_url += $variableValue
                 }
                 pip config set global.extra-index-url $extra_index_url
