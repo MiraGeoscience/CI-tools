@@ -83,7 +83,7 @@ stages:
                 $array = $inputString.Split("")
                 echo "array: $(array)"
                 echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
-                for ($repo in $array) {
+                foreach ($repo in $array) {
                   echo "Adding repository $element"
                   $variableName = "MIRA_$element_PYPI_URL"
                   $variableValue = Get-Variable -Name  $variableName
