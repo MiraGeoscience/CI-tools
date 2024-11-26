@@ -84,8 +84,8 @@ stages:
                 echo "array: $(array)"
                 echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
                 foreach ($repo in $array) {
-                  echo "Adding repository $element"
-                  $variableName = "MIRA_$element_PYPI_URL"
+                  echo "Adding repository $repo"
+                  $variableName = "MIRA_$repo_PYPI_URL"
                   $variableValue = Get-Variable -Name  $variableName
 
                   pip config set global.extra-index-url $variableValue
