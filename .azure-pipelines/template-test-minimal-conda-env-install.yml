@@ -82,7 +82,6 @@ stages:
                 echo "repositories: $(repositories) - envFile: $(envFile)"
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
-                echo "array: $(array)"
                 $extra_index_url = ""
                 foreach ($repo in $array) {
                   echo "Adding repository $repo"
