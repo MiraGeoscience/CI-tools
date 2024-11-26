@@ -79,10 +79,9 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                echo "matrix: $(matrix)"
-                $array = $inputString.Split("")
+                echo "repositories: $(repositories) - envFile: $(envFile)"
+                $array = $repositories.Split(" ")
                 echo "array: $(array)"
-                echo "matrix - repositories: $(repositories) - envFile: $(envFile)"
                 foreach ($repo in $array) {
                   echo "Adding repository $repo"
                   $variableName = "MIRA_$repo_PYPI_URL"
