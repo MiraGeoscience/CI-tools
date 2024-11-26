@@ -80,15 +80,16 @@ stages:
               targetType: 'inline'
               script: |
                 echo "repositories: $(repositories) - envFile: $(envFile)"
-                $array = $repositories.Split(" ")
+                $array = $(repositories).Split(" ")
                 echo "array: $(array)"
+                $extra_index_url = ""
                 foreach ($repo in $array) {
                   echo "Adding repository $repo"
                   $variableName = "MIRA_$repo_PYPI_URL"
                   $variableValue = Get-Variable -Name  $variableName
-
-                  pip config set global.extra-index-url $variableValue
+                  $$extra_index_url += $variableValue
                 }
+                pip config set global.extra-index-url $extra_index_url
           - script: |
               cd envFiles
               conda create -y -f $(envFile) -n testEnv
