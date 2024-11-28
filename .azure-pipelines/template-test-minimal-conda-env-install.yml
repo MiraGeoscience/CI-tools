@@ -87,10 +87,10 @@ stages:
                   echo "Adding repository $repo"
                   $variableName = "MIRA_${repo}_PYPI_URL"
                   echo "$variableName - Test"
-                  echo "$($variableName)"
-                  $variableValue = $($variableName)
-                  echo "variableValue $variableValue"
-                  $extra_index_url += $variableValue
+                  echo "$(${variableName})"
+                  $variableValue = $(${variableName})
+                  echo "variableValue $(variableValue)"
+                  $extra_index_url += $(variableValue)
                 }
                 pip config set global.extra-index-url $extra_index_url
           - script: |
