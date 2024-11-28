@@ -46,6 +46,7 @@ stages:
 
                     if ($matchKey) {
                         $matrix[$key].repositories = $($pipUrlMappings[$matchKey])
+                        $matrix[$key].pipKey = $matchKey
                     } else {
                         $matrix[$key].repositories = "[]"
                     }
@@ -63,7 +64,7 @@ stages:
         pool:
           vmImage: 'windows-2022'
         container: 
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
+          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
           endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
@@ -79,8 +80,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                echo "Variables - $(JFROG_ARTIFACTORY_TOKEN) - $(JFROG_ARTIFACTORY_URL) - $(JFROG_ARTIFACTORY_USER)"
-                echo "repositories: $(repositories) - envFile: $(envFile)"
+                echo "repositories: $(repositories) - envFile: $(envFile) - pipKey $(pipKey)"
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
                 $extra_index_url = ""
@@ -93,5 +93,4 @@ stages:
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              dir
-              conda create -y --file $(envFile) -n testInstallation
+              mamba create -y -f $(envFile) -n $(pipKey) --log-level warning
