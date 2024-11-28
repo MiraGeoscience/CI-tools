@@ -62,9 +62,9 @@ stages:
       - job: TestInstallationOnMinimalCondaEnv
         pool:
           vmImage: 'windows-2022'
-        container: 
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
-          endpoint: Docker-Artifactory
+        # container: 
+        #   image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-miniforge:latest
+        #   endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
@@ -79,6 +79,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
+                echo "variables: $(MIRA_GEOLOGY_CONDA_URL) + $(MIRA_GEOLOGY_PYPI_URL) + $(MIRA_PUBLIC_CONDA_URL) + $(MIRA_PUBLIC_PYPI_URL)"
                 echo "repositories: $(repositories) - envFile: $(envFile)"
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
