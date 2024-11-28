@@ -93,4 +93,4 @@ stages:
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              mamba create -y -f $(envFile) -n $(pipKey) --log-level warning
+              mamba create -y -f $(envFile) -n $(pipKey)
