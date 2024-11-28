@@ -92,7 +92,6 @@ stages:
                 echo "##vso[task.setvariable variable=extra_index_url;isOutput=true]$extra_index_url"
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
-              $
               cd envFiles
               ls .
               conda create -y -f $(envFile) -n testEnv
