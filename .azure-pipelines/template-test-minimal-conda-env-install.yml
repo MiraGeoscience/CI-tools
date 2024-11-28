@@ -23,12 +23,12 @@ stages:
                 }
 
                 $pipUrlMappings = @{
-                    "geology"       = "GEOLOGY"
-                    "geophysics"    = "GEOPHYSICS"
-                    "all_deps_only" = "GEOLOGY GEOPHYSICS"
-                    "all"           = "GEOLOGY GEOPHYSICS"
-                    "interop"       = "PUBLIC"
-                    "simpeg"        = "GEOPHYSICS"
+                    "geology"       = "geology"
+                    "geophysics"    = "geophysics"
+                    "all_deps_only" = "geology geophysics"
+                    "all"           = "geology geophysics"
+                    "interop"       = "public"
+                    "simpeg"        = "geophysics"
                 }
 
                 foreach ($file in $files) {
@@ -69,7 +69,7 @@ stages:
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
         variables:
-        - group: MIRA_PYTHON_URL
+        - group: MIRA_PYTHON
         steps:
           - checkout: none
           - download: current
@@ -79,21 +79,20 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                echo "variables: $(MIRA_GEOLOGY_CONDA_URL) + $(MIRA_GEOLOGY_PYPI_URL) + $(MIRA_PUBLIC_CONDA_URL) + $(MIRA_PUBLIC_PYPI_URL)"
+                echo "Variables - $(JFROG_ARTIFACTORY_TOKEN) - $(JFROG_ARTIFACTORY_URL) - $(JFROG_ARTIFACTORY_USER)"
                 echo "repositories: $(repositories) - envFile: $(envFile)"
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
                 $extra_index_url = ""
                 foreach ($repo in $array) {
-                  echo "Adding repository $repo"
-                  $variableName = "MIRA_${repo}_PYPI_URL"
-                  echo "$variableName - Test"
-                  echo "$(${variableName})"
-                  $variableValue = $(${variableName})
-                  echo "variableValue $(variableValue)"
-                  $extra_index_url += $(variableValue)
+                  echo "Adding repository ${repo}-pypi-prod"
+                  $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-prod/simple "
                 }
                 pip config set global.extra-index-url $extra_index_url
+                echo "##vso[task.setvariable variable=extra_index_url;isOutput=true]$extra_index_url"
           - script: |
+              pip config set global.extra-index-url $(extra_index_url)
+              $
               cd envFiles
+              ls .
               conda create -y -f $(envFile) -n testEnv
