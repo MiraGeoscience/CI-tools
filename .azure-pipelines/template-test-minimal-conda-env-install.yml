@@ -63,9 +63,9 @@ stages:
       - job: TestInstallationOnMinimalCondaEnv
         pool:
           vmImage: 'windows-2022'
-        container: 
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
-          endpoint: Docker-Artifactory
+        # container: 
+        #   image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
+        #   endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
@@ -73,6 +73,11 @@ stages:
         - group: MIRA_PYTHON
         steps:
           - checkout: none
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                Invoke-Expression ((Invoke-WebRequest -UseBasicParsing -Uri https://micro.mamba.pm/install.ps1).Content)
           - download: current
             artifact: envFiles
           - task: PowerShell@2
@@ -93,4 +98,4 @@ stages:
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              mamba create -y -f $(envFile) -n $(pipKey)
+              micromamba env create -y -f $(envFile) -n $(pipKey)
