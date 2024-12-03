@@ -129,4 +129,5 @@ stages:
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              micromamba env create -y -f $(envFile) -n $(pipKey)
+              dir C:\Users\VssAdministrator\AppData\Local
+              C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
