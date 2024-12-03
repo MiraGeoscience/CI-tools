@@ -15,7 +15,7 @@ on:
             description: 'Boolean to indicate if Github LFS is needed'
             required: false
             type: boolean
-            default: false
+            default: true
         virtual-repo-names:
             description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-dev"])'
             required: true
