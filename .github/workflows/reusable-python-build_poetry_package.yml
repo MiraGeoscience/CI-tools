@@ -11,6 +11,11 @@ on:
             description: 'Python version to use (eg: 3.10)'
             required: true
             type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
         version-tag:
             description: 'Version tag of the package to build'
             required: true
@@ -59,6 +64,7 @@ jobs:
             -   name: Checkout
                 uses: actions/checkout@v4
                 with:
+                    lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
             -   name: Get version
                 id: get-version
