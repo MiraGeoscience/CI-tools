@@ -122,13 +122,10 @@ stages:
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-pypi-prod"
                   $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-prod/simple"
-                  if (!$isLast) {
+                  if ($isLast -gt 0) {
                     $extra_index_url += " "
                     $isLast--
                   }
-
-                  echo "Adding repository ${repo}-conda-prod"
-                  C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe config append channels "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-prod" "${repo}"
                 }
                 echo $extra_index_url
                 echo "##vso[task.setvariable variable=extra_index_url;isOutput=true;issecret=true]$extra_index_url"
