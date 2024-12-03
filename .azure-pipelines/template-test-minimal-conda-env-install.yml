@@ -103,10 +103,7 @@ stages:
                     & $MAMBA_INSTALL_PATH shell init -s powershell -p $Env:UserProfile\micromamba
                 }
 
-                $prefix = Read-Host "Enter the path to the micromamba prefix (default: $Env:UserProfile\micromamba)"
-                if ($prefix -eq "") {
-                    $prefix = "$Env:UserProfile\micromamba"
-                }
+                $prefix = "$Env:UserProfile\micromamba"
 
                 Write-Output "Initializing micromamba in  $prefix"
                 $MAMBA_INSTALL_PATH = Join-Path -Path $Env:LocalAppData -ChildPath micromamba\micromamba.exe
