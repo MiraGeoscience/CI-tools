@@ -120,10 +120,16 @@ stages:
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
                 $extra_index_url = ""
+                $isLast = ($array.Length - 1)
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-pypi-prod"
                   $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-prod/simple"
+                  if (!$isLast) {
+                    $extra_index_url += " "
+                    $isLast--
+                  }
                 }
+                echo $extra_index_url
                 echo "##vso[task.setvariable variable=extra_index_url;isOutput=true;issecret=true]$extra_index_url"
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
