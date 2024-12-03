@@ -13,9 +13,9 @@ stages:
               script: |
                 $envFolder = "environments"
                 $artifactFolder = "artifact_envFiles"
-                $files = Get-ChildItem -Path $envFolder -Filter *.yml -Recurse
+                $files = Get-ChildItem -Path $envFolder -Filter py-3.10-win-64-*.yml -Recurse
                 if ($files.Count -eq 0) {
-                  Write-Error "No environment files found in $envFolder"
+                  Write-Error "No win-64 environment files found in $envFolder"
                 }
                 $matrix = @{}
                 if (!(Test-Path -Path $artifactFolder)) {
@@ -63,9 +63,6 @@ stages:
       - job: TestInstallationOnMinimalCondaEnv
         pool:
           vmImage: 'windows-2022'
-        # container: 
-        #   image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
-        #   endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
@@ -74,6 +71,7 @@ stages:
         steps:
           - checkout: none
           - task: PowerShell@2
+            name: InstallMicromamba
             inputs:
               targetType: 'inline'
               script: |
@@ -112,7 +110,7 @@ stages:
           - download: current
             artifact: envFiles
           - task: PowerShell@2
-            name: ConfigurePypiSources
+            name: ConfigureSources
             inputs:
               targetType: 'inline'
               script: |
@@ -128,6 +126,9 @@ stages:
                     $extra_index_url += " "
                     $isLast--
                   }
+
+                  echo "Adding repository ${repo}-conda-prod"
+                  C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe config --add channels "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-prod""
                 }
                 echo $extra_index_url
                 echo "##vso[task.setvariable variable=extra_index_url;isOutput=true;issecret=true]$extra_index_url"
