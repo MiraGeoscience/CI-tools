@@ -56,7 +56,6 @@ stages:
                 
                 $matrixJson = $matrix | ConvertTo-Json -Depth 2 -Compress
                 echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrixJson"
-                Write-Host matrix $matrixJson
           - publish: 'artifact_envFiles/'
             artifact: envFiles
             displayName: 'Publish environment files'
@@ -114,7 +113,6 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                echo "repositories: $(repositories) - envFile: $(envFile) - pipKey $(pipKey)"
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
                 $extra_index_url = ""
@@ -127,10 +125,10 @@ stages:
                     $isLast--
                   }
                 }
-                echo $extra_index_url
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
-              echo $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
+              echo $PATH
+              micromamba.exe --help
               C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
