@@ -128,9 +128,9 @@ stages:
                   }
                 }
                 echo $extra_index_url
-                echo "##vso[task.setvariable variable=extra_index_url;isOutput=true;issecret=true]$extra_index_url"
+                echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
-              echo "test $(extra_index_url)"
+              echo $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
               C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
