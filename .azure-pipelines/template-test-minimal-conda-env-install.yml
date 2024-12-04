@@ -59,7 +59,8 @@ stages:
           - publish: 'artifact_envFiles/'
             artifact: envFiles
             displayName: 'Publish environment files'
-      - job: TestInstallationOnMinimalCondaEnv
+      - job: TestInstallation
+        displayName: 'Test environment installation'
         pool:
           vmImage: 'windows-2022'
         dependsOn: DiscoverFiles
@@ -71,6 +72,7 @@ stages:
           - checkout: none
           - task: PowerShell@2
             name: InstallMicromamba
+            displayName: 'Install micromamba (1.5.10-0)'
             inputs:
               targetType: 'inline'
               script: |
@@ -110,6 +112,7 @@ stages:
             artifact: envFiles
           - task: PowerShell@2
             name: ConfigureSources
+            displayName: 'Configure PyPi sources'
             inputs:
               targetType: 'inline'
               script: |
@@ -129,6 +132,9 @@ stages:
           - script: |
               pip config set global.extra-index-url $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              echo $PATH
-              micromamba.exe --help
+              echo %PATH%
+              micromamba --help
+              git --help
               C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
+            name: InstallEnvironment
+            displayName: 'Install environment'
