@@ -1,13 +1,13 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
+USER ContainerAdministrator
+RUN powershell -Command Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://vcredist.com/install.ps1'))
+USER ContainerUser
+ADD https://github.com/mamba-org/micromamba-releases/releases/download/1.5.10-0/micromamba-win-64 micromamba.exe
+RUN mkdir %USERPROFILE%\micromamba && \
+    copy micromamba.exe %USERPROFILE%\micromamba && \
+    del micromamba.exe && \
+    powershell -Command \
+        [Environment]::SetEnvironmentVariable('PATH', $env:Path + ';${USERPROFILE}\micromamba', 'User')
+RUN %USERPROFILE%\micromamba\micromamba shell init -s powershell -p %USERPROFILE%\micromamba
 
-ADD https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe miniforge_installer.exe
-RUN miniforge_installer.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%USERPROFILE%\Miniforge3 && \
-    del miniforge_installer.exe
-RUN setx /M PATH "%PATH%;%USERPROFILE%\Miniforge3\Scripts"
-RUN %USERPROFILE%\Miniforge3\Scripts\activate.bat && \
-    conda install 
-    conda config --add channels conda-forge && \
-    conda update --all -n base --yes && \
-    conda clean --all --yes
-
-CMD cmd.exe /k %USERPROFILE%\Miniforge3\Scripts\activate.bat
+CMD powershell
