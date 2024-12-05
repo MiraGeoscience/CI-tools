@@ -102,9 +102,15 @@ stages:
                   }
                 }
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
-          - script: |
-              $Env:PIP_EXTRA_INDEX_URL = $(extra_index_url)
-              cd $(Pipeline.Workspace)/envFiles
-              micromamba env create -y -f $(envFile) -n $(pipKey)
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                dir .
+                dir ${Env:USERPROFILE}
+                dir ${Env:USERPROFILE}\micromamba
+                $Env:PIP_EXTRA_INDEX_URL = $(extra_index_url)
+                cd $(Pipeline.Workspace)/envFiles
+                micromamba env create -y -f $(envFile) -n $(pipKey)
             name: InstallEnvironment
             displayName: 'Install environment'
