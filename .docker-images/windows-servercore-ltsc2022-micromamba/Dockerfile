@@ -7,7 +7,7 @@ RUN mkdir %USERPROFILE%\micromamba && \
     copy micromamba.exe %USERPROFILE%\micromamba && \
     del micromamba.exe && \
     powershell -Command \
-        [Environment]::SetEnvironmentVariable('PATH', $env:Path + ';${USERPROFILE}\micromamba', 'User')
+        [Environment]::SetEnvironmentVariable('PATH', $env:Path + ';' + $env:USERPROFILE + '\micromamba', 'User')
 RUN %USERPROFILE%\micromamba\micromamba shell init -s powershell -p %USERPROFILE%\micromamba
 
 CMD powershell

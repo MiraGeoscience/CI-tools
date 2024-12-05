@@ -83,9 +83,8 @@ stages:
           - checkout: none
           - download: current
             artifact: envFiles
-          - script:
+          - script: |
               echo %PATH%
-              echo $Env:PATH
               micromamba --version
               micromamba --help
           - task: PowerShell@2
@@ -113,6 +112,6 @@ stages:
               script: |
                 $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
                 cd $(Pipeline.Workspace)/envFiles
-                ${Env:USERPROFILE}\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
+                micromamba env create -y -f $(envFile) -n $(pipKey)
             name: InstallEnvironment
             displayName: 'Install environment'
