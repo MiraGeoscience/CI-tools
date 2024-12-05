@@ -63,6 +63,9 @@ stages:
         displayName: 'Test environment installation'
         pool:
           vmImage: 'windows-2022'
+        container: 
+          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
+          endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
