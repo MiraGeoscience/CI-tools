@@ -1,4 +1,12 @@
 # File: template-test-minimal-conda-env-install.yml
+parameters:
+  - name: environment
+    type: string
+    default: prod
+    values:
+      - prod
+      - dev
+
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
     displayName: Test installation on minimal conda environment
@@ -73,44 +81,6 @@ stages:
         - group: MIRA_PYTHON
         steps:
           - checkout: none
-          - task: PowerShell@2
-            name: InstallMicromamba
-            displayName: 'Install micromamba (1.5.10-0)'
-            inputs:
-              targetType: 'inline'
-              script: |
-                $RELEASE_URL = "https://github.com/mamba-org/micromamba-releases/releases/download/1.5.10-0/micromamba-win-64"
-                Write-Output "Downloading micromamba from $RELEASE_URL"
-                curl.exe -L -o micromamba.exe $RELEASE_URL
-
-                New-Item -ItemType Directory -Force -Path  $Env:LocalAppData\micromamba | out-null
-
-                $MAMBA_INSTALL_PATH = Join-Path -Path $Env:LocalAppData -ChildPath micromamba\micromamba.exe
-
-                Write-Output "`nInstalling micromamba to $Env:LocalAppData\micromamba`n"
-                Move-Item -Force micromamba.exe $MAMBA_INSTALL_PATH | out-null
-
-                # Add micromamba to PATH if the folder is not already in the PATH variable
-                $PATH = [Environment]::GetEnvironmentVariable("Path", "User")
-                if ($PATH -notlike "*$Env:LocalAppData\micromamba*") {
-                    Write-Output "Adding $MAMBA_INSTALL_PATH to PATH`n"
-                    [Environment]::SetEnvironmentVariable("Path", "$Env:LocalAppData\micromamba;" + [Environment]::GetEnvironmentVariable("Path", "User"), "User")
-                } else {
-                    Write-Output "$MAMBA_INSTALL_PATH is already in PATH`n"
-                }
-
-                # check if this is an interactive session
-                if ($null -eq $Host.UI.RawUI) {
-                    Write-Output "`nNot an interactive session, initializing micromamba to $Env:UserProfile\micromamba`n"
-                    & $MAMBA_INSTALL_PATH shell init -s powershell -p $Env:UserProfile\micromamba
-                }
-
-                $prefix = "$Env:UserProfile\micromamba"
-
-                Write-Output "Initializing micromamba in  $prefix"
-                $MAMBA_INSTALL_PATH = Join-Path -Path $Env:LocalAppData -ChildPath micromamba\micromamba.exe
-                Write-Output $MAMBA_INSTALL_PATH
-                & $MAMBA_INSTALL_PATH shell init -s powershell -p $prefix
           - download: current
             artifact: envFiles
           - task: PowerShell@2
@@ -125,7 +95,7 @@ stages:
                 $isLast = ($array.Length - 1)
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-pypi-prod"
-                  $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-prod/simple"
+                  $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
                   if ($isLast -gt 0) {
                     $extra_index_url += " "
                     $isLast--
@@ -133,11 +103,8 @@ stages:
                 }
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
           - script: |
-              pip config set global.extra-index-url $(extra_index_url)
+              $Env:PIP_EXTRA_INDEX_URL = $(extra_index_url)
               cd $(Pipeline.Workspace)/envFiles
-              echo %PATH%
-              micromamba --help
-              git --help
-              C:\Users\VssAdministrator\AppData\Local\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
+              micromamba env create -y -f $(envFile) -n $(pipKey)
             name: InstallEnvironment
             displayName: 'Install environment'
