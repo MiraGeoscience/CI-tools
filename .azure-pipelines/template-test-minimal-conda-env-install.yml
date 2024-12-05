@@ -83,6 +83,10 @@ stages:
           - checkout: none
           - download: current
             artifact: envFiles
+          - script:
+              echo $Env:PATH
+              micromamba --version
+              micromamba --help
           - task: PowerShell@2
             name: ConfigureSources
             displayName: 'Configure PyPi sources'
