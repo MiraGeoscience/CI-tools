@@ -11,3 +11,4 @@ RUN mkdir %USERPROFILE%\micromamba && \
 RUN %USERPROFILE%\micromamba\micromamba shell init -s powershell -p %USERPROFILE%\micromamba
 
 CMD powershell
+ENTRYPOINT ["powershell"]
