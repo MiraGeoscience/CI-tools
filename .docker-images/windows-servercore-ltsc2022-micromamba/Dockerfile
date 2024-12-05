@@ -7,7 +7,12 @@ RUN mkdir %USERPROFILE%\micromamba && \
     copy micromamba.exe %USERPROFILE%\micromamba && \
     del micromamba.exe && \
     powershell -Command \
-        [Environment]::SetEnvironmentVariable('PATH', $env:Path + ';' + $env:USERPROFILE + '\micromamba', 'User')
-RUN %USERPROFILE%\micromamba\micromamba shell init -s powershell -p %USERPROFILE%\micromamba
+        [Environment]::SetEnvironmentVariable('PATH', $env:Path + ';' + $env:USERPROFILE + '\micromamba', 'User') && \
+    powershell -Command \
+        [Environment]::SetEnvironmentVariable('MAMBA_ROOT_PREFIX', $env:USERPROFILE + '\micromambaenv', 'User')
+RUN micromamba shell init -s powershell && \
+    micromamba config append channels conda-forge && \
+    micromamba config append channels nodefaults && \
+    micromamba config set channel_priority strict
 
 CMD powershell
