@@ -6,64 +6,86 @@ parameters:
     values:
       - prod
       - dev
+  - name: envToRepo
+    type: object
+    default:
+      all:
+        - geology 
+        - geophysics
+      all_deps_only: 
+        - geology
+        - geophysics
+      geology: geology
+      geophysics: geophysics
+      interop: public
+      simpeg: geophysics 
 
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
     displayName: Test installation on minimal conda environment
+    pool:
+      vmImage: 'ubuntu-latest'
     jobs:
       - job: DiscoverFiles
         displayName: 'Discover environment files package'
         steps:
-          - task: PowerShell@2
+          - task: Bash@3
             name: DiscoverFiles
             inputs:
               targetType: 'inline'
               script: |
-                $envFolder = "environments"
-                $artifactFolder = "artifact_envFiles"
-                $files = Get-ChildItem -Path $envFolder -Filter py-3.10-win-64-*.yml -Recurse
-                if ($files.Count -eq 0) {
-                  Write-Error "No win-64 environment files found in $envFolder"
-                }
-                $matrix = @{}
-                if (!(Test-Path -Path $artifactFolder)) {
-                    New-Item -ItemType Directory -Path $artifactFolder | Out-Null
-                }
+                envFolder="environments"
+                artifactFolder="artifact_envFiles"
 
-                $pipUrlMappings = @{
-                    "geology"       = "geology"
-                    "geophysics"    = "geophysics"
-                    "all_deps_only" = "geology geophysics"
-                    "all"           = "geology geophysics"
-                    "interop"       = "public"
-                    "simpeg"        = "geophysics"
-                }
+                # Create test directories and files
+                mkdir -p "$envFolder" "$artifactFolder"
 
-                foreach ($file in $files) {
-                  if ($file.Name -match 'conda\.lock\.yml$') {
-                    $key = [IO.Path]::GetFileNameWithoutExtension($file.Name)
-                    $matrix[$key] = @{ envFile = $file.Name }
-                    
-                    $matchKey = $null
-                    foreach ($pipKey in $pipUrlMappings.Keys) {
-                        if ($($file.Name) -match $pipKey) {
-                            $matchKey = $pipKey
-                            break
-                        }
-                    }
+                # DiscoverFiles
+                files=$(find $envFolder -name "py-3.10-win-64-*.yml")
+                if [[ -z "$files" ]]; then
+                    echo "No win-64 environment files found in $envFolder"
+                    exit 1
+                fi
 
-                    if ($matchKey) {
-                        $matrix[$key].repositories = $($pipUrlMappings[$matchKey])
-                        $matrix[$key].pipKey = $matchKey
-                    } else {
-                        $matrix[$key].repositories = "[]"
-                    }
-                  }
-                  Copy-Item -Path $file.FullName -Destination $artifactFolder -Force
-                }
-                
-                $matrixJson = $matrix | ConvertTo-Json -Depth 2 -Compress
-                echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrixJson"
+                # Initialize the matrix JSON
+                matrix="{}"
+
+                # Iterate through each key-value pair in envToRepo
+                echo "$envToRepo" | jq -c 'to_entries[]' | while read -r entry; do
+                    key=$(echo "$entry" | jq -r '.key')
+                    value=$(echo "$entry" | jq -r '.value')
+                    # Find the corresponding file
+                    matchingFile=$(echo "$files" | grep -m 1 "$key")
+
+                    if [ -z "$matchingFile" ]; then
+                        echo "No matching file found for $key, skipping..."
+                        continue
+                    fi
+                    filename=$(basename "$matchingFile" .yml)
+
+                    # Check if value is an array or a string
+                    if [[ "$value" == "["*"]" ]]; then
+                        repos=$(echo "$value" | jq -r '. | join(" ")')
+                    else
+                        repos=$value
+                    fi
+                    echo "repos: $repos" #TODO
+
+                    # Create object
+                    object_string=$( jq -n \
+                                        --arg envType "$key" \
+                                        --arg filename "$filename" \
+                                        --arg repositories "$repos" \
+                                        '{ $envType: {filename: $filename, repositories: $repositories }}' )
+
+                    matrix=$(echo "$matrix" | jq ". + $object_string")
+
+                  # Copy matching files to the artifact folder
+                  cp "$matchingFile" "$artifactFolder/"
+                done
+
+                # Save and output the final matrix
+                echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
           - publish: 'artifact_envFiles/'
             artifact: envFiles
             displayName: 'Publish environment files'
@@ -83,10 +105,6 @@ stages:
           - checkout: none
           - download: current
             artifact: envFiles
-          - script: |
-              echo %PATH%
-              micromamba --version
-              micromamba --help
           - task: PowerShell@2
             name: ConfigureSources
             displayName: 'Configure PyPi sources'
