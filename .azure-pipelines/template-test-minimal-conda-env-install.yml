@@ -84,6 +84,7 @@ stages:
           - download: current
             artifact: envFiles
           - script:
+              echo %PATH%
               echo $Env:PATH
               micromamba --version
               micromamba --help
