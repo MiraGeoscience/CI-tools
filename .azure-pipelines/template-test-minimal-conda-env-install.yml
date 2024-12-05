@@ -106,9 +106,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                dir ${Env:USERPROFILE}\micromamba
                 $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
                 cd $(Pipeline.Workspace)/envFiles
-                micromamba env create -y -f $(envFile) -n $(pipKey)
+                ${Env:USERPROFILE}\micromamba\micromamba.exe env create -y -f $(envFile) -n $(pipKey)
             name: InstallEnvironment
             displayName: 'Install environment'
