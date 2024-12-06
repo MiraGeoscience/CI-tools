@@ -31,6 +31,7 @@ stages:
         steps:
           - task: Bash@3
             name: DiscoverFiles
+            displayName: 'Discover environment files and create strategy matrix'
             inputs:
               targetType: 'inline'
               script: |
@@ -120,7 +121,7 @@ stages:
                 $extra_index_url = ""
                 $isLast = ($array.Length - 1)
                 foreach ($repo in $array) {
-                  echo "Adding repository ${repo}-pypi-prod"
+                  echo "Adding repository ${repo}-pypi-${{ parameters.environment }}"
                   $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
                   if ($isLast -gt 0) {
                     $extra_index_url += " "
