@@ -121,7 +121,7 @@ stages:
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-conda-${{ parameters.environment }}"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-${{ parameters.environment }}"
-                  micromamba config --append channels $url
+                  micromamba config append channels $url
                 }
           - task: PowerShell@2
             name: ConfigurePyPISources
@@ -150,6 +150,8 @@ stages:
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
                 echo "##vso[task.setvariable variable=index_url;issecret=true]$index_url"
           - task: PowerShell@2
+            name: InstallEnvironment
+            displayName: Install environment
             inputs:
               targetType: 'inline'
               script: |
@@ -158,5 +160,4 @@ stages:
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba env create -y -f $(filename) -n $(name)
-            name: InstallEnvironment
-            displayName: Install environment
+            
