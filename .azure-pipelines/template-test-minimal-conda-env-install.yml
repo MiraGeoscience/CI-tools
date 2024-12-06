@@ -51,7 +51,7 @@ stages:
                 matrix="{}"
 
                 # Iterate through each key-value pair in envToRepo
-                echo "$envToRepo" | jq -c 'to_entries[]' | while read -r entry; do
+                while read -r entry; do
                     key=$(echo "$entry" | jq -r '.key')
                     value=$(echo "$entry" | jq -r '.value')
                     # Find the corresponding file
@@ -83,7 +83,9 @@ stages:
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done
+                done < <(echo "$envToRepo" | jq -c 'to_entries[]')
+
+                echo $matrix
 
                 # Save and output the final matrix
                 echo "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
