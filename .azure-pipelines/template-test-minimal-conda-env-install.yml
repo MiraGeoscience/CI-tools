@@ -81,6 +81,9 @@ stages:
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
 
+                  echo "Found matching file for $key: $matchingFile"
+                  echo "$matrix" | jq .
+
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
                 done < <(echo "$envToRepo" | jq -c 'to_entries[]')
