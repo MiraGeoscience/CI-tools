@@ -73,8 +73,6 @@ stages:
                     repos=$value
                   fi
 
-                  echo "Found matching file for $key: $filename with repos: $repos"
-
                   # Create object
                   object_string=$( jq -n \
                                     --arg envType "$key" \
@@ -85,15 +83,13 @@ stages:
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
 
-                  echo "Found matching file for $key: $matchingFile"
-                  echo "$matrix" | jq .
-
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
                 done < <(echo "$envToRepoJson" | jq -c 'to_entries[]')
 
                 echo $matrix | jq .
-                json_matrix=$(echo "matrix" | jq -c)
+                json_matrix=$(echo $matrix | jq -c .)
+                echo $json_matrix
 
                 # Save and output the final matrix
                 echo "##vso[task.setvariable variable=matrix;isOutput=true]$json_matrix"
