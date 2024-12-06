@@ -1,11 +1,13 @@
 # File: template-test-minimal-conda-env-install.yml
 parameters:
+  # Determines the type of package repository to use for testing installation (prod or dev).
   - name: environment
     type: string
     default: prod
     values:
       - prod
       - dev
+  # Maps environment names to the repositories required for each environment.
   - name: envToRepo
     type: object
     default:
