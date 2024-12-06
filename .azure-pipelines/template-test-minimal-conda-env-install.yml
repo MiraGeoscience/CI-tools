@@ -91,7 +91,7 @@ stages:
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo $envToRepoJson | jq -c 'to_entries[]')}})
+                done < <(echo $envToRepoJson | jq -c 'to_entries[]')
 
                 echo $matrix | jq .
                 json_matrix=$(echo "matrix" | jq -c)
