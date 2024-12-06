@@ -77,10 +77,10 @@ stages:
 
                   # Create object
                   object_string=$( jq -n \
-                                      --arg envType "$key" \
-                                      --arg filename "$filename" \
-                                      --arg repositories "$repos" \
-                                      '{ $envType: {name: $envType, filename: $filename, repositories: $repositories }}' )
+                                    --arg envType "$key" \
+                                    --arg filename "$filename" \
+                                    --arg repositories "$repos" \
+                                    '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories }}' )
 
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
