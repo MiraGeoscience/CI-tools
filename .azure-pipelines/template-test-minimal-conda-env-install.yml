@@ -63,7 +63,7 @@ stages:
                     echo "No matching file found for $key, skipping..."
                     continue
                   fi
-                  filename=$(basename "$matchingFile" .yml)
+                  filename=$(basename "$matchingFile")
 
                   # Check if value is an array or a string
                   if [[ "$value" == "["*"]" ]]; then
