@@ -47,7 +47,6 @@ stages:
                     exit 1
                 fi
 
-                echo "Found the following environment files: $files" # TODEBUG
                 envToRepoJson='${{ convertToJson(parameters.envToRepo) }}'
                 echo "EnvRepo $(echo $envToRepoJson | jq -c)"
 
@@ -74,15 +73,14 @@ stages:
                     repos=$value
                   fi
 
-                  echo "Found matching file for $key: $matchingFile with repos: $repos"
+                  echo "Found matching file for $key: $filename with repos: $repos"
 
                   # Create object
                   object_string=$( jq -n \
                                       --arg envType "$key" \
                                       --arg filename "$filename" \
                                       --arg repositories "$repos" \
-                                      --arg name "$key" \
-                                      '{ $envType: {name: $name, filename: $filename, repositories: $repositories }}' )
+                                      '{ $envType: {name: $envType, filename: $filename, repositories: $repositories }}' )
 
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
