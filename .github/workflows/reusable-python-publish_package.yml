@@ -1,4 +1,4 @@
-name: Publish condan package to Artifactory 
+name: Publish condan package to Artifactory
 
 on:
   workflow_call:
@@ -26,13 +26,13 @@ on:
             required: false
             type: boolean
             default: false
-        
+
         extra_repository:
             description: 'Boolean to indicate if an extra repository is needed to manage the dependencies'
             required: false
             type: boolean
             default: false
-        
+
         repo_names:
             description: 'List with all the names of repositories to publish on (eg. ["analyst-dev-pypi-local", "analyst-pypi-local"])'
             required: true
@@ -119,8 +119,8 @@ jobs:
                             exit 1
                         fi
                     done
-                    
-                    
+
+
     release_conda_package:
         name: Release Conda package
         runs-on: ubuntu-latest

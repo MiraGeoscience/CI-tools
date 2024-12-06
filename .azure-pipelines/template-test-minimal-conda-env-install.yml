@@ -10,15 +10,15 @@ parameters:
     type: object
     default:
       all:
-        - geology 
+        - geology
         - geophysics
-      all_deps_only: 
+      all_deps_only:
         - geology
         - geophysics
       geology: geology
       geophysics: geophysics
       interop: public
-      simpeg: geophysics 
+      simpeg: geophysics
 
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
@@ -98,7 +98,7 @@ stages:
         displayName: 'Test environment installation'
         pool:
           vmImage: 'windows-2022'
-        container: 
+        container:
           image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
           endpoint: Docker-Artifactory
         dependsOn: DiscoverFiles
