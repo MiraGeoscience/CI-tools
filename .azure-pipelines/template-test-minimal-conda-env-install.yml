@@ -47,6 +47,10 @@ stages:
                     exit 1
                 fi
 
+                echo "Found the following environment files: $files" # TODEBUG
+                echo "EnvRepo $envToRepo" # TODEBUG
+                echo "EnvRepo $(echo "$envToRepo" | jq -c 'to_entries[]')"
+
                 # Initialize the matrix JSON
                 matrix="{}"
 
