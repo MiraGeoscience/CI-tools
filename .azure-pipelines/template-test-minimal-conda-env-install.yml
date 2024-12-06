@@ -49,7 +49,8 @@ stages:
 
                 echo "Found the following environment files: $files" # TODEBUG
                 echo 'EnvRepo ${{ convertToJson(parameters.envToRepo) }}' # TODEBUG
-                echo "EnvRepo $(echo ${{ convertToJson(parameters.envToRepo) }} | jq -c)"
+                envToRepoJson='${{ convertToJson(parameters.envToRepo) }}'
+                echo "EnvRepo $(echo $envToRepoJson | jq -c)"
 
                 # Initialize the matrix JSON
                 matrix="{}"
@@ -90,7 +91,7 @@ stages:
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo ${{ convertToJson(parameters.envToRepo) }})
+                done < <(echo $envToRepoJson | jq -c 'to_entries[]')}})
 
                 echo $matrix | jq .
                 json_matrix=$(echo "matrix" | jq -c)
