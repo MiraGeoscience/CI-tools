@@ -118,22 +118,44 @@ stages:
               script: |
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
+                foreach ($repo in $array) {
+                  echo "Adding repository ${repo}-conda-${{ parameters.environment }}"
+                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-${{ parameters.environment }}"
+                  micromamba config --append channels $url
+                }
+          - task: PowerShell@2
+            name: ConfigurePyPISources
+            displayName: Configure PyPI sources
+            inputs:
+              targetType: 'inline'
+              script: |
+                $string = "$(repositories)"
+                $array = $string.Split(" ")
+                $index_url = ""
                 $extra_index_url = ""
-                $isLast = ($array.Length - 1)
+                $i = 0
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-pypi-${{ parameters.environment }}"
-                  $extra_index_url += "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
-                  if ($isLast -gt 0) {
-                    $extra_index_url += " "
-                    $isLast--
+                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
+                  if ($i -eq 0) {
+                    $index_url = $url
+                  } else {
+                    $extra_index_url += $url
+                    if (($array.Length - $i) -gt 1) {
+                      $extra_index_url += " "
+                    }
                   }
+                  $i++
                 }
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
+                echo "##vso[task.setvariable variable=index_url;issecret=true]$index_url"
           - task: PowerShell@2
             inputs:
               targetType: 'inline'
               script: |
+                $Env:PIP_INDEX_URL = "$(index_url)"
                 $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
+                $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba env create -y -f $(filename) -n $(name)
             name: InstallEnvironment
