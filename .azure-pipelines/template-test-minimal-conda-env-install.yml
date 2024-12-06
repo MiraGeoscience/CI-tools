@@ -48,8 +48,8 @@ stages:
                 fi
 
                 echo "Found the following environment files: $files" # TODEBUG
-                echo "EnvRepo $(envToRepo)" # TODEBUG
-                echo "EnvRepo $(echo "$(envToRepo)" | jq -c 'to_entries[]')"
+                echo "EnvRepo ${{parameters.envToRepo}}" # TODEBUG
+                echo "EnvRepo $(echo "${{parameters.envToRepo}}" | jq -c 'to_entries[]')"
 
                 # Initialize the matrix JSON
                 matrix="{}"
@@ -90,7 +90,7 @@ stages:
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo "$(envToRepo)" | jq -c 'to_entries[]')
+                done < <(echo "${{parameters.envToRepo}}" | jq -c 'to_entries[]')
 
                 echo $matrix | jq .
                 json_matrix=$(echo "matrix" | jq -c)
