@@ -48,7 +48,6 @@ stages:
                 fi
 
                 envToRepoJson='${{ convertToJson(parameters.envToRepo) }}'
-                echo "EnvRepo $(echo $envToRepoJson | jq -c)"
 
                 # Initialize the matrix JSON
                 matrix="{}"
@@ -87,9 +86,7 @@ stages:
                   cp "$matchingFile" "$artifactFolder/"
                 done < <(echo "$envToRepoJson" | jq -c 'to_entries[]')
 
-                echo $matrix | jq .
                 json_matrix=$(echo $matrix | jq -c .)
-                echo $json_matrix
 
                 # Save and output the final matrix
                 echo "##vso[task.setvariable variable=matrix;isOutput=true]$json_matrix"
