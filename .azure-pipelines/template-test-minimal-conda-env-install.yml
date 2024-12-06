@@ -76,7 +76,8 @@ stages:
                                         --arg envType "$key" \
                                         --arg filename "$filename" \
                                         --arg repositories "$repos" \
-                                        '{ $envType: {filename: $filename, repositories: $repositories }}' )
+                                        --arg name "$envType" \
+                                        '{ $envType: {name: $name, filename: $filename, repositories: $repositories }}' )
 
                     matrix=$(echo "$matrix" | jq ". + $object_string")
 
@@ -130,6 +131,6 @@ stages:
               script: |
                 $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
                 cd $(Pipeline.Workspace)/envFiles
-                micromamba env create -y -f $(envFile) -n $(pipKey)
+                micromamba env create -y -f $(filename) -n $(name)
             name: InstallEnvironment
             displayName: 'Install environment'
