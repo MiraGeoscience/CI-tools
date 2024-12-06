@@ -1,7 +1,7 @@
 name: Setup conda env
 description: Setup conda environment for Python
 inputs:
-  python_ver:
+  python-version:
     description: 'Python version to use'
     required: true
     type: string
@@ -11,19 +11,21 @@ runs:
   steps:
     - uses: actions/checkout@v4
     - name: Setup CONDA_LOCK_ENV_FILE
+      shell: bash
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> $GITHUB_ENV
-      shell: bash
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v1
       with:
+        micromamba-version: 1.5.8-0
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
         init-shell: bash
         cache-downloads: true
+        post-cleanup: none
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
-        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python_ver }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
+        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'

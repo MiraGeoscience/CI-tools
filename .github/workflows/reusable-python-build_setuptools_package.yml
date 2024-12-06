@@ -1,0 +1,118 @@
+name: Build setuptools package
+
+on:
+  workflow_call:
+    inputs:
+        package-name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
+        version-tag:
+            description: 'Version tag of the package to build'
+            required: true
+            type: string
+
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
+            required: true
+            type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: true
+            type: string
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: true
+            type: number
+    outputs:
+        build-dir-path:
+            description: 'Path to the build directory'
+            value: ${{ jobs.build_package.outputs.build-dir-path }}
+        version:
+            description: 'Version of the package'
+            value: ${{ jobs.build_package.outputs.version }}
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    build_package:
+        name: Build setuptools package
+        runs-on: ${{ inputs.os }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        outputs:
+            build-dir-path: ${{ steps.define-build-path.outputs.dir-path }}
+            version: ${{ steps.get-version.outputs.version }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   name: Get version
+                id: get-version
+                run: |
+                    if [ "${{ inputs.version-tag }}" = "v0.0.0" ]; then
+                        echo "Version tag not available"
+                        exit 1
+                    fi
+                    VERSION=$(echo "${{ inputs.version-tag }}" | sed 's/v//')
+                    echo "version: ${VERSION}"
+                    if [ -z "${VERSION}" ]; then
+                        echo "Version is not available"
+                        exit 1
+                    fi
+                    echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python-version }}
+            -   name: Verify package installation
+                run: |
+                    repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+                    for repo_name in ${repository_list}; do
+                        PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"
+                    done
+                    export PIP_EXTRA_INDEX_URL
+                    pip install .
+            -   name: Pip install build
+                run: pip install build
+            -   name: Build package
+                run: python -m build
+            -   name: Define build path
+                id: define-build-path
+                run: |
+                    DIR_PATH="dist"
+                    echo "dir-path: ${DIR_PATH}"
+                    if [[ -z ${DIR_PATH} ]]; then
+                        echo "Build folder {DIR_PATH} not found"
+                        exit 1
+                    fi
+                    echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
+            -   name: Archive build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: package-build-pypi
+                    path: ${{ steps.define-build-path.outputs.dir-path }}

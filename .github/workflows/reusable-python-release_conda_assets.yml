@@ -1,0 +1,57 @@
+name: Publish Conda package from release assets
+
+on:
+  workflow_call:
+    inputs:
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-prod"])'
+            required: true
+            type: string
+        release-tag:
+            description: 'Tag for the existing (draft) release to publish assets from'
+            required: true
+            type: string
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    publish_conda_asset:
+        name: Publish Conda asset
+        if: ${{ github.repository_owner == 'MiraGeoscience' }}
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        strategy:
+            matrix:
+                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        steps:
+            -   name: Find release from tag
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                id: find-release
+                with:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    existing-release: ${{ inputs.release-tag }}
+            -   name: Download release assets
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GH_REPO: ${{ github.repository }}
+                run: |
+                    mkdir -p download-assets
+                    cd download-assets
+                    gh release download ${{ inputs.release-tag }} -p '*.tar.bz2'
+            -   name: Publish package to Artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                with:
+                    build-dir-path: download-assets
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}

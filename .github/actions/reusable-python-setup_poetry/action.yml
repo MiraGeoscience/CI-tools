@@ -1,30 +1,21 @@
 name: Setup poetry env
 description: Setup poetry environment for Python
 inputs:
-  python_ver:
-    description: 'Python version to use'
-    required: true
-    type: string
-  cache_number:
+  cache-number:
     description: 'Cache number to reset cache if poetry.lock has not changed'
     required: true
     type: number
-  runner_os:
+  runner-os:
     description: 'Runner OS'
     required: true
     type: string
-  extra_repository:
-    description: 'Boolean to indicate if extra repository is needed'
-    required: false
-    type: boolean
-    default: false
-  repo_user:
-    description: 'Repository username'
+  virtual-repo-names:
+    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
     required: false
     type: string
-  repo_token:
-    description: 'Repository token'
-    required: false
+  JFROG_ARTIFACTORY_TOKEN:
+    description: 'JFrog Artifactory Token'
+    required: true
     type: string
 
 runs:
@@ -32,33 +23,37 @@ runs:
   steps:
     - name: Get full Python version
       id: full-python-version
-      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
       shell: bash
+      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
     - name: Install poetry
+      shell: bash
       run: |
         curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-      shell: bash
     - name: Config poetry
+      shell: bash
       run: |
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
-        if (${{ inputs.extra_repository}}); then
-          poetry config http-basic.mira-pypi ${{ inputs.repo_user }} ${{ inputs.repo_token }}
-        fi
-      shell: bash
+
+        repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+        for repo_name in ${repository_list}; do
+          first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
+          echo "Adding repository $repo_name under $first_part"
+          poetry config -- http-basic.${first_part} github ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+        done
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
       env:
-        CACHE_NUMBER: ${{ inputs.cache_number }}
+        cache-number: ${{ inputs.cache-number }}
       with:
         path: .venv
-        key: venv-${{ inputs.runner_os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.CACHE_NUMBER }}
+        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.cache-number }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
       run: timeout 10s poetry run pip --version || rm -rf .venv
-      shell: bash
     - name: Install dependencies
-      run: poetry install -vvv
       shell: bash
+      run: poetry install -vvv

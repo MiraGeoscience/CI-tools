@@ -1,0 +1,36 @@
+name: Publish to Artifactory
+description: Publish package to JFrog Artifactory
+inputs:
+  build-dir-path:
+    description: 'Path to the build directory'
+    required: true
+    type: string
+  artifactory-dir-path:
+    description: 'Path for the package in Artifactory containing the repository name'
+    required: true
+    type: string
+  JFROG_ARTIFACTORY_URL:
+    description: 'JFrog Artifactory URL'
+    required: true
+    type: string
+  JFROG_ARTIFACTORY_TOKEN:
+    description: 'JFrog Artifactory Token'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4.4.1
+      env:
+        JF_URL: https://${{ inputs.JFROG_ARTIFACTORY_URL }}
+        JF_ACCESS_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+    - name: Publish package to Artifactory
+      shell: bash
+      run: |
+        for file in ${{ inputs.build-dir-path }}/*; do
+          filename=$(basename "${file}")
+          echo "Uploading in: ${{ inputs.artifactory-dir-path }}: $filename"
+          jf rt u ${file} ${{ inputs.artifactory-dir-path}}/$filename
+        done
