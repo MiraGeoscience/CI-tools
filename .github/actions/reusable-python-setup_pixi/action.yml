@@ -1,0 +1,31 @@
+name: Setup pixi env
+description: Setup pixi environment for Python
+inputs:
+  cache-number:
+    description: 'Cache number to reset cache if poetry.lock has not changed'
+    required: true
+    type: number
+  runner-os:
+    description: 'Runner OS'
+    required: true
+    type: string
+  virtual-repo-names:
+    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
+    required: false
+    type: string
+  JFROG_ARTIFACTORY_TOKEN:
+    description: 'JFrog Artifactory Token'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get full Python version
+      id: full-python-version
+      shell: bash
+      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
+    - uses: prefix-dev/setup-pixi@v0.8.1
+      with:
+        pixi-version: v0.39.2
+        cache: true
