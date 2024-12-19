@@ -29,3 +29,4 @@ runs:
       with:
         pixi-version: v0.39.2
         cache: true
+        frozen: true
