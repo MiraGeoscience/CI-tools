@@ -1,0 +1,14 @@
+# File: template-run-squish-tests.yml
+stages:
+  - stage: RunSquishTests
+    displayName: Run Squish tests
+    pool:
+      vmImage: 'windows-2022'
+    jobs:
+      - job: FetchGA
+        displayName: Fetch Geoscience Analyst
+      - job: InstallGA
+        displayName: Install Geoscience Analyst
+      - job: RunSquishTests
+        displayName: Run Squish tests
+  
