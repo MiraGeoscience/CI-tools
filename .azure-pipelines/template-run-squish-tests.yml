@@ -1,4 +1,9 @@
 # File: template-run-squish-tests.yml
+parameters:
+  # Determines the type of package repository to use for testing installation (prod or dev).
+  - name: squishTestSuites
+    type: string
+
 stages:
   - stage: RunSquishTests
     displayName: Run Squish tests
@@ -7,8 +12,21 @@ stages:
     jobs:
       - job: FetchGA
         displayName: Fetch Geoscience Analyst
+        steps:
+          - task: Bash@3
+            name: DiscoverFiles
+            displayName: Discover environment files and create strategy matrix
+            inputs:
+              targetType: 'inline'
+              script: |
+
       - job: InstallGA
         displayName: Install Geoscience Analyst
       - job: RunSquishTests
         displayName: Run Squish tests
+        steps:
+          - task: SquishTask@1
+            inputs:
+              squishFolder: '.'
+              squishTestSuites: ${{ parameters.squishTestSuites }}
   
