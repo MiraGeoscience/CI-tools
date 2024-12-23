@@ -3,8 +3,10 @@ parameters:
   # Determines the type of package repository to use for testing installation (prod or dev).
   - name: squishTestSuites
     type: string
+    default: 'all'
   - name: branchName
     type: string
+    default: 'development'
 
 stages:
   - stage: GetGA
