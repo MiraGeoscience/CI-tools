@@ -92,13 +92,12 @@ stages:
         steps:
           - download: current
             artifact: GA
-          - task: Bash@3
+          - task: PowerShell@2
             inputs:
               targetType: 'inline'
               script: |
-                ls ../GA
-                cd ../GA
-                $(gaFile) /SP /Silent
+                cd ..\GA
+                Start-Process -FilePath $(gaFile) -ArgumentList '/SP /Silent' -Verb RunAs
           - task: SquishTask@1
             inputs:
               squishFolder: '.'
