@@ -97,9 +97,9 @@ stages:
               targetType: 'inline'
               script: |
                 ls .
-                ls $(System.DefaultWorkingDirectory)
-                ls $(System.DefaultWorkingDirectory)/GA
-                cd $(System.DefaultWorkingDirectory)/GA
+                ls "$(System.DefaultWorkingDirectory)"
+                ls "$(System.DefaultWorkingDirectory)/GA"
+                cd "$(System.DefaultWorkingDirectory)/GA"
 
                 .\$(gaFile) /SP /Silent
           - task: SquishTask@1
