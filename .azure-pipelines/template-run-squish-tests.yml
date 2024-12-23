@@ -69,9 +69,12 @@ stages:
                 fi
                 # Save and output the file name
                 echo '##vso[task.setvariable variable=gaFileName;isOutput=true]$LATEST_FILE'
-          - publish: $[ DownloadGA.gaFileName ]
-            artifact: GA
+          - task: PublishPipelineArtifact@1
             displayName: Publish Geoscience Analyst executable
+            inputs: 
+              targetPath: $(Pipeline.Workspace)/$(DownloadGA.gaFileName)
+              artifact: GA
+            
 
   - stage: RunSquishTests
     displayName: Run Squish tests
