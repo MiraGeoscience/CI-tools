@@ -23,6 +23,10 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
+                # Install lftp
+                sudo apt-get update
+                sudo apt-get install lftp
+                
                 # Download file using lftp
                 echo "Searching for the latest file containing '${{ parameters.branchName }}' in its name..."
                 LATEST_FILE=$(lftp -d -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
