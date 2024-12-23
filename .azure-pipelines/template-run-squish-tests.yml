@@ -33,13 +33,13 @@ stages:
                 LATEST_FILE=$(lftp -d -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
                 set ftp:ssl-force true
                 set ftp:ssl-protect-data true
-                cls -1 --sort=date $(SHAREFILE_GA_DIR)
+                cls -1 --sort=date $(SHAREFILE_GA_DIRECTORY)
                 bye
                 EOF
                 )
                 #DEBUG
                 echo "LATEST_FILE: $LATEST_FILE"
-                
+
                 LATEST_FILE=$(echo $LATEST_FILE | grep "${{ parameters.branchName }}" | head -n 1)
 
                 if [ -z "$LATEST_FILE" ]; then
