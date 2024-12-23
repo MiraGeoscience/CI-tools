@@ -27,6 +27,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
+                cd $(Pipeline.Workspace)/
+                
                 # Install lftp
                 sudo apt-get update
                 sudo apt-get install lftp
