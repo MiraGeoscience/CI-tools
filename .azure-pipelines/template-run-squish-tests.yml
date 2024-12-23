@@ -42,6 +42,9 @@ stages:
 
                 LATEST_FILE=$(echo $LATEST_FILE | grep "${{ parameters.branchName }}" | head -n 1)
 
+                #DEBUG
+                echo "LATEST_FILE: $LATEST_FILE"
+
                 if [ -z "$LATEST_FILE" ]; then
                     echo "No file found with '${{ parameters.branchName }}' in its name."
                     exit 1
@@ -54,7 +57,7 @@ stages:
                 lftp -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
                 set ftp:ssl-force true
                 set ftp:ssl-protect-data true
-                get $(SHAREFILE_GA_DIR)/$LATEST_FILE -o $LATEST_FILE
+                get $(SHAREFILE_GA_DIRECTORY)/$LATEST_FILE -o $LATEST_FILE
                 bye
                 EOF
 
