@@ -97,6 +97,7 @@ stages:
               targetType: 'inline'
               script: |
                 ls .
+                ls "D:\a\1/GA"
                 ls "$(System.DefaultWorkingDirectory)"
                 ls "$(System.DefaultWorkingDirectory)/GA"
                 cd "$(System.DefaultWorkingDirectory)/GA"
