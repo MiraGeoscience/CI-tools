@@ -44,7 +44,7 @@ stages:
                 LATEST_FILE=$(echo "$LATEST_FILE" | tr ' ' '\n')
                 #DEBUG
                 echo "LATEST_FILE: $LATEST_FILE"
-                LATEST_FILE=$(echo $LATEST_FILE | grep '${{ parameters.branchName }}' | grep '${{ parameters.version }}' | head -n 1)
+                LATEST_FILE=$(echo "$LATEST_FILE" | grep '${{ parameters.branchName }}' | grep '${{ parameters.version }}' | head -n 1)
                 #DEBUG
                 echo "LATEST_FILE: $LATEST_FILE"
                 LATEST_FILE=$(basename "$LATEST_FILE")
