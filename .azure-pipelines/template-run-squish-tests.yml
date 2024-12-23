@@ -67,18 +67,16 @@ stages:
     pool:
       vmImage: 'windows-2022'
     jobs:
-      - download: current
-        artifact: GA
-      - job: InstallGA
-        displayName: Install Geoscience Analyst
-        steps:
-          - task: Bash@3
-            target: 'inline'
-            inline: |
-              .\$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ] /SP /Silent
       - job: RunSquishTests
         displayName: Run Squish tests
         steps:
+          - download: current
+            artifact: GA
+          - task: Bash@3
+            inputs:
+              targetType: 'inline'
+              script: |
+                .\$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ] /SP /Silent
           - task: SquishTask@1
             inputs:
               squishFolder: '.'
