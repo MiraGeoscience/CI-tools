@@ -37,12 +37,14 @@ stages:
                 bye
                 EOF
                 )
-                #DEBUG
 
                 LATEST_FILE=$(echo "$LATEST_FILE" | tr ' ' '\n')
+                #DEBUG
+                echo "LATEST_FILE: $LATEST_FILE"
                 LATEST_FILE=$(echo $LATEST_FILE | grep "${{ parameters.branchName }}" | head -n 1)
+                #DEBUG
+                echo "LATEST_FILE: $LATEST_FILE"
                 LATEST_FILE=$(basename "$LATEST_FILE")
-
                 #DEBUG
                 echo "LATEST_FILE: $LATEST_FILE"
 
