@@ -1,6 +1,5 @@
 # File: template-run-squish-tests.yml
 parameters:
-  # Determines the type of package repository to use for testing installation (prod or dev).
   - name: squishTestSuites
     type: string
     default: 'all'
@@ -16,6 +15,8 @@ stages:
     jobs:
       - job: FetchGA
         displayName: Fetch Geoscience Analyst
+        variables:
+        - group: MIRA_SHAREFILE
         steps:
           - task: Bash@3
             name: DownloadGA
