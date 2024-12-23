@@ -21,6 +21,7 @@ stages:
         variables:
         - group: MIRA_SHAREFILE
         steps:
+          - checkout: none
           - task: Bash@3
             name: DownloadGA
             displayName: Download the last Geoscience Analyst executable built
@@ -96,9 +97,9 @@ stages:
               targetType: 'inline'
               script: |
                 ls .
-                ls $(Pipeline.Workspace)\
-                ls $(Pipeline.Workspace)\GA\
-                cd $(Pipeline.Workspace)\GA\
+                ls $(Pipeline.Workspace)
+                ls $(Pipeline.Workspace)/GA
+                cd $(Pipeline.Workspace)/GA
 
                 .\$(gaFile) /SP /Silent
           - task: SquishTask@1
