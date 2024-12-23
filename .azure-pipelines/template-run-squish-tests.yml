@@ -37,7 +37,9 @@ stages:
                 bye
                 EOF
                 )
-
+                #DEBUG
+                echo "LATEST_FILE: $LATEST_FILE"
+                
                 LATEST_FILE=$(echo $LATEST_FILE | grep "${{ parameters.branchName }}" | head -n 1)
 
                 if [ -z "$LATEST_FILE" ]; then
