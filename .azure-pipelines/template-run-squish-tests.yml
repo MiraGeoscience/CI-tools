@@ -96,11 +96,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                ls .
-                ls "D:\a\1/GA"
-                ls "$(System.DefaultWorkingDirectory)"
-                ls "$(System.DefaultWorkingDirectory)/GA"
-                cd "$(System.DefaultWorkingDirectory)/GA"
+                ls ..
+                cd "D:\a\1/GA"
 
                 .\$(gaFile) /SP /Silent
           - task: SquishTask@1
