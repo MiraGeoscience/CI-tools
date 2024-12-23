@@ -96,10 +96,9 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                ls ..
-                cd "D:\a\1/GA"
-
-                .\$(gaFile) /SP /Silent
+                ls ..\GA
+                cd ..\GA
+                $(gaFile) /SP /Silent
           - task: SquishTask@1
             inputs:
               squishFolder: '.'
