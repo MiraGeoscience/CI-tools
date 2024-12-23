@@ -3,25 +3,79 @@ parameters:
   # Determines the type of package repository to use for testing installation (prod or dev).
   - name: squishTestSuites
     type: string
+  - name: branchName
+    type: string
 
 stages:
-  - stage: RunSquishTests
-    displayName: Run Squish tests
+  - stage: GetGA
+    displayName: Download Geoscience Analyst
     pool:
-      vmImage: 'windows-2022'
+      vmImage: 'ubuntu-latest'
     jobs:
       - job: FetchGA
         displayName: Fetch Geoscience Analyst
         steps:
           - task: Bash@3
-            name: DiscoverFiles
-            displayName: Discover environment files and create strategy matrix
+            name: DownloadGA
+            displayName: Download the last Geoscience Analyst executable built
             inputs:
               targetType: 'inline'
               script: |
+                # Download file using lftp
+                echo "Searching for the latest file containing '${{ parameters.branchName }}' in its name..."
+                LATEST_FILE=$(lftp -d -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
+                set ftp:ssl-force true
+                set ftp:ssl-protect-data true
+                cls -1 --sort=date $(SHAREFILE_GA_DIR)
+                bye
+                EOF
+                )
 
+                LATEST_FILE=$(echo $LATEST_FILE | grep "${{ parameters.branchName }}" | head -n 1)
+
+                if [ -z "$LATEST_FILE" ]; then
+                    echo "No file found with '${{ parameters.branchName }}' in its name."
+                    exit 1
+                fi
+
+                echo "Found file: $LATEST_FILE"
+
+                echo "Downloading '$LATEST_FILE'..."
+
+                lftp -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
+                set ftp:ssl-force true
+                set ftp:ssl-protect-data true
+                get $(SHAREFILE_GA_DIR)/$LATEST_FILE -o $LATEST_FILE
+                bye
+                EOF
+
+                # Verify success
+                if [ $? -eq 0 ]; then
+                    echo "File downloaded successfully to $LATEST_FILE"
+                else
+                    echo "Failed to download the file."
+                    exit 1
+                fi
+                # Save and output the file name
+                echo '##vso[task.setvariable varaible=gaFileName;isOutput=true]$LATEST_FILE'
+          - publish: '$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ]'
+            artifact: GA
+            displayName: Publish Geoscience Analyst executable
+
+  - stage: RunSquishTests
+    displayName: Run Squish tests
+    pool:
+      vmImage: 'windows-2022'
+    jobs:
+      - download: current
+        artifact: GA
       - job: InstallGA
         displayName: Install Geoscience Analyst
+        steps:
+          - task: Bash@3
+            target: 'inline'
+            inline: |
+              .\$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ] /SP /Silent
       - job: RunSquishTests
         displayName: Run Squish tests
         steps:
