@@ -58,7 +58,7 @@ stages:
                 fi
                 # Save and output the file name
                 echo '##vso[task.setvariable varaible=gaFileName;isOutput=true]$LATEST_FILE'
-          - publish: '$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ]'
+          - publish: "$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ]"
             artifact: GA
             displayName: Publish Geoscience Analyst executable
 
