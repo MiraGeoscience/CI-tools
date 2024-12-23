@@ -28,7 +28,7 @@ stages:
               targetType: 'inline'
               script: |
                 cd $(Pipeline.Workspace)/
-                
+
                 # Install lftp
                 sudo apt-get update
                 sudo apt-get install lftp
@@ -71,8 +71,6 @@ stages:
                 fi
                 # Save and output the file name
                 echo "##vso[task.setvariable variable=gaFileName;isOutput=true]$LATEST_FILE"
-                
-                ls $(Pipeline.Workspace)/
           - task: PublishPipelineArtifact@1
             displayName: Publish Geoscience Analyst executable
             inputs: 
@@ -84,9 +82,12 @@ stages:
     displayName: Run Squish tests
     pool:
       vmImage: 'windows-2022'
+    dependsOn: GetGA
     jobs:
       - job: RunSquishTests
         displayName: Run Squish tests
+        variables:
+          gaFile: $[ stageDependencies.GetGA.FetchGA.outputs['DownloadGA.gaFileName'] ]
         steps:
           - download: current
             artifact: GA
@@ -95,7 +96,11 @@ stages:
               targetType: 'inline'
               script: |
                 ls .
-                .\$[ dependencies.FetchGA.outputs['DownloadGA.gaFileName'] ] /SP /Silent
+                ls $(Pipeline.Workspace)\
+                ls $(Pipeline.Workspace)\GA\
+                cd $(Pipeline.Workspace)\GA\
+
+                .\$(gaFile) /SP /Silent
           - task: SquishTask@1
             inputs:
               squishFolder: '.'
