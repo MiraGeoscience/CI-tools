@@ -122,7 +122,7 @@ jobs:
                     fi
                     
                     
-                    if [[ ${{ contains(input.os, 'windows') }} ]]; then
+                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         RELATIVE_BUILD_PATH="${BUILD_PATH#${HOME}\}"
                         RELATIVE_BUILD_PATH=$(echo $RELATIVE_BUILD_PATH | tr '\' '/')
                     else
