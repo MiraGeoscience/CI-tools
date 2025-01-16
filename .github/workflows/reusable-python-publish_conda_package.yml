@@ -49,9 +49,6 @@ jobs:
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
-        outputs:
-            build-dir-path: ${{ steps.build-package.outputs.build-dir-path }}
-            relative-build-dir-path: ${{ steps.build-package.outputs.relative-build-dir-path }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
@@ -107,54 +104,21 @@ jobs:
             -   name: Build package
                 id: build-package
                 run: |
-                    # # DEBUG
-                    # echo "New build"
-                    # if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                    #     conda-build .
-                    # else
-                    #     conda build .
-                    # fi
-
-                    # if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                    #     BUILD_PATH=$(conda-build --output .)
-                    # else
-                    #     BUILD_PATH=$(conda build --output .)
-                    # fi
-
-                    # if [[ -z ${BUILD_PATH} ]]; then
-                    #     echo "No build path found"
-                    #     exit 1
-                    # fi
-                    # if [[ ! -e ${BUILD_PATH} ]]; then
-                    #     echo "No build at ${BUILD_PATH}"
-                    #     exit 1
-                    # fi
-
-                    BUILD_PATH="C:\Users\runneradmin\micromamba\envs\test_env\conda-bld\noarch\gempy-drivers-0.1.0b2-pyh3a91677_0.conda"
-                    
-                    #DEBUG
-                    echo "Build-path ${BUILD_PATH}"
-                    
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        # DEBUG
-                        echo "Home ${HOME}"
-                        echo "github workspace ${{ github.workspace }}"
-                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}\\"}
-                        # DEBUG
-                        echo $RELATIVE_BUILD_PATH
-                        RELATIVE_BUILD_PATH=$(echo ${RELATIVE_BUILD_PATH} | tr '\' '/')
-                        # DEBUG
-                        echo $RELATIVE_BUILD_PATH
+                        conda-build .
                     else
-                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}/"}
+                        conda build .
                     fi
-
-                    #DEBUG
-                    echo $RELATIVE_BUILD_PATH
-
+                    BUILD_PATH=$(conda build --output .)
+                    if [[ -z ${BUILD_PATH} ]]; then
+                        echo "No build path found"
+                        exit 1
+                    fi
+                    if [[ ! -e ${BUILD_PATH} ]]; then
+                        echo "No build at ${BUILD_PATH}"
+                        exit 1
+                    fi
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
-                    echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
-                    echo "relative-build-dir-path=$(dirname ${RELATIVE_BUILD_PATH})" >> $GITHUB_OUTPUT
 
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
@@ -176,11 +140,11 @@ jobs:
                 uses: actions/download-artifact@v4
                 with:
                     name: package-build-conda
-                    path: ${{ needs.build_conda_package.outputs.build-dir-path }}
+                    path: build-dir
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@DEVOPS-578
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
-                    relative-build-dir-path: ${{ needs.build_conda_package.outputs.relative-build-dir-path }}
+                    build-dir-path: 'build-dir'
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
