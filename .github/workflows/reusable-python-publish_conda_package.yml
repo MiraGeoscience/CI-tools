@@ -120,7 +120,7 @@ jobs:
                     else
                         BUILD_PATH=$(conda build --output .)
                     fi
-                    
+
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
                         exit 1
@@ -134,7 +134,7 @@ jobs:
                     echo "Build-path ${BUILD_PATH}"
                     
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}\"}
+                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}\\"}
                         # DEBUG
                         echo $RELATIVE_BUILD_PATH
                         RELATIVE_BUILD_PATH=$(echo ${RELATIVE_BUILD_PATH} | tr '\' '/')
