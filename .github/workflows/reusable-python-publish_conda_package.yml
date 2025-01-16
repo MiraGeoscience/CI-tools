@@ -106,11 +106,12 @@ jobs:
             -   name: Build package
                 id: build-package
                 run: |
-                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        conda-build .
-                    else
-                        conda build .
-                    fi
+                    # DEBUG
+                    # if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                    #     conda-build .
+                    # else
+                    #     conda build .
+                    # fi
                     BUILD_PATH=$(conda build --output .)
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
@@ -123,11 +124,18 @@ jobs:
                     
                     
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        RELATIVE_BUILD_PATH="${BUILD_PATH#${HOME}\}"
-                        RELATIVE_BUILD_PATH=$(echo $RELATIVE_BUILD_PATH | tr '\' '/')
+                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}\"}
+                        # DEBUG
+                        echo $RELATIVE_BUILD_PATH
+                        RELATIVE_BUILD_PATH=$(echo ${RELATIVE_BUILD_PATH} | tr '\' '/')
+                        # DEBUG
+                        echo $RELATIVE_BUILD_PATH
                     else
-                        RELATIVE_BUILD_PATH="${BUILD_PATH#${HOME}/}"
+                        RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}/"}
                     fi
+
+                    #DEBUG
+                    echo $RELATIVE_BUILD_PATH
 
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
                     echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
