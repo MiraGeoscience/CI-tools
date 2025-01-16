@@ -120,8 +120,18 @@ jobs:
                         echo "No build at ${BUILD_PATH}"
                         exit 1
                     fi
+                    
+                    
+                    if [[ ${{ contains(input.os, 'windows') }} ]]; then
+                        RELATIVE_BUILD_PATH="${BUILD_PATH#${HOME}\}"
+                        RELATIVE_BUILD_PATH=$(echo $RELATIVE_BUILD_PATH | tr '\' '/')
+                    else
+                        RELATIVE_BUILD_PATH="${BUILD_PATH#${HOME}/}"
+                    fi
+
                     echo "build-path=${BUILD_PATH}" >> $GITHUB_OUTPUT
                     echo "build-dir-path=$(dirname ${BUILD_PATH})" >> $GITHUB_OUTPUT
+                    echo "relative-build-dir-path=$(dirname ${RELATIVE_BUILD_PATH})" >> $GITHUB_OUTPUT
 
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
@@ -145,9 +155,9 @@ jobs:
                     name: package-build-conda
                     path: ${{ needs.build_conda_package.outputs.build-dir-path }}
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@DEVOPS-578
                 with:
-                    build-dir-path: ${{ needs.build_conda_package.outputs.build-dir-path }}
+                    relative-build-dir-path: ${{ needs.build_conda_package.outputs.relative-build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}

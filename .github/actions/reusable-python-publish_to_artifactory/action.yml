@@ -1,8 +1,8 @@
 name: Publish to Artifactory
 description: Publish package to JFrog Artifactory
 inputs:
-  build-dir-path:
-    description: 'Path to the build directory'
+  relative-build-dir-path:
+    description: 'Relative path to the build directory'
     required: true
     type: string
   artifactory-dir-path:
@@ -29,7 +29,8 @@ runs:
     - name: Publish package to Artifactory
       shell: bash
       run: |
-        for file in ${{ inputs.build-dir-path }}/*; do
+        build_dir_path="${HOME}/${{ inputs.relative-build-dir-path }}"
+        for file in ${build_dir_path}/*; do
           filename=$(basename "${file}")
           echo "Uploading in: ${{ inputs.artifactory-dir-path }}: $filename"
           jf rt u ${file} ${{ inputs.artifactory-dir-path}}/$filename
