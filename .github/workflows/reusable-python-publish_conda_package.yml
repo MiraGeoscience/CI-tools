@@ -109,7 +109,13 @@ jobs:
                     else
                         conda build .
                     fi
-                    BUILD_PATH=$(conda build --output .)
+
+                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                        BUILD_PATH=$(conda-build --output .)
+                    else
+                        BUILD_PATH=$(conda build --output .)
+                    fi
+                    
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
                         exit 1
