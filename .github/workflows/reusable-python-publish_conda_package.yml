@@ -108,12 +108,19 @@ jobs:
                 id: build-package
                 run: |
                     # DEBUG
+                    echo "New build"
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         conda-build .
                     else
                         conda build .
                     fi
-                    BUILD_PATH=$(conda build --output .)
+
+                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                        BUILD_PATH=$(conda-build --output .)
+                    else
+                        BUILD_PATH=$(conda build --output .)
+                    fi
+                    
                     if [[ -z ${BUILD_PATH} ]]; then
                         echo "No build path found"
                         exit 1
@@ -123,6 +130,8 @@ jobs:
                         exit 1
                     fi
                     
+                    #DEBUG
+                    echo "Build-path ${BUILD_PATH}"
                     
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         RELATIVE_BUILD_PATH=${BUILD_PATH#"${HOME}\"}
