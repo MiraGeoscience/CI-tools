@@ -140,7 +140,7 @@ jobs:
     build_rattler_package:
         name: Build package with rattler
         if: ${{ github.repository_owner == 'MiraGeoscience' && inputs.package-builder == 'rattler' }}
-        runs-on: ${{ inputs.os }}
+        runs-on: 'ubuntu-latest'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         steps:
             -   name: Checkout
