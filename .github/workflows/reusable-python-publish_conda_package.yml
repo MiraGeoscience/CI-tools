@@ -185,8 +185,6 @@ jobs:
                         BUILDS_ARGS+=" -c https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
                     
-                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-                    echo "RATTLER_AUTH_FILE=$RATTLER_AUTH_FILE" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
@@ -194,6 +192,9 @@ jobs:
                     build-args: ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                     artifact-name: package-build-conda
+                env:
+                    RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
+                
     publish_package_on_artifactory:
         name: Publish package
         if: |
