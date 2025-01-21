@@ -140,7 +140,7 @@ jobs:
     build_rattler_package:
         name: Build package with rattler
         if: ${{ github.repository_owner == 'MiraGeoscience' && inputs.package-builder == 'rattler' }}
-        runs-on: ${{ inputs.os }}
+        runs-on: 'ubuntu-latest'
         timeout-minutes: ${{ inputs.timeout-minutes }}
         steps:
             -   name: Checkout
@@ -176,9 +176,6 @@ jobs:
                         BUILDS_ARGS=" --channel conda-forge"
                     fi
 
-                    # DEBUG
-                    cat < "$RATTLER_AUTH_FILE"
-
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
@@ -186,15 +183,10 @@ jobs:
                     
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
-            -   name: Check content RATTLER_AUTH_FILE
-                run: |
-                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
-                    cat < "${{ env.RATTLER_AUTH_FILE }}"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
                 with:
-                    build-args: |
-                        ${{ env.BUILDS_ARGS }}
+                    build-args: ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                     artifact-name: package-build-conda
                 
