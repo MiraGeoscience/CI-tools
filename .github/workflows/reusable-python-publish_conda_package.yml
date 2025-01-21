@@ -159,6 +159,14 @@ jobs:
             -   name: Authentificate with JFrog channels
                 run: |
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
+
+                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
+                        type NUL > $RATTLER_AUTH_FILE
+                    done
+                    
+                    # DEBUG
+                    echo "Temp runner"
+                    ls ${{ runner.temp }}
                     
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     repository_count=$(echo '${{ inputs.virtual-repo-names }}' | jq '. | length')
@@ -170,6 +178,9 @@ jobs:
                     else
                         BUILDS_ARGS=" -c conda-forge"
                     fi
+
+                    # DEBUG
+                    cat < "$RATTLER_AUTH_FILE""
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
