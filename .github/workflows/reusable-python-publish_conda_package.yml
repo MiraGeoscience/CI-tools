@@ -3,6 +3,11 @@ name: Publish Conda package to Artifactory
 on:
   workflow_call:
     inputs:
+        package-builder:
+            description: 'Name of the package manager (eg. "conda", "rattler")'
+            required: true
+            type: string
+            default: 'conda'
         package-name:
             description: 'Name of the package to build'
             required: true
@@ -45,8 +50,8 @@ defaults:
 
 jobs:
     build_conda_package:
-        name: Build package
-        if: ${{ github.repository_owner == 'MiraGeoscience' }}
+        name: Build package with conda
+        if: ${{ github.repository_owner == 'MiraGeoscience' && inputs.package-builder == 'conda' }}
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         outputs:
@@ -129,12 +134,65 @@ jobs:
                     name: package-build-conda
                     path: ${{ steps.build-package.outputs.build-path }}
                     retention-days: 7
+    build_rattler_package:
+        name: Build package with rattler
+        if: ${{ github.repository_owner == 'MiraGeoscience' && inputs.package-builder == 'rattler' }}
+        runs-on: ${{ inputs.os }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        outputs:
+            build-dir-path: ${{ steps.build-package.outputs.build-dir-path }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   name: Check if there is a rattler recipe
+                run: |
+                    if [ -f recipe.yaml ]; then
+                        echo "Rattler recipe found"
+                    else
+                        echo "Rattler recipe not found"
+                        exit 1
+                    fi
+            -   name: Authentificate with JFrog channels
+                run: |
+                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
+                    
+                    repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+                    repository_count=$(echo '${{ inputs.virtual-repo-names }}' | jq '. | length')
+                    
+                    # Check if there is more than one element
+                    if [ "$repository_count" -ge 1 ]; then
+                        BUILDS_ARGS=""
+                        echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
+                    else
+                        BUILDS_ARGS=" -c conda-forge"
+                    fi
+
+                    # Loop through the repository names and add them to the command
+                    for repo_name in ${repository_list}; do
+                        BUILDS_ARGS+=" -c https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                    done
+
+                    echo "RATTLER_AUTH_FILE=$RATTLER_AUTH_FILE" >> "$GITHUB_ENV"
+                    echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+            -   name: Build package
+                uses: prefix-dev/rattler-build-action@v0.2.29
+                with:
+                    build-args: ${{ env.BUILDS_ARGS }}
+                    artifact-name: package-build-conda
     publish_package_on_artifactory:
         name: Publish package
-        if: ${{ github.repository_owner == 'MiraGeoscience' }}
+        if: |
+            github.repository_owner == 'MiraGeoscience' && 
+            always() && 
+            (needs.build_conda_package.result == 'success' || needs.build_rattler_package.result == 'skipped') && 
+            (needs.build_conda_package.result == 'skipped' || needs.build_rattler_package.result == 'success') && 
+            !(needs.build_conda_package.result == 'skipped' && needs.build_rattler_package.result == 'skipped')
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: build_conda_package
+        needs: [build_conda_package, build_rattler_package]
         strategy:
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
