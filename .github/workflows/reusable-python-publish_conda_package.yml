@@ -161,7 +161,9 @@ jobs:
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         RATTLER_AUTH_FILE=${{ runner.temp }}\credentials.json
                         type NUL > $RATTLER_AUTH_FILE
-                    else 
+                        BUILDS_ARGS="--target-platform win-64"
+                    else
+                        BUILDS_ARGS=""
                         RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                     fi
                     
@@ -170,7 +172,6 @@ jobs:
                     
                     # Check if there is more than one element
                     if [ "$repository_count" -ge 1 ]; then
-                        BUILDS_ARGS=""
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                     else
                         BUILDS_ARGS=" -c conda-forge"
@@ -183,7 +184,8 @@ jobs:
                     for repo_name in ${repository_list}; do
                         BUILDS_ARGS+=" -c https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
-
+                    
+                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                     echo "RATTLER_AUTH_FILE=$RATTLER_AUTH_FILE" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
             -   name: Build package
