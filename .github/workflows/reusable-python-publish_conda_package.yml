@@ -162,7 +162,7 @@ jobs:
 
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         type NUL > $RATTLER_AUTH_FILE
-                    done
+                    fi
                     
                     # DEBUG
                     echo "Temp runner"
