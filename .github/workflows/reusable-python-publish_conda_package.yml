@@ -173,7 +173,7 @@ jobs:
                     if [ "$repository_count" -ge 1 ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                     else
-                        BUILDS_ARGS=" -c conda-forge"
+                        BUILDS_ARGS=" --channel conda-forge"
                     fi
 
                     # DEBUG
@@ -181,15 +181,14 @@ jobs:
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
-                        BUILDS_ARGS+=" -c https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
                     
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
-            -   name: Chekc content RATTLER_AUTH_FILE
+            -   name: Check content RATTLER_AUTH_FILE
                 run: |
                     echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
-                    ls ${{ runner.temp }}
                     cat < "${{ env.RATTLER_AUTH_FILE }}"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
