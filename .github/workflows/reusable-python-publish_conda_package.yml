@@ -158,12 +158,11 @@ jobs:
                     fi
             -   name: Authentificate with JFrog channels
                 run: |
+                    BUILDS_ARGS=""
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         RATTLER_AUTH_FILE=${{ runner.temp }}\credentials.json
                         type NUL > $RATTLER_AUTH_FILE
-                        BUILDS_ARGS="--target-platform win-64"
                     else
-                        BUILDS_ARGS=""
                         RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                     fi
                     
@@ -186,6 +185,12 @@ jobs:
                     done
                     
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+            -   name: Chekc content RATTLER_AUTH_FILE
+                env:
+                    RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
+                run: |
+                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
+                    cat < "${{ env.RATTLER_AUTH_FILE }}"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
                 with:
