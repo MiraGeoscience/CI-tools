@@ -182,6 +182,7 @@ jobs:
                 uses: prefix-dev/rattler-build-action@v0.2.29
                 with:
                     build-args: ${{ env.BUILDS_ARGS }}
+                    recipe-path: ${{ github.workspace}}/recipe.yaml
                     artifact-name: package-build-conda
     publish_package_on_artifactory:
         name: Publish package
