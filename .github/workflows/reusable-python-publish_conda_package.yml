@@ -183,6 +183,7 @@ jobs:
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
                 with:
+                    rattler-build-version: v0.34.1
                     build-args: ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                     artifact-name: package-build-conda
