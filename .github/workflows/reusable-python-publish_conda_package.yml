@@ -72,12 +72,6 @@ jobs:
                 uses: actions/setup-python@v5
                 with:
                     python-version: ${{ inputs.python-version }}
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
-                name: Setup JFrog CLI
-                env:
-                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
-                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-
             -   name: Setup conda env
                 uses: mamba-org/setup-micromamba@v1
                 with:
@@ -156,11 +150,6 @@ jobs:
                         echo "Rattler recipe not found"
                         exit 1
                     fi
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
-                name: Setup JFrog CLI
-                env:
-                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
-                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Authentificate with JFrog channels
                 run: |
                     BUILDS_ARGS=""
@@ -183,12 +172,22 @@ jobs:
                     
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+            -   name: Check RATTLER_AUTH_FILE content
+                run: |
+                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
+                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}"
+                    printenv
+                    printenv RATTLER_AUTH_FILE
+                    cat < $RATTLER_AUTH_FILE
+                    cat < ${{ runner.temp }}/credentials.json
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.29
                 with:
                     build-args: ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                     artifact-name: package-build-conda
+                env:
+                    RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                 
     publish_package_on_artifactory:
         name: Publish package
