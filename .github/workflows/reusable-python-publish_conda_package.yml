@@ -156,15 +156,15 @@ jobs:
                         echo "Rattler recipe not found"
                         exit 1
                     fi
+            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+                name: Setup JFrog CLI
+                env:
+                    JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Authentificate with JFrog channels
                 run: |
                     BUILDS_ARGS=""
-                    if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        RATTLER_AUTH_FILE=${{ runner.temp }}\credentials.json
-                        type NUL > $RATTLER_AUTH_FILE
-                    else
-                        RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-                    fi
+                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                     
                     repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
                     repository_count=$(echo '${{ inputs.virtual-repo-names }}' | jq '. | length')
