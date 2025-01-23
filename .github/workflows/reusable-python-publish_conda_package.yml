@@ -169,6 +169,8 @@ jobs:
                     for repo_name in ${repository_list}; do
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
+
+                    BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
                     
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
