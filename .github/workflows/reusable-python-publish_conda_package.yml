@@ -101,7 +101,7 @@ jobs:
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
                         micromamba install -y conda-build conda-verify
                     else
-                        conda install -y conda-build conda-verify
+                        conda install -y conda-build>=25.1.0  conda-verify
                     fi
             -   name: Build package
                 id: build-package
