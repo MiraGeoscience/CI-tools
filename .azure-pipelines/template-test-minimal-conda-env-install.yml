@@ -172,4 +172,3 @@ stages:
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba env create -y -f $(filename) -n $(name)
-            
