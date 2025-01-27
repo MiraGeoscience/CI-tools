@@ -99,7 +99,7 @@ jobs:
             -   name: Install conda build
                 run: |
                     if [[ ${{ contains(inputs.os, 'windows') }} ]]; then
-                        micromamba install -y conda-build conda-verify
+                        micromamba install -y conda-build>=25.1.0 conda-verify
                     else
                         conda install -y conda-build>=25.1.0  conda-verify
                     fi
