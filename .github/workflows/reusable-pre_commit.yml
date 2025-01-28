@@ -41,9 +41,24 @@ jobs:
       SKIP: ${{ inputs.skip }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v4
-      - run: git fetch --deepen=500 origin ${{github.base_ref}}
+      - name: Get base depth
+        id: base-depth
         if: ${{ (github.event_name == 'pull_request') }}
+        run: |
+          depth=$(expr ${{ github.event.pull_request.commits }} + 1)
+          echo "base-depth=$depth"
+          echo "base-depth=$depth" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        if: ${{ (github.event_name == 'pull_request') }}
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ steps.base-depth.outputs.base-depth }}
+      - name: Fetch target branch
+        if: ${{ (github.event_name == 'pull_request') }}
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+      - run: git fetch --deepen=500 origin ${{github.base_ref}}
+        if: ${{ (github.event_name != 'pull_request') }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
