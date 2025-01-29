@@ -111,9 +111,14 @@ jobs:
                     rattler-build-version: v0.34.1
                     build-args: ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
-                    artifact-name: package-build-conda
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
+            -   name: Archive build artifact
+                uses: actions/upload-artifact@v4
+                with:
+                    name: package-build-conda
+                    path: ${{ runner.temp }}/output/**/*.conda
+                    retention-days: 7
                 
     publish_package_on_artifactory:
         name: Publish package
