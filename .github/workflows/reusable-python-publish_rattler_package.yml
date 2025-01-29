@@ -17,7 +17,7 @@ on:
             type: boolean
             default: true
         local-repo-names:
-            description: 'Matrix of local repository names to publish on (eg. ["public-conda-dev-local"])'
+            description: 'Matrix of local repository names to pull dependencies from (eg. ["public-conda-dev-local"])'
             required: true
             type: string
         virtual-repo-names:
