@@ -151,20 +151,20 @@ stages:
                 $array = $string.Split(" ")
                 $index_url = ""
                 $extra_index_url = ""
-                $i = 0
                 foreach ($repo in $array) {
-                  echo "Adding repository ${repo}-pypi-${{ parameters.environment }}"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}-local/simple"
-                  if ($i -eq 0) {
-                    $index_url = $url
-                  } else {
-                    $extra_index_url += $url
-                    if (($array.Length - $i) -gt 1) {
-                      $extra_index_url += " "
-                    }
+                  $repo_name = "${repo}-pypi-${{ parameters.environment }}-local"
+                  echo "Adding repository '${repo_name}'"
+                  if ($index_url -eq "") {
+                    $index_url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                   }
-                  $i++
+                  else {
+                    $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
+                  }
                 }
+                $pypi_remote_name = "pypi-remote"
+                echo "Adding repository '${pypi_remote_name}'"
+                $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${pypi_remote_name}/simple"
+                $extra_index_url = $extra_index_url.Trim()
                 echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
                 echo "##vso[task.setvariable variable=index_url;issecret=true]$index_url"
           - task: PowerShell@2
