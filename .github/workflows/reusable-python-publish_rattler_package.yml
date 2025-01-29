@@ -94,7 +94,8 @@ jobs:
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-forge-${env_type}-remote"
                     fi
 
-                    BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
+                    BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
+                    BUILDS_ARGS+=" --channel-priority disabled"
 
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
