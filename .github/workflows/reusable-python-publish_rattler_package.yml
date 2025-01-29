@@ -135,7 +135,7 @@ jobs:
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
-                    build-dir-path: 'build-dir'
+                    build-dir-path: 'build-dir/noarch'
                     artifactory-dir-path: ${{ matrix.local-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
