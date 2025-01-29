@@ -20,6 +20,10 @@ on:
             description: 'Matrix of local repository names to publish on (eg. ["public-conda-dev-local"])'
             required: true
             type: string
+        virtual-repo-names:
+            description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-dev"])'
+            required: true
+            type: string
         os:
             description: 'OS to build against (eg. "ubuntu-latest")'
             required: false
@@ -136,7 +140,7 @@ jobs:
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
                     build-dir-path: 'build-dir/noarch'
-                    artifactory-dir-path: ${{ matrix.local-repo-name}}/noarch
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     add_release_asset:
