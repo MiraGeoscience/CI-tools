@@ -76,9 +76,6 @@ jobs:
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                         
                         env_type=$(echo "$repository_list" | head -n 1 | cut -d '-' -f3)
-
-                        # Debug
-                        echo "env_type: ${env_type}"
                     else
                         BUILDS_ARGS=" --channel conda-forge"
                     fi
