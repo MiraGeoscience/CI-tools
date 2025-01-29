@@ -14,13 +14,19 @@ parameters:
       all:
         - geology
         - geophysics
+        - public
       all_deps_only:
+        - public
+      geology:
         - geology
+        - public
+      geophysics:
         - geophysics
-      geology: geology
-      geophysics: geophysics
+        - public
       interop: public
-      simpeg: geophysics
+      simpeg:
+        - geophysics
+        - public
 
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
