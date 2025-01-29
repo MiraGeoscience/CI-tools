@@ -90,8 +90,8 @@ jobs:
                     done
 
                     if [ "$repository_count" -ge 1 ]; then
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-forge-${env_type}-remote"
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-pytorch-${env_type}-remote"
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-forge-${env_type}-remote"
                     fi
 
                     BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
