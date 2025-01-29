@@ -79,9 +79,6 @@ jobs:
 
                         # Debug
                         echo "env_type: ${env_type}"
-                        
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_TOKEN }}/artifactory/api/conda/conda-forge-${env_type}-remote"
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_TOKEN }}/artifactory/api/conda/conda-pytorch-${env_type}-remote"
                     else
                         BUILDS_ARGS=" --channel conda-forge"
                     fi
@@ -91,7 +88,10 @@ jobs:
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
 
-                    
+                    if [ "$repository_count" -ge 1 ]; then
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-forge-${env_type}-remote"
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-pytorch-${env_type}-remote"
+                    fi
 
                     BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
                     
@@ -120,6 +120,7 @@ jobs:
         if: github.repository_owner == 'MiraGeoscience'
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
+        needs: build_rattler_package
         strategy:
             matrix:
                 local-repo-name: ${{ fromJson(inputs.local-repo-names) }}
