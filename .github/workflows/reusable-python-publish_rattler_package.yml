@@ -67,7 +67,7 @@ jobs:
                         echo "Rattler recipe not found"
                         exit 1
                     fi
-            -   name: Authentificate with JFrog channels
+            -   name: Auths with JFrog channels
                 run: |
                     BUILDS_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
