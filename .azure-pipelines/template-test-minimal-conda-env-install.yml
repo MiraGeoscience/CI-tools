@@ -37,16 +37,16 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                envFolder="environments"
+                buildEnvFolder="build"
                 artifactFolder="artifact_envFiles"
 
                 # Create test directories and files
-                mkdir -p "$envFolder" "$artifactFolder"
+                mkdir -p "environments" "$artifactFolder"
 
                 # DiscoverFiles
-                files=$(find $envFolder -name "py-3.10-win-64-*.yml")
+                files=$(find $buildEnvFolder -name "py-3.10-win-64-*.yml")
                 if [[ -z "$files" ]]; then
-                    echo "No win-64 environment files found in $envFolder"
+                    echo "No win-64 environment files found in $buildEnvFolder"
                     exit 1
                 fi
 
@@ -60,7 +60,7 @@ stages:
                   key=$(echo "$entry" | jq -r '.key')
                   value=$(echo "$entry" | jq -r '.value')
                   # Find the corresponding file
-                  matchingFile=$(echo "$files" | grep -m 1 "$key")
+                  matchingFile=$(echo "$files" | grep -m 1 "$key\.conda\.lock")
 
                   if [ -z "$matchingFile" ]; then
                     echo "No matching file found for $key, skipping..."
