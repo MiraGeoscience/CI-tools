@@ -1,0 +1,159 @@
+name: Publish Rattler package to Artifactory
+
+on:
+  workflow_call:
+    inputs:
+        package-name:
+            description: 'Name of the package to build'
+            required: true
+            type: string
+        python-version:
+            description: 'Python version to use (eg: 3.10)'
+            required: true
+            type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: true
+        local-repo-names:
+            description: 'Matrix of local repository names to publish on (eg. ["public-conda-dev-local"])'
+            required: true
+            type: string
+        os:
+            description: 'OS to build against (eg. "ubuntu-latest")'
+            required: false
+            type: string
+            default: 'ubuntu-latest'
+        timeout-minutes:
+            description: 'Timeout in minutes for the job'
+            required: false
+            type: number
+            default: 20
+
+    secrets:
+        JFROG_ARTIFACTORY_URL:
+            description: 'JFrog Artifactory URL'
+            required: true
+        JFROG_ARTIFACTORY_TOKEN:
+            description: 'JFrog Artifactory Token'
+            required: true
+
+defaults:
+    run:
+        shell: 'bash -l {0}'
+
+jobs:
+    build_rattler_package:
+        name: Build package with rattler
+        if: ${{ github.repository_owner == 'MiraGeoscience' }}
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    lfs: ${{ inputs.lfs }}
+                    fetch-depth: 0
+            -   name: Check if there is a rattler recipe
+                run: |
+                    if [ -f recipe.yaml ]; then
+                        echo "Rattler recipe found"
+                    else
+                        echo "Rattler recipe not found"
+                        exit 1
+                    fi
+            -   name: Authentificate with JFrog channels
+                run: |
+                    BUILDS_ARGS=""
+                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
+                    
+                    repository_list=$(echo '${{ inputs.local-repo-names }}' | jq -r '.[]')
+                    repository_count=$(echo '${{ inputs.local-repo-names }}' | jq '. | length')
+                    
+                    # Check if there is more than one element
+                    if [ "$repository_count" -ge 1 ]; then
+                        echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
+                        
+                        env_type=$(echo "$repository_list" | head -n 1 | cut -d '-' -f3)
+
+                        # Debug
+                        echo "env_type: ${env_type}"
+                        
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_TOKEN }}/artifactory/api/conda/conda-forge-${env_type}-remote"
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_TOKEN }}/artifactory/api/conda/conda-pytorch-${env_type}-remote"
+                    else
+                        BUILDS_ARGS=" --channel conda-forge"
+                    fi
+
+                    # Loop through the repository names and add them to the command
+                    for repo_name in ${repository_list}; do
+                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                    done
+
+                    
+
+                    BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
+                    
+                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
+                    echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+            -   name: Check RATTLER_AUTH_FILE content
+                run: |
+                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
+                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}"
+                    printenv
+                    printenv RATTLER_AUTH_FILE
+                    cat < $RATTLER_AUTH_FILE
+                    cat < ${{ runner.temp }}/credentials.json
+            -   name: Build package
+                uses: prefix-dev/rattler-build-action@v0.2.29
+                with:
+                    rattler-build-version: v0.34.1
+                    build-args: ${{ env.BUILDS_ARGS }}
+                    recipe-path: ${{ github.workspace}}/recipe.yaml
+                    artifact-name: package-build-conda
+                env:
+                    RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
+                
+    publish_package_on_artifactory:
+        name: Publish package
+        if: github.repository_owner == 'MiraGeoscience'
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        strategy:
+            matrix:
+                local-repo-name: ${{ fromJson(inputs.local-repo-names) }}
+        steps:
+            -   name: Download build artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: package-build-conda
+                    path: build-dir
+            -   name: Publish package to Artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                with:
+                    build-dir-path: 'build-dir'
+                    artifactory-dir-path: ${{ matrix.local-repo-name}}/noarch
+                    JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                    JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+    add_release_asset:
+        name: Add release asset
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        needs: publish_package_on_artifactory
+        steps:
+            -   name: Get draft release
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                id: get-draft-release
+                with:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            -   name: Download build artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: package-build-conda
+                    path: download-artifact
+            -   name: Upload release asset
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GH_REPO: ${{ github.repository }}
+                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-tag }} download-artifact/*
