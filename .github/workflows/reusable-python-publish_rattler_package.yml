@@ -67,14 +67,14 @@ jobs:
                 run: |
                     BUILDS_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-                    
+
                     repository_list=$(echo '${{ inputs.local-repo-names }}' | jq -r '.[]')
                     repository_count=$(echo '${{ inputs.local-repo-names }}' | jq '. | length')
-                    
+
                     # Check if there is more than one element
                     if [ "$repository_count" -ge 1 ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
-                        
+
                         env_type=$(echo "$repository_list" | head -n 1 | cut -d '-' -f3)
                     else
                         BUILDS_ARGS=" --channel conda-forge"
@@ -91,7 +91,7 @@ jobs:
                     fi
 
                     BUILDS_ARGS+="  --output-dir ${{ runner.temp }}/output"
-                    
+
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
             -   name: Check RATTLER_AUTH_FILE content
@@ -116,7 +116,7 @@ jobs:
                     name: package-build-conda
                     path: ${{ runner.temp }}/output/**/*.conda
                     retention-days: 7
-                
+
     publish_package_on_artifactory:
         name: Publish package
         if: github.repository_owner == 'MiraGeoscience'
