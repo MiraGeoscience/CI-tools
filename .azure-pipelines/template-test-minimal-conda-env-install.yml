@@ -124,7 +124,7 @@ stages:
                 $i = 0
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-conda-${{ parameters.environment }}"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-${{ parameters.environment }}"
+                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-${{ parameters.environment }}-local"
                   micromamba config append channels $url
                   $conda_channels += $url
                   if (($array.Length - $i) -gt 1) {
@@ -132,6 +132,8 @@ stages:
                   }
                     $i++
                 }
+                $conda_channels += ",https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/conda-pytorch-${{ parameters.environment }}-remote"
+                $conda_channels += ",https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/conda-forge-${{ parameters.environment }}-remote"
                 echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
             name: ConfigurePyPISources
@@ -146,7 +148,7 @@ stages:
                 $i = 0
                 foreach ($repo in $array) {
                   echo "Adding repository ${repo}-pypi-${{ parameters.environment }}"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
+                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}-local/simple"
                   if ($i -eq 0) {
                     $index_url = $url
                   } else {
