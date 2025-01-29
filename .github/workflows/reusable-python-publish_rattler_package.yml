@@ -130,7 +130,7 @@ jobs:
         needs: build_rattler_package
         strategy:
             matrix:
-                local-repo-name: ${{ fromJson(inputs.local-repo-names) }}
+                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
         steps:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
