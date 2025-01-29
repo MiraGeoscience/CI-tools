@@ -16,11 +16,11 @@ on:
             required: false
             type: boolean
             default: true
-        local-repo-names:
-            description: 'Matrix of local repository names to publish on (eg. ["public-conda-dev-local"])'
+        source-repo-names:
+            description: 'Matrix of repository names to publish on (eg. ["public-conda-dev-local", "conda-forge-dev-remote"])'
             required: true
             type: string
-        virtual-repo-names:
+        publish-repo-names:
             description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-dev"])'
             required: true
             type: string
@@ -72,14 +72,12 @@ jobs:
                     BUILDS_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
-                    repository_list=$(echo '${{ inputs.local-repo-names }}' | jq -r '.[]')
-                    repository_count=$(echo '${{ inputs.local-repo-names }}' | jq '. | length')
+                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]')
+                    repository_count=$(echo '${{ inputs.source-repo-names }}' | jq '. | length')
 
                     # Check if there is more than one element
                     if [ "$repository_count" -ge 1 ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
-
-                        env_type=$(echo "$repository_list" | head -n 1 | cut -d '-' -f3)
                     else
                         BUILDS_ARGS=" --channel conda-forge"
                     fi
@@ -88,11 +86,6 @@ jobs:
                     for repo_name in ${repository_list}; do
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
-
-                    if [ "$repository_count" -ge 1 ]; then
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-pytorch-${env_type}-remote"
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/conda-forge-${env_type}-remote"
-                    fi
 
                     BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
                     BUILDS_ARGS+=" --channel-priority disabled"
@@ -130,7 +123,7 @@ jobs:
         needs: build_rattler_package
         strategy:
             matrix:
-                virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+                virtual-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
         steps:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
