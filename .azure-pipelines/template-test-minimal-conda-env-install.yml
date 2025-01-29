@@ -166,7 +166,7 @@ stages:
                     $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                   }
                 }
-                $pypi_remote_name = "pypi-remote"
+                $pypi_remote_name = "pypi-${{ parameters.environment }}-remote"
                 echo "Adding repository '${pypi_remote_name}'"
                 $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${pypi_remote_name}/simple"
                 $extra_index_url = $extra_index_url.Trim()
