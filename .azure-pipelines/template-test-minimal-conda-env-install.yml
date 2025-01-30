@@ -156,7 +156,7 @@ stages:
                 $pip_extra_index_url = ""
                 foreach ($repo in $array) {
                   $repo_name = "${repo}-pypi-${{ parameters.environment }}-local"
-                  echo "Adding Pip index for '${repo_name}'"
+                  echo "Adding Pip index URL for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                   if ($pip_index_url -eq "") {
                     $pip_index_url = $url
@@ -165,9 +165,9 @@ stages:
                     $pip_extra_index_url += " $url"
                   }
                 }
-                $pypi_index_name = "pypi"
-                echo "Adding Pip index for '${pypi_index_name}'"
-                $pip_extra_index_url += " https://pypi.org/simple"
+                $pypi_repo_name = "pypi-${{ parameters.environment }}-remote"
+                echo "Adding Pip index URL for '${pypi_repo_name}'"
+                $pip_extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                 $pip_extra_index_url = $pip_extra_index_url.Trim()
                 echo "##vso[task.setvariable variable=pip_index_url;issecret=true]$pip_index_url"
                 echo "##vso[task.setvariable variable=pip_extra_index_url;issecret=true]$pip_extra_index_url"
