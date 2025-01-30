@@ -127,24 +127,22 @@ stages:
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
                 $conda_channels = ""
-                $i = 0
                 foreach ($repo in $array) {
                   $repo_name = "${repo}-conda-${{ parameters.environment }}-local"
-                  echo "Adding repository '${repo_name}'"
+                  echo "Adding Conda channel for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
                   micromamba config append channels $url
-                  $conda_channels += $url
-                  if (($array.Length - $i) -gt 1) {
+                  if ($conda_channels -ne "") {
                     $conda_channels += ","
                   }
-                    $i++
+                  $conda_channels += $url
                 }
-                $pytorch_repo_name = "conda-pytorch-${{ parameters.environment }}-remote"
-                echo "Adding repository '${pytorch_repo_name}'"
-                $conda_channels += ",https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${pytorch_repo_name}"
-                $conda_forge_repo_name = "conda-forge-${{ parameters.environment }}-remote"
-                echo "Adding repository '${conda_forge_repo_name}'"
-                $conda_channels += ",https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${conda_forge_repo_name}"
+                $pytorch_channel_name = "pytorch"
+                echo "Adding Conda channel for '${pytorch_channel_name}'"
+                $conda_channels += ",${pytorch_channel_name}"
+                $conda_forge_channel_name = "conda-forge"
+                echo "Adding Conda channel for '${conda_forge_channel_name}'"
+                $conda_channels += ",${conda_forge_channel_name}"
                 echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
             name: ConfigurePyPISources
@@ -154,24 +152,25 @@ stages:
               script: |
                 $string = "$(repositories)"
                 $array = $string.Split(" ")
-                $index_url = ""
-                $extra_index_url = ""
+                $pip_index_url = ""
+                $pip_extra_index_url = ""
                 foreach ($repo in $array) {
                   $repo_name = "${repo}-pypi-${{ parameters.environment }}-local"
-                  echo "Adding repository '${repo_name}'"
-                  if ($index_url -eq "") {
-                    $index_url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
+                  echo "Adding Pip index for '${repo_name}'"
+                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
+                  if ($pip_index_url -eq "") {
+                    $pip_index_url = $url
                   }
                   else {
-                    $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
+                    $pip_extra_index_url += " $url"
                   }
                 }
-                $pypi_remote_name = "pypi-${{ parameters.environment }}-remote"
-                echo "Adding repository '${pypi_remote_name}'"
-                $extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${pypi_remote_name}/simple"
-                $extra_index_url = $extra_index_url.Trim()
-                echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
-                echo "##vso[task.setvariable variable=index_url;issecret=true]$index_url"
+                $pypi_index_name = "pypi"
+                echo "Adding Pip index for '${pypi_index_name}'"
+                $pip_extra_index_url += " https://pypi.org/simple"
+                $pip_extra_index_url = $pip_extra_index_url.Trim()
+                echo "##vso[task.setvariable variable=pip_index_url;issecret=true]$pip_index_url"
+                echo "##vso[task.setvariable variable=pip_extra_index_url;issecret=true]$pip_extra_index_url"
           - task: PowerShell@2
             name: InstallEnvironment
             displayName: Install environment
@@ -180,8 +179,8 @@ stages:
               script: |
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
                 $Env:CONDARC = "$(Pipeline.Workspace)/envFiles"
-                $Env:PIP_INDEX_URL = "$(index_url)"
-                $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
+                $Env:PIP_INDEX_URL = "$(pip_index_url)"
+                $Env:PIP_EXTRA_INDEX_URL = "$(pip_extra_index_url)"
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba env create -y -f $(filename) -n $(name)
