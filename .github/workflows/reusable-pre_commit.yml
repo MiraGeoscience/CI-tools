@@ -53,11 +53,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.base-depth.outputs.base-depth }}
-      # for non PR events, check out to depth 1
+      # for non PR events, check out to default depth (i.e. 1)
       - uses: actions/checkout@v4
         if: ${{ (github.event_name != 'pull_request') }}
-        with:
-          fetch-depth: 1
       - name: Fetch target branch
         if: ${{ (github.event_name == 'pull_request') }}
         run: |
