@@ -146,7 +146,7 @@ stages:
                   $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
                   echo "Adding Conda channel for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
-                  if ($conda_channels -ne "") {
+                  if ($conda_channels) {
                     $conda_channels += ","
                   }
                   $conda_channels += $url
@@ -174,11 +174,11 @@ stages:
                   $repo_name = "${repo}-pypi-${{ parameters.environment }}"
                   echo "Adding Pip index URL for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
-                  if ($pip_index_url -eq "") {
-                    $pip_index_url = $url
+                  if ($pip_index_url) {
+                    $pip_extra_index_url += " $url"
                   }
                   else {
-                    $pip_extra_index_url += " $url"
+                    $pip_index_url = $url
                   }
                 }
                 $pypi_repo_name = "pypi-${{ parameters.environment }}-remote"
