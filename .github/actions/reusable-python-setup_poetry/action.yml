@@ -45,8 +45,6 @@ runs:
     - name: Set up cache
       uses: actions/cache@v4
       id: cache
-      env:
-        cache-number: ${{ inputs.cache-number }}
       with:
         path: .venv
         key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.cache-number }}
