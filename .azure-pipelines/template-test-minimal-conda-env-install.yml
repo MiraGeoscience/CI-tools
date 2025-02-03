@@ -192,6 +192,7 @@ stages:
               script: |
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
                 $Env:CONDARC = "$(Pipeline.Workspace)/envFiles"
+                $Env:MAMBA_CHANNEL_PRIORITY = "strict"
                 $Env:PIP_INDEX_URL = "$(pip_index_url)"
                 $Env:PIP_EXTRA_INDEX_URL = "$(pip_extra_index_url)"
                 $Env:PIP_NO_DEPS = 1
