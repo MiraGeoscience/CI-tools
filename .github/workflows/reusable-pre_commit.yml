@@ -49,16 +49,13 @@ jobs:
           echo "base-depth=$depth"
           echo "base-depth=$depth" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
-        if: ${{ (github.event_name == 'pull_request') }}
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: ${{ steps.base-depth.outputs.base-depth }}
+          # for non PR events, check out to depth 1 (the default)
+          fetch-depth: ${{ steps.base-depth.outputs.base-depth || 1}}
       - name: Fetch target branch
         if: ${{ (github.event_name == 'pull_request') }}
         run: |
           git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
-      - run: git fetch --deepen=500 origin ${{github.base_ref}}
-        if: ${{ (github.event_name != 'pull_request') }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
