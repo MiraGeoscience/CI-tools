@@ -198,5 +198,11 @@ stages:
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba env create -y -f $(filename) -n $(name)
-                micromamba run -n $(name) python -c "import geoh5py; print(f'geoh5py version: {geoh5py.__version__}')"
-                micromamba run -n $(name) python -c "import numpy; print(f'numpy version: {numpy.__version__}')"
+          - task: PowerShell@2
+            name: CheckEnvironment
+            displayName: Check environment
+            inputs:
+              targetType: 'inline'
+            script: |
+              micromamba run -n $(name) python -c "import geoh5py; print(f'geoh5py version: {geoh5py.__version__}')"
+              micromamba run -n $(name) python -c "import numpy; print(f'numpy version: {numpy.__version__}')"
