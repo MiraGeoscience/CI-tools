@@ -139,21 +139,21 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $virtual_repos = "$(repositories)".Split(" ")
-                $remote_repos = "$(remotes)".Split(" ")
                 $conda_channels = ""
-                foreach ($repo in $virtual_repos) {
-                  $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
-                  echo "Adding Conda channel for '${repo_name}'"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
-                  if ($conda_channels) {
-                    $conda_channels += ","
+                if ($repositories) {
+                  $virtual_repos = "$(repositories)".Split(" ")
+                  foreach ($repo in $virtual_repos) {
+                    $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
+                    echo "Adding Conda channel for '${repo_name}'"
+                    $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
+                    if ($conda_channels) {
+                      $conda_channels += ","
+                    }
+                    $conda_channels += $url
                   }
-                  $conda_channels += $url
                 }
 
-                # join remote repos with ','
-                $remote_repos = $remote_repos -join ","
+                $remote_repos = "$(remotes)".Split(" ") -join ","
                 echo "Adding Conda channels: '${remote_repos}'"
                 if ($conda_channels -and $remote_repos) {
                   $conda_channels += ","
