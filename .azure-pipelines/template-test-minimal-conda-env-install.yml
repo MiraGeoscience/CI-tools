@@ -155,7 +155,10 @@ stages:
                 # join remote repos with ','
                 $remote_repos = $remote_repos -join ","
                 echo "Adding Conda channels: '${remote_repos}'"
-                $conda_channels += ",${remote_repos}"
+                if ($conda_channels -and $remote_repos) {
+                  $conda_channels += ","
+                }
+                $conda_channels += "${remote_repos}"
                 echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
             name: ConfigurePyPISources
