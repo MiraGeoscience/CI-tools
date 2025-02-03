@@ -8,25 +8,35 @@ parameters:
       - prod
       - dev
   # Maps environment names to the repositories required for each environment.
-  - name: envToRepo
+  - name: envToLocalRepos
+    type: object
+    default:
+      all: geoplus
+      all_deps_only: ""
+      geology: geology
+      geophysics: geophysics
+      interop: public
+      simpeg: geophysics
+  - name: envToRemoteRepos
     type: object
     default:
       all:
-        - geology
-        - geophysics
-        - public
+        - pytorch
+        - conda-forge
       all_deps_only:
-        - public
+        - pytorch
+        - conda-forge
       geology:
-        - geology
-        - public
+        - pytorch
+        - conda-forge
       geophysics:
-        - geophysics
-        - public
-      interop: public
+        - pytorch
+        - conda-forge
+      interop:
+        - pytorch
+        - conda-forge
       simpeg:
-        - geophysics
-        - public
+        - conda-forge
 
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
@@ -56,12 +66,13 @@ stages:
                     exit 1
                 fi
 
-                envToRepoJson='${{ convertToJson(parameters.envToRepo) }}'
+                envToLocalReposJson='${{ convertToJson(parameters.envToLocalRepos) }}'
+                envToRemoteReposJson='${{ convertToJson(parameters.envToRemoteRepos) }}'
 
                 # Initialize the matrix JSON
                 matrix="{}"
 
-                # Iterate through each key-value pair in envToRepo
+                # Iterate through each key-value pair in envToLocalRepos
                 while read -r entry; do
                   key=$(echo "$entry" | jq -r '.key')
                   value=$(echo "$entry" | jq -r '.value')
@@ -81,19 +92,23 @@ stages:
                     repos=$value
                   fi
 
+                  # also add repos from envToRemoteRepos for the current key
+                  remoteRepos=$(echo "$envToRemoteReposJson" | jq -r ".$key | join(\" \")")
+
                   # Create object
                   object_string=$( jq -n \
                                     --arg envType "$key" \
                                     --arg filename "$filename" \
                                     --arg repositories "$repos" \
-                                    '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories }}' )
+                                    --arg remotes "$remoteRepos" \
+                                    '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories, remotes: $remotes }}' )
 
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo "$envToRepoJson" | jq -c 'to_entries[]')
+                done < <(echo "$envToLocalReposJson" | jq -c 'to_entries[]')
 
                 json_matrix=$(echo $matrix | jq -c .)
 
@@ -124,11 +139,11 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $string = "$(repositories)"
-                $array = $string.Split(" ")
+                $local_repos = "$(repositories)".Split(" ")
+                $remote_repos = "$(remotes)".Split(" ")
                 $conda_channels = ""
-                foreach ($repo in $array) {
-                  $repo_name = "${repo}-conda-${{ parameters.environment }}-local"
+                foreach ($repo in $local_repos) {
+                  $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}-local"
                   echo "Adding Conda channel for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
                   micromamba config append channels $url
@@ -137,12 +152,11 @@ stages:
                   }
                   $conda_channels += $url
                 }
-                $pytorch_channel_name = "pytorch"
-                echo "Adding Conda channel for '${pytorch_channel_name}'"
-                $conda_channels += ",${pytorch_channel_name}"
-                $conda_forge_channel_name = "conda-forge"
-                echo "Adding Conda channel for '${conda_forge_channel_name}'"
-                $conda_channels += ",${conda_forge_channel_name}"
+
+                # join remote repos with ','
+                $remote_repos = $remote_repos -join ","
+                echo "Adding Conda channels: '${remote_repos}'"
+                $conda_channels += ",${remote_repos}"
                 echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
             name: ConfigurePyPISources
