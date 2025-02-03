@@ -8,7 +8,7 @@ parameters:
       - prod
       - dev
   # Maps environment names to the repositories required for each environment.
-  - name: envToLocalRepos
+  - name: envToVirtualRepos
     type: object
     default:
       all: geoplus
@@ -66,13 +66,13 @@ stages:
                     exit 1
                 fi
 
-                envToLocalReposJson='${{ convertToJson(parameters.envToLocalRepos) }}'
+                envToVirtualReposJson='${{ convertToJson(parameters.envToVirtualRepos) }}'
                 envToRemoteReposJson='${{ convertToJson(parameters.envToRemoteRepos) }}'
 
                 # Initialize the matrix JSON
                 matrix="{}"
 
-                # Iterate through each key-value pair in envToLocalRepos
+                # Iterate through each key-value pair in envToVirtualRepos
                 while read -r entry; do
                   key=$(echo "$entry" | jq -r '.key')
                   value=$(echo "$entry" | jq -r '.value')
@@ -108,7 +108,7 @@ stages:
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo "$envToLocalReposJson" | jq -c 'to_entries[]')
+                done < <(echo "$envToVirtualReposJson" | jq -c 'to_entries[]')
 
                 json_matrix=$(echo $matrix | jq -c .)
 
@@ -139,11 +139,11 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $local_repos = "$(repositories)".Split(" ")
+                $virtual_repos = "$(repositories)".Split(" ")
                 $remote_repos = "$(remotes)".Split(" ")
                 $conda_channels = ""
-                foreach ($repo in $local_repos) {
-                  $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}-local"
+                foreach ($repo in $virtual_repos) {
+                  $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
                   echo "Adding Conda channel for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
                   if ($conda_channels -ne "") {
@@ -168,7 +168,7 @@ stages:
                 $pip_index_url = ""
                 $pip_extra_index_url = ""
                 foreach ($repo in $array) {
-                  $repo_name = "${repo}-pypi-${{ parameters.environment }}-local"
+                  $repo_name = "${repo}-pypi-${{ parameters.environment }}"
                   echo "Adding Pip index URL for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                   if ($pip_index_url -eq "") {
