@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (eg. "conda", "poetry")'
+        description: 'Package manager to use (eg. "conda", "poetry", "pixi")'
         required: true
         type: string
         default: 'poetry'
@@ -98,6 +98,12 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@DEVOPS-584
+        name: Setup pixi env
+        if: ${{ inputs.package-manager == 'pixi' }}
+        with:
+          python-version: ${{ inputs.python-version }}
+          runner-os: ${{ runner.os }}
 
       - name: Run Pytest
         run: |
@@ -105,6 +111,8 @@ jobs:
             pytest --cov --cov-report=xml
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pytest --cov --cov-report=xml
+          elif ${{ inputs.package-manager == 'pixi' }}; then
+            pixi run pytest --cov --cov-report=xml
           else
             hatch run pytest --cov --cov-report=xml
           fi
