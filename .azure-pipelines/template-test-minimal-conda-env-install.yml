@@ -146,7 +146,6 @@ stages:
                   $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}-local"
                   echo "Adding Conda channel for '${repo_name}'"
                   $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
-                  micromamba config append channels $url
                   if ($conda_channels -ne "") {
                     $conda_channels += ","
                   }
