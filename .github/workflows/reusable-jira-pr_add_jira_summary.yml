@@ -34,8 +34,8 @@ jobs:
         )"
         >> $GITHUB_OUTPUT
     - name: Get JIRA summary
-      id: get_jira_summary
       if: ${{ steps.find_jira_key.outputs.issue_key }}
+      id: get_jira_summary
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
         JIRA_BASIC_AUTH: ${{ secrets.JIRA_BASIC_AUTH }}
@@ -47,12 +47,13 @@ jobs:
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
     - name: Extract PR title
       id: get_pr_title
+      if: ${{ steps.get_jira_summary.outputs.summary }}
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         echo "text=$(echo $PR_TITLE | sed -E "s/^\s*[?[A-Z]+[-# ]*[0-9]+]?[-: ]*(.*)/\1/i")" >> $GITHUB_OUTPUT
     - name: Add comment
-      if: ${{ steps.get_jira_summary.outputs.summary != '' }}
+      if: ${{ steps.get_jira_summary.outputs.summary }}
       env:
         ISSUE_SUMMARY: ${{ steps.get_jira_summary.outputs.summary }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
