@@ -23,12 +23,13 @@ jobs:
       env:
         HEAD_REF: ${{ github.head_ref}}
         PR_TITLE: ${{ github.event.pull_request.title }}
+        PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
       run: >
-        echo $HEAD_REF $PR_TITLE
-        | echo "issue_key=$(
-        grep -osi "\b[A-Z]\+[ #-]*[0-9]\+"
+        echo "issue_key=$(
+        echo $HEAD_REF | grep -osiE "$PATTERN"
+        || echo $PR_TITLE | grep -osiE "^\s*\[?\s*$PATTERN"
         | head -n1
-        | sed -E "s/([A-Z]+)[-# ]*([0-9]+)/\1-\2/i"
+        | sed -E "s/\W*$PATTERN/\1-\2/i"
         | tr [:lower:] [:upper:]
         )"
         >> $GITHUB_OUTPUT
@@ -51,7 +52,7 @@ jobs:
       run: |
         echo "text=$(echo $PR_TITLE | sed -E "s/^\s*[?[A-Z]+[-# ]*[0-9]+]?[-: ]*(.*)/\1/i")" >> $GITHUB_OUTPUT
     - name: Add comment
-      if: ${{ steps.find_jira_key.outputs.issue_key }}
+      if: ${{ steps.find_jira_key.outputs.issue_key && steps.get_jira_summary.outputs.summary }}
       env:
         ISSUE_SUMMARY: ${{ steps.get_jira_summary.outputs.summary }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
