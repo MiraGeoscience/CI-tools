@@ -45,9 +45,11 @@ jobs:
         -H "Content-Type: application/json"
         "$JIRA_BASE_URL/rest/api/2/issue/${{ steps.find_jira_key.outputs.issue_key }}"
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
+    - name: Debug Output
+      run: echo "Output is '${{ steps.get_jira_summary.outputs.summary }}'"
     - name: Extract PR title
       id: get_pr_title
-      if: ${{ steps.get_jira_summary.outputs.summary }}
+      if: ${{ steps.get_jira_summary.outputs.summary != '' && steps.get_jira_summary.outputs.summary != null }}
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
@@ -55,7 +57,7 @@ jobs:
     - name: Add comment
       if: ${{ steps.get_jira_summary.outputs.summary }}
       env:
-        ISSUE_SUMMARY: ${{ steps.get_jira_summary.outputs.summary }}
+        ISSUE_SUMMARY: ${{ steps.get_jira_summary.outputs.summary != '' && steps.get_jira_summary.outputs.summary != null }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
         PR_BODY: ${{ github.event.pull_request.body }}
       run: >
