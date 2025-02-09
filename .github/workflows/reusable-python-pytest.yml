@@ -32,6 +32,10 @@ on:
         required: false
         type: string
         default: "['windows-latest']"
+      install-extras:
+        description: 'Extra dependencies to install (eg. ["torch", "cuda"])'
+        required: false
+        type: string
       virtual-repo-names:
         description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
         required: false
@@ -90,6 +94,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+          install-extras: ${{ inputs.install-extras }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main

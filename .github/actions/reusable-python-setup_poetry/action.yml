@@ -9,6 +9,10 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
+  install-extras:
+    description: 'Extra dependencies to install (eg. ["torch", "cuda"])'
+    required: false
+    type: string
   virtual-repo-names:
     description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
     required: false
@@ -54,4 +58,7 @@ runs:
       run: timeout 10s poetry run pip --version || rm -rf .venv
     - name: Install dependencies
       shell: bash
-      run: poetry install -vvv
+      run: |
+        extra_list=$(echo '${{ inputs.install-extras }}' | jq -r '.[]')
+        extra_args=${extra_list:+--extras \"$extra_list\"}
+        poetry install -vvv $(echo $extra_args)
