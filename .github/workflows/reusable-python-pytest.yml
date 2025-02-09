@@ -89,7 +89,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-694
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
