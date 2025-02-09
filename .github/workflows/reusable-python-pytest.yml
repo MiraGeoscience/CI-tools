@@ -88,7 +88,8 @@ jobs:
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-694
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:

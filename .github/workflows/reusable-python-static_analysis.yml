@@ -70,7 +70,8 @@ jobs:
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ inputs.python-version }}
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
+
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-694
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
@@ -79,6 +80,7 @@ jobs:
           install-extras: ${{ inputs.install-extras }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
