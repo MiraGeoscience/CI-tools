@@ -58,6 +58,5 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        extra_list=$(echo '${{ inputs.install-extras }}' | jq -r '.[]')
-        extra_args=${extra_list:+--extras \"$extra_list\"}
-        poetry install -vvv $(echo $extra_args)
+        extra_args=$(echo '${{ inputs.install-extras }}' | jq -r 'map("-E " + .) | join(" ")')
+        poetry install -vvv $(echo "$extra_args")
