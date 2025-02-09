@@ -29,17 +29,16 @@ runs:
       id: full-python-version
       shell: bash
       run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-    - name: Install poetry
+    - name: Install and configure Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.5
+        virtualenvs-in-project: true
+        virtualenvs-path: .venv
+        installer-parallel: true
+    - name: Config repos for Poetry
       shell: bash
       run: |
-        curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
-        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-    - name: Config poetry
-      shell: bash
-      run: |
-        poetry config virtualenvs.create true
-        poetry config virtualenvs.in-project true
-
         repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
         for repo_name in ${repository_list}; do
           first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
