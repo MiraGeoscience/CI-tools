@@ -11,26 +11,14 @@ parameters:
   - name: envToVirtualRepos
     type: object
     default:
-      all: geoplus
       all_deps_only: ""
-      geology: geology
-      geophysics: geophysics
       interop: public
-      simpeg: geophysics
   - name: envToRemoteRepos
     type: object
     default:
-      all:
-        - conda-forge
       all_deps_only:
         - conda-forge
-      geology:
-        - conda-forge
-      geophysics:
-        - conda-forge
       interop:
-        - conda-forge
-      simpeg:
         - conda-forge
 
 stages:
