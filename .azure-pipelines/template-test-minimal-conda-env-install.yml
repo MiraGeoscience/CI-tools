@@ -21,19 +21,14 @@ parameters:
     type: object
     default:
       all:
-        - pytorch
         - conda-forge
       all_deps_only:
-        - pytorch
         - conda-forge
       geology:
-        - pytorch
         - conda-forge
       geophysics:
-        - pytorch
         - conda-forge
       interop:
-        - pytorch
         - conda-forge
       simpeg:
         - conda-forge
@@ -181,10 +176,12 @@ stages:
                     $pip_index_url = $url
                   }
                 }
-                $pypi_repo_name = "pypi-${{ parameters.environment }}-remote"
-                echo "Adding Pip index URL for '${pypi_repo_name}'"
-                $pip_extra_index_url += " https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
                 $pip_extra_index_url = $pip_extra_index_url.Trim()
+
+                # if no repos were listed, this is the case all-deps-only: it only has pip dependency from PyTorch
+                if (-not $pip_index_url ) {
+                  $pip_index_url = "https://download.pytorch.org/whl/cpu"
+                }
                 echo "##vso[task.setvariable variable=pip_index_url;issecret=true]$pip_index_url"
                 echo "##vso[task.setvariable variable=pip_extra_index_url;issecret=true]$pip_extra_index_url"
           - task: PowerShell@2
