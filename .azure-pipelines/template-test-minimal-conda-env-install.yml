@@ -191,7 +191,8 @@ stages:
               targetType: 'inline'
               script: |
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
-                $Env:MAMBA_CHANNEL_PRIORITY = "strict"
+                $Env:MAMBA_CHANNEL_ALIAS = "https://repo.prefix.dev"
+                # $Env:MAMBA_CHANNEL_PRIORITY = "flexible"  # the default, not forced by Analyst
                 $Env:PIP_INDEX_URL = "$(pip_index_url)"
                 $Env:PIP_EXTRA_INDEX_URL = "$(pip_extra_index_url)"
                 $Env:PIP_NO_DEPS = 1
