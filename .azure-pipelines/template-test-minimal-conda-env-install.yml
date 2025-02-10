@@ -161,22 +161,23 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $string = "$(repositories)"
-                $array = $string.Split(" ")
                 $pip_index_url = ""
                 $pip_extra_index_url = ""
-                foreach ($repo in $array) {
-                  $repo_name = "${repo}-pypi-${{ parameters.environment }}"
-                  echo "Adding Pip index URL for '${repo_name}'"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
-                  if ($pip_index_url) {
-                    $pip_extra_index_url += " $url"
+                if ($repositories) {
+                  $array = "$(repositories)".Split(" ")
+                  foreach ($repo in $array) {
+                    $repo_name = "${repo}-pypi-${{ parameters.environment }}"
+                    echo "Adding Pip index URL for '${repo_name}'"
+                    $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
+                    if ($pip_index_url) {
+                      $pip_extra_index_url += " $url"
+                    }
+                    else {
+                      $pip_index_url = $url
+                    }
                   }
-                  else {
-                    $pip_index_url = $url
-                  }
+                  $pip_extra_index_url = $pip_extra_index_url.Trim()
                 }
-                $pip_extra_index_url = $pip_extra_index_url.Trim()
 
                 # if no repos were listed, this is the case all-deps-only: it only has pip dependency from PyTorch
                 if (-not $pip_index_url ) {
