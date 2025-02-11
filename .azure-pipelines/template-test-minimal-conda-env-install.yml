@@ -123,13 +123,13 @@ stages:
               targetType: 'inline'
               script: |
                 $conda_channels = ""
-                if ($repositories) {
-                  $virtual_repos = "$(repositories)".Split(" ")
-                  foreach ($repo in $virtual_repos) {
+                $conda_virtual_repos = "$(repositories)".Split(" ")
+                if ($conda_virtual_repos -ne "") {
+                  foreach ($repo in $conda_virtual_repos) {
                     $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
                     echo "Adding Conda channel for '${repo_name}'"
                     $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
-                    if ($conda_channels) {
+                    if ($conda_channels -ne "") {
                       $conda_channels += ","
                     }
                     $conda_channels += $url
@@ -151,13 +151,13 @@ stages:
               script: |
                 $pip_index_url = ""
                 $pip_extra_index_url = ""
-                if ($repositories) {
-                  $array = "$(repositories)".Split(" ")
-                  foreach ($repo in $array) {
+                $pypi_virtual_repos = "$(repositories)".Split(" ")
+                if ($pypi_virtual_repos -ne "") {
+                  foreach ($repo in $pypi_virtual_repos) {
                     $repo_name = "${repo}-pypi-${{ parameters.environment }}"
                     echo "Adding Pip index URL for '${repo_name}'"
                     $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
-                    if ($pip_index_url) {
+                    if ($pip_index_url -ne "") {
                       $pip_extra_index_url += " $url"
                     }
                     else {
