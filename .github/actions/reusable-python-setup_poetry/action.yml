@@ -9,6 +9,10 @@ inputs:
     description: 'Runner OS'
     required: true
     type: string
+  install-extras:
+    description: 'Extra dependencies to install (eg. ["torch", "cuda"])'
+    required: false
+    type: string
   virtual-repo-names:
     description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
     required: false
@@ -25,17 +29,16 @@ runs:
       id: full-python-version
       shell: bash
       run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-    - name: Install poetry
+    - name: Install and configure Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.5
+        virtualenvs-in-project: true
+        virtualenvs-path: .venv
+        installer-parallel: true
+    - name: Config repos for Poetry
       shell: bash
       run: |
-        curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
-        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-    - name: Config poetry
-      shell: bash
-      run: |
-        poetry config virtualenvs.create true
-        poetry config virtualenvs.in-project true
-
         repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
         for repo_name in ${repository_list}; do
           first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
@@ -54,4 +57,6 @@ runs:
       run: timeout 10s poetry run pip --version || rm -rf .venv
     - name: Install dependencies
       shell: bash
-      run: poetry install -vvv
+      run: |
+        extra_args=$(echo '${{ inputs.install-extras }}' | jq -r 'map("-E " + .) | join(" ")')
+        poetry install -vvv $(echo "$extra_args")
