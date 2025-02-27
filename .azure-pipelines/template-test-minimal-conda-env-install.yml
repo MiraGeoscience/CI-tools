@@ -117,7 +117,7 @@ stages:
         pool:
           vmImage: 'windows-2019'
         container:
-          image: ghcr.io/mirageoscience/windows-servercore-ltsc2019-micromamba:latest
+          image: ghcr.io/mirageoscience/windows-servercore-ltsc2022-micromamba:latest
           endpoint: mira-github-docker
         dependsOn: DiscoverFiles
         strategy:
