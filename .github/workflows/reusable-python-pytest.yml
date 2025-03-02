@@ -79,13 +79,15 @@ jobs:
         # if runner is Windows [D]esktop 11
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
         shell: powershell
-        run: >
-          Set-ExecutionPolicy Bypass -Scope Process -Force;
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
+          echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+          echo "$env:ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: "Config Chocolatey cache"
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
-        shell: cmd
+        shell: powershell
         run: choco config set cacheLocation ./.choco-cache
       - name: "Restore cache for choco"
         uses: actions/cache@v4
@@ -95,9 +97,10 @@ jobs:
           key: choco-cache
       - name: "Install Git"
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
-        shell: cmd
-        run: choco install git.install --params "'/GitAndUnixToolsOnPath /NoGitLfs'"
-
+        shell: powershell
+        run: |
+          choco install git.install --params "'/GitAndUnixToolsOnPath /NoGitLfs'"
+          echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
