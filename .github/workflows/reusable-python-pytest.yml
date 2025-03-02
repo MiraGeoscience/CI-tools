@@ -74,6 +74,17 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
+      - name: Install git
+        # if runner is Windows [D]esktop 11
+        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+        shell: cmd
+        run: |
+          where git
+          if %ERRORLEVEL% neq 0 (
+            winget install -e --id Microsoft.Git --force --verbose --disable-interactivity
+          ) else (
+            echo "Git already installed"
+          )
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
@@ -85,30 +96,36 @@ jobs:
 
       - name: "Test if Bash is found"
         id: bash-check
-        if: ${{ runner.os == 'Windows' }}
+        # if runner is Windows [D]esktop 11
+        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
         shell: cmd
         run: |
           where git
-          where choco
+          dir "C:\Program Files\Git\usr\bin\bash.exe"
           where bash
           if %ERRORLEVEL% neq 0 (
             echo "bash-found=false" >> $GITHUB_OUTPUT
           ) else (
             echo "bash-found=true" >> $GITHUB_OUTPUT
           )
+          exit /b 0
 
-      - name: "Configure choco cache"
-        if: ${{ steps.bash-check.outputs.bash-found == 'false' }}
+      - name: "Install Chocolatey"
+        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
+        shell: cmd
+        run: winget install -e --id Chocolatey.Chocolatey --force --verbose --disable-interactivity
+      - name: "Config Chocolatey cache"
+        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
         shell: cmd
         run: choco config set cacheLocation ./.choco-cache
       - name: "Restore cache for choco"
         uses: actions/cache@v4
-        if: ${{ steps.bash-check.outputs.bash-found == 'false' }}
+        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
         with:
           path: ./.choco-cache
           key: choco-cache
       - name: "Install Bash"
-        if: ${{ steps.bash-check.outputs.bash-found == 'false' }}
+        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
         shell: cmd
         run: |
           choco install bash --verbose
