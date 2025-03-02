@@ -88,6 +88,8 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         shell: cmd
         run: |
+          where git
+          where choco
           where bash
           if %ERRORLEVEL% neq 0 (
             echo "bash-found=false" >> $GITHUB_OUTPUT
