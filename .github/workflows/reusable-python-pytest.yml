@@ -73,18 +73,31 @@ jobs:
       run:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
+
     steps:
-      - name: Install git
+      - name: Install Chocolatey
         # if runner is Windows [D]esktop 11
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+        shell: powershell
+        run: >
+          Set-ExecutionPolicy Bypass -Scope Process -Force;
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
+          iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
+      - name: "Config Chocolatey cache"
+        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
         shell: cmd
-        run: |
-          where git
-          if %ERRORLEVEL% neq 0 (
-            winget install -e --id Microsoft.Git --force --verbose --disable-interactivity
-          ) else (
-            echo "Git already installed"
-          )
+        run: choco config set cacheLocation ./.choco-cache
+      - name: "Restore cache for choco"
+        uses: actions/cache@v4
+        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+        with:
+          path: ./.choco-cache
+          key: choco-cache
+      - name: "Install Git"
+        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+        shell: cmd
+        run: choco install git.install --params "'/GitAndUnixToolsOnPath /NoGitLfs'"
+
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
@@ -93,43 +106,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: "Test if Bash is found"
-        id: bash-check
-        # if runner is Windows [D]esktop 11
-        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
-        shell: cmd
-        run: |
-          where git
-          dir "C:\Program Files\Git\usr\bin\bash.exe"
-          where bash
-          if %ERRORLEVEL% neq 0 (
-            echo "bash-found=false" >> $GITHUB_OUTPUT
-          ) else (
-            echo "bash-found=true" >> $GITHUB_OUTPUT
-          )
-          exit /b 0
-
-      - name: "Install Chocolatey"
-        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
-        shell: cmd
-        run: winget install -e --id Chocolatey.Chocolatey --force --verbose --disable-interactivity
-      - name: "Config Chocolatey cache"
-        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
-        shell: cmd
-        run: choco config set cacheLocation ./.choco-cache
-      - name: "Restore cache for choco"
-        uses: actions/cache@v4
-        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
-        with:
-          path: ./.choco-cache
-          key: choco-cache
-      - name: "Install Bash"
-        if: ${{ runner.os == 'Windows' && steps.bash-check.outputs.bash-found == 'false' }}
-        shell: cmd
-        run: |
-          choco install bash --verbose
-          where bash
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
