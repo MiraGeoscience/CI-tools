@@ -70,6 +70,9 @@ jobs:
         os: ${{ fromJson(inputs.os)}}
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +109,6 @@ jobs:
           runner-os: ${{ runner.os }}
 
       - name: Run Pytest
-        shell: pwsh
         env:
           CMD_PREFIX: ${{ inputs.package-manager != 'conda' && inputs.package-manager || '' }}
         run: |
