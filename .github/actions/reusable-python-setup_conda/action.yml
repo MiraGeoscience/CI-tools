@@ -10,7 +10,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup conda env
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
