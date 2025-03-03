@@ -72,53 +72,9 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
-        shell: pwsh
+        shell: 'bash -l {0}'
 
     steps:
-      - name: Check Windows has Bash
-        id: check-win-bash
-        # runner "Windows Desktop 11" has no Bash (nor Git)
-        if: ${{ runner.os == 'Windows' }}
-        shell: powershell
-        run: |
-          if (Get-Command bash -ErrorAction SilentlyContinue) {
-            "has-bash=true" >> $env:GITHUB_OUTPUT
-          } else {
-            "has-bash=false" >> $env:GITHUB_OUTPUT
-          }
-
-      - name: Git and Bash installation cache
-        id: cache-tools-install
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
-        uses: actions/cache@v4
-        env:
-          # change this number to force cache reset
-          CACHE_NUMBER: 1
-        with:
-          path: C:\Program Files\Git
-          key: tools-install-${{ runner.name }}-${{ env.CACHE_NUMBER }}
-      - name: Install Chocolatey
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
-        shell: powershell
-        run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
-          "$env:ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-      - name: "Install Git and Bash"
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
-        shell: powershell
-        # git installation will also install Bash under Git\usr\bin
-        run: |
-          choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
-      - name: "Add Bash to PATH"
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
-        shell: powershell
-        run: |
-          "$env:ProgramFiles\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$env:ProgramFiles\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$env:ProgramFiles\Git\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
