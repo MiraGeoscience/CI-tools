@@ -69,56 +69,9 @@ jobs:
         python-version: ${{ fromJSON(inputs.python-versions) }}
         os: ${{ fromJson(inputs.os)}}
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
     steps:
-      - name: Check Windows has Bash
-        id: check-win-bash
-        # runner "Windows Desktop 11" has no Bash (nor Git)
-        if: ${{ runner.os == 'Windows' }}
-        shell: powershell
-        run: |
-          if (Get-Command bash -ErrorAction SilentlyContinue) {
-            "has-bash=true" >> $env:GITHUB_OUTPUT
-          } else {
-            "has-bash=false" >> $env:GITHUB_OUTPUT
-          }
-
-      - name: Git and Bash installation cache
-        id: cache-tools-install
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
-        uses: actions/cache@v4
-        env:
-          # change this number to force cache reset
-          CACHE_NUMBER: 1
-        with:
-          path: C:\Program Files\Git
-          key: tools-install-${{ runner.name }}-${{ env.CACHE_NUMBER }}
-      - name: Install Chocolatey
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
-        shell: powershell
-        run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
-          "$env:ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-      - name: "Install Git and Bash"
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
-        shell: powershell
-        # git installation will also install Bash under Git\usr\bin
-        run: |
-          choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
-      - name: "Add Bash to PATH"
-        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
-        shell: powershell
-        run: |
-          "$env:ProgramFiles\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$env:ProgramFiles\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$env:ProgramFiles\Git\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
@@ -129,7 +82,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-2029
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
@@ -152,15 +105,17 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - name: Run Pytest
+      - name: get shell
+        id: get-shell
         run: |
-          if ${{ inputs.package-manager == 'conda' }}; then
-            pytest --cov --cov-report=xml
-          elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pytest --cov --cov-report=xml
-          else
-            hatch run pytest --cov --cov-report=xml
-          fi
+          echo "shell=${{ runner.os == 'Windows' && 'powershell' || 'bash -l {0}' }}" >> $GITHUB_OUTPUT
+
+      - name: Run Pytest
+        shell: ${{ steps.get-shell.outputs.shell }}
+        env:
+          CMD_PREFIX: ${{ inputs.package-manager == 'conda' && '' || inputs.package-manager }}
+        run: |
+          ${{ env.CMD_PREFIX }} pytest --cov --cov-report=xml
 
       - name: Codecov
         if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
