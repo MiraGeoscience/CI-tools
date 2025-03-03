@@ -113,6 +113,7 @@ jobs:
           choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
           "$env:ProgramFiles\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Append
           "$env:ProgramFiles\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$env:ProgramFiles\Git\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - uses: actions/checkout@v4
         with:
