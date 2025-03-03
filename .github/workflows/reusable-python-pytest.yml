@@ -99,7 +99,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
         shell: powershell
         run: |
-          choco install git.install --params "'/GitAndUnixToolsOnPath /NoGitLfs'"
+          choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
           echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - uses: actions/checkout@v4
         with:
