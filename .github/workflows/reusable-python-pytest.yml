@@ -83,8 +83,9 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
+          refreshenv
+          echo "$env:PATH"
           echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-          echo "$env:ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: "Config Chocolatey cache"
         if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
         shell: powershell
@@ -100,6 +101,8 @@ jobs:
         shell: powershell
         run: |
           choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
+          refreshenv
+          echo "$env:PATH"
           echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - uses: actions/checkout@v4
         with:
