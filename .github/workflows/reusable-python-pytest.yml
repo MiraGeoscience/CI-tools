@@ -108,7 +108,7 @@ jobs:
       - name: Run Pytest
         shell: pwsh
         env:
-          CMD_PREFIX: ${{ inputs.package-manager == 'conda' && '' || inputs.package-manager }}
+          CMD_PREFIX: ${{ inputs.package-manager != 'conda' && inputs.package-manager || '' }}
         run: |
           ${{ env.CMD_PREFIX }} pytest --cov --cov-report=xml
 
