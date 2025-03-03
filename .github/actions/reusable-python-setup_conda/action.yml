@@ -21,6 +21,6 @@ runs:
         micromamba-version: 1.5.8-0
         environment-file: 'environments/py-${{ inputs.python-version }}-${{ env.FILE_OS_ID }}-64-dev.conda.lock.yml'
         environment-name: test_env
-        init-shell: pwsh
+        init-shell: powershell
         cache-downloads: true
         post-cleanup: none
