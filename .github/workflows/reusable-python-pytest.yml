@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
-        shell: 'bash -l {0}'
+        shell: pwsh
 
     steps:
       - name: Check Windows has Bash
