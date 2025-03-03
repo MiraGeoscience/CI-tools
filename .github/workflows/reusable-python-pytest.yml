@@ -75,39 +75,50 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
     steps:
+      - name: Check Windows has Bash
+        id: check-win-bash
+        # runner "Windows Desktop 11" has no Bash (nor Git)
+        if: ${{ runner.os == 'Windows' }}
+        shell: powershell
+        run: |
+          if (Get-Command bash -ErrorAction SilentlyContinue) {
+            "has-bash=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "has-bash=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Git and Bash installation cache
+        id: cache-tools-install
+        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
+        uses: actions/cache@v4
+        env:
+          # change this number to force cache reset
+          CACHE_NUMBER: 1
+        with:
+          path: C:\Program Files\Git
+          key: tools-install-${{ runner.name }}-${{ env.CACHE_NUMBER }}
       - name: Install Chocolatey
-        # if runner is Windows [D]esktop 11
-        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
         shell: powershell
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
-          refreshenv
-          echo "$env:PATH"
-          echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-      - name: "Config Chocolatey cache"
-        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
+          "$env:ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: "Install Git and Bash"
+        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' && steps.cache-tools-install.outputs.cache-hit != 'true' }}
         shell: powershell
-        run: choco config set cacheLocation ./.choco-cache
-      - name: "Restore cache for choco"
-        uses: actions/cache@v4
-        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
-        with:
-          path: ./.choco-cache
-          key: choco-cache
-      - name: "Install Git"
-        if: ${{ runner.os == 'Windows' && contains(runner.name, 'esktop') && contains(runner.name, '11') }}
-        shell: powershell
+        # git installation will also install Bash under Git\usr\bin
         run: |
           choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
-          refreshenv
-          echo "$env:PATH"
-          echo "$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+          "$env:ProgramFiles\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$env:ProgramFiles\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
       - uses: actions/checkout@v4
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
@@ -128,6 +139,7 @@ jobs:
           install-extras: ${{ inputs.install-extras }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
@@ -144,6 +156,7 @@ jobs:
           else
             hatch run pytest --cov --cov-report=xml
           fi
+
       - name: Codecov
         if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
         uses: codecov/codecov-action@v4
