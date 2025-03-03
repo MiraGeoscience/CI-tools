@@ -105,13 +105,8 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - name: get shell
-        id: get-shell
-        run: |
-          echo "shell=${{ runner.os == 'Windows' && 'powershell' || 'bash -l {0}' }}" >> $GITHUB_OUTPUT
-
       - name: Run Pytest
-        shell: ${{ steps.get-shell.outputs.shell }}
+        shell: pwsh
         env:
           CMD_PREFIX: ${{ inputs.package-manager == 'conda' && '' || inputs.package-manager }}
         run: |
