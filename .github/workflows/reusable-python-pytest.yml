@@ -111,6 +111,10 @@ jobs:
         # git installation will also install Bash under Git\usr\bin
         run: |
           choco install git.install -y --params "'/GitAndUnixToolsOnPath'"
+      - name: "Add Bash to PATH"
+        if: ${{ steps.check-win-bash.outputs.has-bash == 'false' }}
+        shell: powershell
+        run: |
           "$env:ProgramFiles\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Append
           "$env:ProgramFiles\Git\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
           "$env:ProgramFiles\Git\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
