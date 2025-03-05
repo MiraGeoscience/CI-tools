@@ -117,8 +117,8 @@ stages:
         pool:
           vmImage: 'windows-2022'
         container:
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
-          endpoint: Docker-Artifactory
+          image: ghcr.io/mirageoscience/windows-servercore-ltsc2022-micromamba:latest
+          endpoint: mira-github-docker
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
