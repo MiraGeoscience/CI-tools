@@ -76,7 +76,7 @@ jobs:
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
             -   name: Setup conda env
-                uses: mamba-org/setup-micromamba@v1
+                uses: mamba-org/setup-micromamba@v2
                 with:
                     micromamba-version: 1.5.8-0
                     environment-name: test_env
