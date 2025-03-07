@@ -80,7 +80,7 @@ jobs:
                         exit 1
                     fi
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+            -   uses: jfrog/setup-jfrog-cli@v4.5.6
                 name: Setup JFrog CLI
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
