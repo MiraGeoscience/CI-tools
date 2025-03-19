@@ -97,7 +97,7 @@ jobs:
                     done
 
                     BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
-                    BUILDS_ARGS+=" --channel-priority disabled"
+                    BUILDS_ARGS+=" --channel-priority flexible"
 
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
