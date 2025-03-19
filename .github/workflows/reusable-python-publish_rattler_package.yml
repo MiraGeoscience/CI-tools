@@ -51,6 +51,11 @@ defaults:
     run:
         shell: 'bash -l {0}'
 
+env:
+    # cover for both conda and mamba
+    CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
+    MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
+
 jobs:
     build_rattler_package:
         name: Build package with rattler
