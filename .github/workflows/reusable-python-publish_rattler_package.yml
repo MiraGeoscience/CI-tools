@@ -76,28 +76,29 @@ jobs:
                         echo "Rattler recipe not found"
                         exit 1
                     fi
-            -   name: Auths with JFrog channels
+            -   name: Configure channels and Auth
+                id: config-channels
                 run: |
-                    BUILDS_ARGS=""
+                    BUILD_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
                     repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                     fi
+                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                        BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
 
                     channnel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
                     for channel_name in ${channel_list}; do
-                        BUILDS_ARGS+=" --channel ${channel_name}"
+                        BUILD_ARGS+=" --channel ${channel_name}"
                     done
 
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
-                    echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+                    echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
             -   name: Check RATTLER_AUTH_FILE content
                 run: |
                     echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
@@ -113,7 +114,7 @@ jobs:
                     build-args: >-
                         --output-dir ${{ runner.temp }}/output
                         --channel-priority strict
-                        ${{ env.BUILDS_ARGS }}
+                        ${{ steps.config-channels.outputs.BUILD_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
