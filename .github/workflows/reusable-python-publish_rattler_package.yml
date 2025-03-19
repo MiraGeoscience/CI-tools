@@ -96,9 +96,6 @@ jobs:
                         BUILDS_ARGS+=" --channel ${channel_name}"
                     done
 
-                    BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
-                    BUILDS_ARGS+=" --channel-priority flexible"
-
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
             -   name: Check RATTLER_AUTH_FILE content
@@ -113,7 +110,10 @@ jobs:
                 uses: prefix-dev/rattler-build-action@v0.2.32
                 with:
                     rattler-build-version: v0.34.1
-                    build-args: ${{ env.BUILDS_ARGS }}
+                    build-args: >-
+                        --output-dir ${{ runner.temp }}/output
+                        --channel-priority strict
+                        ${{ env.BUILDS_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
