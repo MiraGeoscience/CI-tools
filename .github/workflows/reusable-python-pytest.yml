@@ -4,17 +4,17 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (eg. "conda", "poetry")'
+        description: 'Package manager to use (e.g. "conda", "poetry")'
         required: true
         type: string
         default: 'poetry'
       python-versions:
-        description: 'Matrix of Python versions to test against (eg. ["3.10", "3.11", "3.12"])'
+        description: 'List of Python versions to test against (e.g. ["3.10", "3.11", "3.12"])'
         required: false
         type: string
         default: "['3.10']"
       os:
-        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        description: 'List of OS to test against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
         type: string
         default: "['ubuntu-latest']"
@@ -28,16 +28,16 @@ on:
         required: false
         type: string
       codecov-reference-os:
-        description: 'Matrix of OS to use as reference for Codecov'
+        description: 'List of OS to use as reference for Codecov'
         required: false
         type: string
         default: "['windows-latest']"
       install-extras:
-        description: 'Extra dependencies to install (eg. ["torch", "cuda"])'
+        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
         required: false
         type: string
       virtual-repo-names:
-        description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
+        description: 'List of repository names to publish on (e.g. ["public-dev-pypi"])'
         required: false
         type: string
       lfs:

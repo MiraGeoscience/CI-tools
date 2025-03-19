@@ -8,7 +8,7 @@ on:
         required: false
         type: string
       os:
-        description: 'Matrix of OS to run against (eg. ["ubuntu-latest", "macos-latest"])'
+        description: 'List of OS to run against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
         type: string
         default: "['ubuntu-latest']"

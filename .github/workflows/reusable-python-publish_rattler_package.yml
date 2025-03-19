@@ -8,7 +8,7 @@ on:
             required: true
             type: string
         python-version:
-            description: 'Python version to use (eg: 3.10)'
+            description: 'Python version to use (e.g. 3.10)'
             required: true
             type: string
         lfs:
@@ -16,16 +16,20 @@ on:
             required: false
             type: boolean
             default: true
+        conda-channels:
+            description: 'List of conda channels to pull from (e.g. ["conda-forge", "pytorch"])'
+            required: true
+            type: string
         source-repo-names:
-            description: 'Matrix of repository names to publish on (eg. ["public-conda-dev-local", "conda-forge-dev-remote"])'
+            description: 'List of repository names to pull from (e.g. ["geology-conda-dev", "geophysics-conda-dev"])'
             required: true
             type: string
         publish-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-dev"])'
+            description: 'List of repository names to publish on (e.g. ["public-conda-dev"])'
             required: true
             type: string
         os:
-            description: 'OS to build against (eg. "ubuntu-latest")'
+            description: 'OS to build against (e.g. "ubuntu-latest")'
             required: false
             type: string
             default: 'ubuntu-latest'
@@ -47,6 +51,11 @@ defaults:
     run:
         shell: 'bash -l {0}'
 
+env:
+    # cover for both conda and mamba
+    CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
+    MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
+
 jobs:
     build_rattler_package:
         name: Build package with rattler
@@ -67,31 +76,29 @@ jobs:
                         echo "Rattler recipe not found"
                         exit 1
                     fi
-            -   name: Auths with JFrog channels
+            -   name: Configure channels and Auth
+                id: config-channels
                 run: |
-                    BUILDS_ARGS=""
+                    BUILD_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
-                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]')
-                    repository_count=$(echo '${{ inputs.source-repo-names }}' | jq '. | length')
-
-                    # Check if there is more than one element
-                    if [ "$repository_count" -ge 1 ]; then
+                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]' | xargs)
+                    if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
-                    else
-                        BUILDS_ARGS=" --channel conda-forge"
                     fi
+                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
-                        BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                        BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
 
-                    BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
-                    BUILDS_ARGS+=" --channel-priority disabled"
+                    channel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
+                    for channel_name in ${channel_list}; do
+                        BUILD_ARGS+=" --channel ${channel_name}"
+                    done
 
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
-                    echo "BUILDS_ARGS=$BUILDS_ARGS" >> "$GITHUB_ENV"
+                    echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
             -   name: Check RATTLER_AUTH_FILE content
                 run: |
                     echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
@@ -104,7 +111,10 @@ jobs:
                 uses: prefix-dev/rattler-build-action@v0.2.32
                 with:
                     rattler-build-version: v0.34.1
-                    build-args: ${{ env.BUILDS_ARGS }}
+                    build-args: >-
+                        --output-dir ${{ runner.temp }}/output
+                        --channel-priority strict
+                        ${{ steps.config-channels.outputs.BUILD_ARGS }}
                     recipe-path: ${{ github.workspace}}/recipe.yaml
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
@@ -123,7 +133,7 @@ jobs:
         needs: build_rattler_package
         strategy:
             matrix:
-                virtual-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
+                publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
         steps:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
@@ -134,7 +144,7 @@ jobs:
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
                     build-dir-path: 'build-dir/noarch'
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
+                    artifactory-dir-path: ${{ matrix.publish-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     add_release_asset:

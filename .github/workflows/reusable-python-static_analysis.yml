@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (eg. "conda", "poetry")'
+        description: 'Package manager to use (e.g. "conda", "poetry")'
         required: true
         type: string
         default: 'poetry'
@@ -18,11 +18,11 @@ on:
         type: string
         default: '3.10'
       install-extras:
-        description: 'Extra dependencies to install (eg. ["torch", "cuda"])'
+        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
         required: false
         type: string
       virtual-repo-names:
-        description: 'Matrix of virtual repository names to resolve on (eg. ["public-dev-pypi"])'
+        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
         required: false
         type: string
       timeout-minutes:
@@ -31,7 +31,7 @@ on:
         type: number
         default: 20
       os:
-        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        description: 'List of OS to test against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
         type: string
         default: "['ubuntu-latest']"

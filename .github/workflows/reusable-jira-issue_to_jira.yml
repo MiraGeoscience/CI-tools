@@ -20,7 +20,7 @@ on:
         required: true
         type: string
       components:
-        description: 'JIRA components (eg. [{"name": "geoh5py"}])'
+        description: 'JIRA components (e.g. [{"name": "geoh5py"}])'
         required: false
         type: string
 
