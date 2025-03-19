@@ -16,12 +16,16 @@ on:
             required: false
             type: boolean
             default: true
+        conda-channels:
+            description: 'List of conda channels to pull from (e.g. ["conda-forge", "pytorch"])'
+            required: true
+            type: string
         source-repo-names:
-            description: 'Matrix of repository names to publish on (eg. ["public-conda-dev-local", "conda-forge-dev-remote"])'
+            description: 'List of repository names to pull from (e.g. ["geology-conda-dev", "geophysics-conda-dev"])'
             required: true
             type: string
         publish-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-dev"])'
+            description: 'List of repository names to publish on (e.g. ["public-conda-dev"])'
             required: true
             type: string
         os:
@@ -72,19 +76,19 @@ jobs:
                     BUILDS_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
-                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]')
-                    repository_count=$(echo '${{ inputs.source-repo-names }}' | jq '. | length')
-
-                    # Check if there is more than one element
-                    if [ "$repository_count" -ge 1 ]; then
+                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]' | xargs)
+                    if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
-                    else
-                        BUILDS_ARGS=" --channel conda-forge"
                     fi
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
                         BUILDS_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                    done
+
+                    channnel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
+                    for channel_name in ${channel_list}; do
+                        BUILDS_ARGS+=" --channel ${channel_name}"
                     done
 
                     BUILDS_ARGS+=" --output-dir ${{ runner.temp }}/output"
@@ -123,7 +127,7 @@ jobs:
         needs: build_rattler_package
         strategy:
             matrix:
-                virtual-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
+                publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
         steps:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
@@ -134,7 +138,7 @@ jobs:
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:
                     build-dir-path: 'build-dir/noarch'
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
+                    artifactory-dir-path: ${{ matrix.publish-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     add_release_asset:
