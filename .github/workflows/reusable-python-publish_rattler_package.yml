@@ -8,7 +8,7 @@ on:
             required: true
             type: string
         python-version:
-            description: 'Python version to use (eg: 3.10)'
+            description: 'Python version to use (e.g. 3.10)'
             required: true
             type: string
         lfs:
@@ -29,7 +29,7 @@ on:
             required: true
             type: string
         os:
-            description: 'OS to build against (eg. "ubuntu-latest")'
+            description: 'OS to build against (e.g. "ubuntu-latest")'
             required: false
             type: string
             default: 'ubuntu-latest'
