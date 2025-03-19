@@ -93,7 +93,7 @@ jobs:
                         BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
 
-                    channnel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
+                    channel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
                     for channel_name in ${channel_list}; do
                         BUILD_ARGS+=" --channel ${channel_name}"
                     done
