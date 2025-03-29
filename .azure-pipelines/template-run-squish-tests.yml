@@ -1,0 +1,105 @@
+# File: template-run-squish-tests.yml
+parameters:
+  - name: squishTestSuites
+    type: string
+    default: 'all'
+  - name: branchName
+    type: string
+    default: 'development'
+  - name: version
+    type: string
+    default: '4\.5\.0'
+
+stages:
+  - stage: GetGA
+    displayName: Download Geoscience Analyst
+    pool:
+      vmImage: 'ubuntu-latest'
+    jobs:
+      - job: FetchGA
+        displayName: Fetch Geoscience Analyst
+        variables:
+        - group: MIRA_SHAREFILE
+        steps:
+          - checkout: none
+          - task: Bash@3
+            name: DownloadGA
+            displayName: Download the last Geoscience Analyst executable built
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd $(Pipeline.Workspace)/
+
+                # Install lftp
+                sudo apt-get update
+                sudo apt-get install lftp
+                
+                # Download file using lftp
+                echo "Searching for the latest file containing '${{ parameters.branchName }}' in its name..."
+                LATEST_FILE=$(lftp -d -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
+                set ftp:ssl-force true
+                set ftp:ssl-protect-data true
+                cls -1 --sort=date $(SHAREFILE_GA_DIRECTORY)
+                bye
+                EOF
+                )
+
+                LATEST_FILE=$(echo "$LATEST_FILE" | tr ' ' '\n' | grep "${{ parameters.branchName }}" | grep "${{ parameters.version }}" | head -n 1)
+                LATEST_FILE=$(basename "$LATEST_FILE")
+
+                if [ -z "$LATEST_FILE" ]; then
+                    echo "No file found with '${{ parameters.branchName }}' in its name."
+                    exit 1
+                fi
+
+                echo "Found file: $LATEST_FILE"
+
+                echo "Downloading '$LATEST_FILE'..."
+
+                lftp -u "$(SHAREFILE_USER)","$(SHAREFILE_PWD)" ftps://$(SHAREFILE_HOST):$(SHAREFILE_PORT) <<EOF
+                set ftp:ssl-force true
+                set ftp:ssl-protect-data true
+                get $(SHAREFILE_GA_DIRECTORY)/$LATEST_FILE -o $LATEST_FILE
+                bye
+                EOF
+
+                # Verify success
+                if [ $? -eq 0 ]; then
+                    echo "File downloaded successfully to $LATEST_FILE"
+                else
+                    echo "Failed to download the file."
+                    exit 1
+                fi
+                # Save and output the file name
+                echo "##vso[task.setvariable variable=gaFileName;isOutput=true]$LATEST_FILE"
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Geoscience Analyst executable
+            inputs: 
+              targetPath: $(Pipeline.Workspace)/$(DownloadGA.gaFileName)
+              artifact: GA
+            
+
+  - stage: RunSquishTests
+    displayName: Run Squish tests
+    pool:
+      vmImage: 'windows-2022'
+    dependsOn: GetGA
+    jobs:
+      - job: RunSquishTests
+        displayName: Run Squish tests
+        variables:
+          gaFile: $[ stageDependencies.GetGA.FetchGA.outputs['DownloadGA.gaFileName'] ]
+        steps:
+          - download: current
+            artifact: GA
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd ..\GA
+                Start-Process -FilePath $(gaFile) -ArgumentList '/SP /Silent' -Verb RunAs
+          - task: SquishTask@1
+            inputs:
+              squishFolder: '.'
+              squishTestSuites: ${{ parameters.squishTestSuites }}
+  
