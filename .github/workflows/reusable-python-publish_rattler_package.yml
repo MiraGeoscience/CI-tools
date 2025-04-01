@@ -108,7 +108,7 @@ jobs:
                     cat < $RATTLER_AUTH_FILE
                     cat < ${{ runner.temp }}/credentials.json
             -   name: Build package
-                uses: prefix-dev/rattler-build-action@v0.2.32
+                uses: prefix-dev/rattler-build-action@v0.2.33
                 with:
                     rattler-build-version: v0.34.1
                     build-args: >-
