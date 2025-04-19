@@ -103,9 +103,9 @@ jobs:
             -   name: Define build path
                 id: define-build-path
                 run: |
-                    DIR_PATH="dist"
+                    DIR_PATH="dist/"
                     echo "dir-path: ${DIR_PATH}"
-                    if [[ -z ${DIR_PATH} ]]; then
+                    if [[ ! -d ${DIR_PATH} ]]; then
                         echo "Build folder {DIR_PATH} not found"
                         exit 1
                     fi
