@@ -39,6 +39,11 @@ on:
             required: false
             type: number
             default: 20
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -59,9 +64,10 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@GEOPY-2049
         with:
             package-name: ${{ inputs.package-name }}
+            source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
             version-tag: ${{ inputs.version-tag }}

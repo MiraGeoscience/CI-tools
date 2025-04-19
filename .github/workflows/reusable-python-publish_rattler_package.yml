@@ -38,6 +38,11 @@ on:
             required: false
             type: number
             default: 20
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -70,7 +75,7 @@ jobs:
                     fetch-depth: 0
             -   name: Check if there is a rattler recipe
                 run: |
-                    if [ -f recipe.yaml ]; then
+                    if [ -f ${{ inputs.source-path || '.' }}/recipe.yaml ]; then
                         echo "Rattler recipe found"
                     else
                         echo "Rattler recipe not found"
@@ -115,7 +120,7 @@ jobs:
                         --output-dir ${{ runner.temp }}/output
                         --channel-priority strict
                         ${{ steps.config-channels.outputs.BUILD_ARGS }}
-                    recipe-path: ${{ github.workspace}}/recipe.yaml
+                    recipe-path: ${{ github.workspace}}/${{ inputs.source-path }}/recipe.yaml
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
             -   name: Archive build artifact

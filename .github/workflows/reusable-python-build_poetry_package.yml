@@ -7,6 +7,11 @@ on:
             description: 'Name of the package to build'
             required: true
             type: string
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
         python-version:
             description: 'Python version to use (e.g. 3.10)'
             required: true
@@ -106,14 +111,15 @@ jobs:
                         poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                     done
             -   name: Poetry build
+                working-directory: ${{ inputs.source-path || '.' }}
                 run: poetry build
 
             -   name: Define build path
                 id: define-build-path
                 run: |
-                    DIR_PATH="dist"
+                    DIR_PATH="${{ inputs.source-path || '.' }}/dist"
                     echo "dir-path: ${DIR_PATH}"
-                    if [[ -z ${DIR_PATH} ]]; then
+                    if [[ ! -d ${DIR_PATH} ]]; then
                         echo "No build path found"
                         exit 1
                     fi
