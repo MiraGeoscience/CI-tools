@@ -119,7 +119,7 @@ jobs:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
@@ -152,7 +152,7 @@ jobs:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: download-artifact
             -   name: Upload release asset
                 env:

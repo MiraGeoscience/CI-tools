@@ -113,5 +113,5 @@ jobs:
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ steps.define-build-path.outputs.dir-path }}
