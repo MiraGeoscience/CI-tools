@@ -12,7 +12,6 @@ parameters:
     type: object
     default:
       all: geoplus
-      all_deps_only: ""
       geology: geology
       geophysics: geophysics
       interop: public
@@ -21,8 +20,6 @@ parameters:
     type: object
     default:
       all:
-        - conda-forge
-      all_deps_only:
         - conda-forge
       geology:
         - conda-forge
