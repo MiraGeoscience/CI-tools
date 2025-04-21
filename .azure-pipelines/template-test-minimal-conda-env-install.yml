@@ -160,7 +160,7 @@ stages:
               script: |
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
                 $Env:MAMBA_CHANNEL_ALIAS = "https://repo.prefix.dev"
-                # $Env:MAMBA_CHANNEL_PRIORITY = "flexible"  # the default, not forced by Analyst
+                $Env:MAMBA_CHANNEL_PRIORITY = "strict"  # make sure Artifactory takes precedence over conda-forge
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba --no-rc env create -y -f $(filename) -n $(name)
