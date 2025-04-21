@@ -156,36 +156,6 @@ stages:
                 $conda_channels += "${remote_repos}"
                 echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
-            name: ConfigurePyPISources
-            displayName: Configure PyPI sources
-            inputs:
-              targetType: 'inline'
-              script: |
-                $pip_index_url = ""
-                $pip_extra_index_url = ""
-                $pypi_virtual_repos = "$(repositories)".Split(" ")
-                if ($pypi_virtual_repos -ne "") {
-                  foreach ($repo in $pypi_virtual_repos) {
-                    $repo_name = "${repo}-pypi-${{ parameters.environment }}"
-                    echo "Adding Pip index URL for '${repo_name}'"
-                    $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo_name}/simple"
-                    if ($pip_index_url -ne "") {
-                      $pip_extra_index_url += " $url"
-                    }
-                    else {
-                      $pip_index_url = $url
-                    }
-                  }
-                  $pip_extra_index_url = $pip_extra_index_url.Trim()
-                }
-
-                # if no repos were listed, this is the case all-deps-only: it only has pip dependency from PyTorch
-                if (-not $pip_index_url ) {
-                  $pip_index_url = "https://download.pytorch.org/whl/cpu"
-                }
-                echo "##vso[task.setvariable variable=pip_index_url;issecret=true]$pip_index_url"
-                echo "##vso[task.setvariable variable=pip_extra_index_url;issecret=true]$pip_extra_index_url"
-          - task: PowerShell@2
             name: InstallEnvironment
             displayName: Install environment
             inputs:
@@ -194,8 +164,6 @@ stages:
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
                 $Env:MAMBA_CHANNEL_ALIAS = "https://repo.prefix.dev"
                 # $Env:MAMBA_CHANNEL_PRIORITY = "flexible"  # the default, not forced by Analyst
-                $Env:PIP_INDEX_URL = "$(pip_index_url)"
-                $Env:PIP_EXTRA_INDEX_URL = "$(pip_extra_index_url)"
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
                 micromamba --no-rc env create -y -f $(filename) -n $(name)
