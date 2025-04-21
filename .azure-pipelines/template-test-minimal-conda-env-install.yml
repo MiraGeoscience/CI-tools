@@ -15,7 +15,7 @@ parameters:
       geology: geology
       geophysics: geophysics
       interop: public
-      simpeg: geophysics
+      simpeg: public
   - name: envToRemoteRepos
     type: object
     default:
