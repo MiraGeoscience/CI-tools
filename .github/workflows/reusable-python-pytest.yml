@@ -83,7 +83,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GA-8604
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
