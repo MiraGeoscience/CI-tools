@@ -52,7 +52,7 @@ stages:
                 mkdir -p "environments" "$artifactFolder"
 
                 # DiscoverFiles
-                files=$(find $buildEnvFolder -name "py-3.10-win-64-*.yml")
+                files=$(find $buildEnvFolder -name "py-3.12-win-64-*.yml")
                 if [[ -z "$files" ]]; then
                     echo "No win-64 environment files found in $buildEnvFolder"
                     exit 1
