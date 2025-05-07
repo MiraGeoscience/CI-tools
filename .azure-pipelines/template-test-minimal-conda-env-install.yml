@@ -1,5 +1,8 @@
 # File: template-test-minimal-conda-env-install.yml
 parameters:
+  - name: pythonVersion
+    type: string
+    default: '3.10'
   # Determines the type of package repository to use for testing installation (prod or dev).
   - name: environment
     type: string
@@ -52,7 +55,7 @@ stages:
                 mkdir -p "environments" "$artifactFolder"
 
                 # DiscoverFiles
-                files=$(find $buildEnvFolder -name "py-3.12-win-64-*.yml")
+                files=$(find $buildEnvFolder -name "py-${{parameters.pythonVersion}}-win-64-*.yml")
                 if [[ -z "$files" ]]; then
                     echo "No win-64 environment files found in $buildEnvFolder"
                     exit 1
