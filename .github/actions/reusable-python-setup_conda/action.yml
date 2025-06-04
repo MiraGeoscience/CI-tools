@@ -5,16 +5,12 @@ inputs:
     description: 'Python version to use'
     required: true
     type: string
-  virtual-repo-names:
-    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-conda"])'
-    required: false
-    type: string
   JFROG_ARTIFACTORY_URL:
-    description: 'JFrog Artifactory URL, to access the virtual repositories, if any'
+    description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
     required: false
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: 'JFrog Artifactory Token, to access the virtual repositories, if any'
+    description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
     required: false
     type: string
 

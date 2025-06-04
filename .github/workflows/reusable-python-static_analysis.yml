@@ -37,10 +37,10 @@ on:
         default: "['ubuntu-latest']"
     secrets:
       JFROG_ARTIFACTORY_URL:
-        description: 'JFrog Artifactory URL, to access the virtual repositories, if any'
+        description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
         required: false
       JFROG_ARTIFACTORY_TOKEN:
-        description: 'JFrog Artifactory Token, to access the virtual repositories, if any'
+        description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
         required: false
 
 env:
@@ -73,7 +73,6 @@ jobs:
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ inputs.python-version }}
-          virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
