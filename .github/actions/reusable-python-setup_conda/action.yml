@@ -37,7 +37,6 @@ runs:
           CHANNELS_CONFIG="${CHANNELS_CONFIG}  - https://github:${{ inputs.JFROG_ARTIFACTORY_TOKEN }}@${{ inputs.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}\\n"
         done
         CHANNELS_CONFIG="${CHANNELS_CONFIG}  - conda-forge\\n"
-        CHANNELS_CONFIG="${CHANNELS_CONFIG}  - nodefaults\\n"
         {
           echo 'CHANNELS_CONFIG<<EOF'
           echo -e "$CHANNELS_CONFIG"
