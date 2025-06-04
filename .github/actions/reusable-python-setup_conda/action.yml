@@ -30,3 +30,4 @@ runs:
         MAMBA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
         CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
+        MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
