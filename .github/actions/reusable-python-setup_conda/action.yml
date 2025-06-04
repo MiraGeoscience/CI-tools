@@ -14,23 +14,35 @@ inputs:
     required: false
     type: string
 
+
 runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
-    - name: Setup CONDA_LOCK_ENV_FILE
+    - name: Setup env vars
       shell: bash
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
-        echo "os_conda=$os_conda" >> $GITHUB_ENV
-    - name: Credentials for Artifactory
-      shell: bash
-      run: |
-        echo "machine ${{ inputs.JFROG_ARTIFACTORY_URL }} login github password ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}" > ~/.netrc
-    - name: Setup conda env
+        echo "os_conda=$os_conda" >> "$GITHUB_ENV"
+        echo "micromamba_version=2.1.0-0" >> "$GITHUB_ENV"
+        echo "MAMBA_CHANNEL_ALIAS=https://repo.prefix.dev" >> "$GITHUB_ENV"
+    - name: Setup micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
-        micromamba-version: 2.1.0-0
+        micromamba-version: ${{ env.micromamba_version }}
+        init-shell: bash
+        cache-downloads: true
+        environment-name: ""
+        post-cleanup: none
+    - name: Authenticate to Artifactory
+      if: ${{ inputs.JFROG_ARTIFACTORY_URL && inputs.JFROG_ARTIFACTORY_TOKEN }}
+      shell: 'bash -l {0}'
+      run: |
+        micromamba auth login ${{ inputs.JFROG_ARTIFACTORY_URL }} -u github -p ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+    - name: Create conda env
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        micromamba-version: ${{ env.micromamba_version }}
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}
         environment-name: test_env
         init-shell: bash
@@ -42,4 +54,3 @@ runs:
         MAMBA_CHANNEL_PRIORITY: strict
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
         CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
-        MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
