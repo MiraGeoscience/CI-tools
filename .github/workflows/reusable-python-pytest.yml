@@ -55,8 +55,11 @@ on:
       CODECOV_TOKEN:
         description: 'Codecov token'
         required: false
+      JFROG_ARTIFACTORY_URL:
+        description: 'JFrog Artifactory URL, to access the virtual repositories, if any'
+        required: false
       JFROG_ARTIFACTORY_TOKEN:
-        description: 'JFrog Artifactory Token'
+        description: 'JFrog Artifactory Token, to access the virtual repositories, if any'
         required: false
 
 jobs:
@@ -78,16 +81,20 @@ jobs:
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@GEOPY-2241
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ matrix.python-version }}
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
+          JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
@@ -98,6 +105,7 @@ jobs:
           install-extras: ${{ inputs.install-extras }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
@@ -114,6 +122,7 @@ jobs:
           else
             hatch run pytest --cov --cov-report=xml
           fi
+
       - name: Codecov
         if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
         uses: codecov/codecov-action@v5

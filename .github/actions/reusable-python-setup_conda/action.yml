@@ -5,6 +5,18 @@ inputs:
     description: 'Python version to use'
     required: true
     type: string
+  virtual-repo-names:
+    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-conda"])'
+    required: false
+    type: string
+  JFROG_ARTIFACTORY_URL:
+    description: 'JFrog Artifactory URL, to access the virtual repositories, if any'
+    required: false
+    type: string
+  JFROG_ARTIFACTORY_TOKEN:
+    description: 'JFrog Artifactory Token, to access the virtual repositories, if any'
+    required: false
+    type: string
 
 runs:
   using: "composite"
@@ -15,6 +27,23 @@ runs:
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> $GITHUB_ENV
+    - name: Process repository names
+      shell: bash
+      run: |
+        CHANNELS_CONFIG="channels:\\n"
+        repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+        for repo_name in ${repository_list}; do
+          echo "Adding repository $repo_name"
+          CHANNELS_CONFIG="${CHANNELS_CONFIG}  - https://github:${{ inputs.JFROG_ARTIFACTORY_TOKEN }}@${{ inputs.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}\\n"
+        done
+        CHANNELS_CONFIG="${CHANNELS_CONFIG}  - conda-forge\\n"
+        CHANNELS_CONFIG="${CHANNELS_CONFIG}  - nodefaults\\n"
+        {
+          echo 'CHANNELS_CONFIG<<EOF'
+          echo -e "$CHANNELS_CONFIG"
+          echo EOF
+        } >> "$GITHUB_ENV"
+
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -24,6 +53,8 @@ runs:
         init-shell: bash
         cache-downloads: true
         post-cleanup: none
+        condarc: |
+          ${{ env.CHANNELS_CONFIG }}
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
