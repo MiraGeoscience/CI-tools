@@ -27,22 +27,10 @@ runs:
       run: |
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> $GITHUB_ENV
-    - name: Process repository names
+    - name: Credentials for Artifactory
       shell: bash
       run: |
-        CHANNELS_CONFIG="channels:\\n"
-        repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
-        for repo_name in ${repository_list}; do
-          echo "Adding repository $repo_name"
-          CHANNELS_CONFIG="${CHANNELS_CONFIG}  - https://github:${{ inputs.JFROG_ARTIFACTORY_TOKEN }}@${{ inputs.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}\\n"
-        done
-        CHANNELS_CONFIG="${CHANNELS_CONFIG}  - conda-forge\\n"
-        {
-          echo 'CHANNELS_CONFIG<<EOF'
-          echo -e "$CHANNELS_CONFIG"
-          echo EOF
-        } >> "$GITHUB_ENV"
-
+        echo "machine ${{ inputs.JFROG_ARTIFACTORY_URL }} login github password ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}" > ~/.netrc
     - name: Setup conda env
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -52,14 +40,10 @@ runs:
         init-shell: bash
         cache-downloads: true
         post-cleanup: none
-        condarc: |
-          ${{ env.CHANNELS_CONFIG }}
       env:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         MAMBA_CHANNEL_PRIORITY: strict
-        MIRA_ARTIFACTORY_USER: github
-        MIRA_ARTIFACTORY_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
         PIP_NO_DEPS: 1 # all dependencies are installed from conda
         CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
         MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
