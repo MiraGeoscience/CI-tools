@@ -1,5 +1,8 @@
 name: Create JIRA issue
 
+permissions:
+  issues: write
+
 on:
   issues:
     types: [opened]
