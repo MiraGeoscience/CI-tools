@@ -1,4 +1,11 @@
-name: Zizmor Security Scan
+name: Zizmor analysis
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'Name of the app to run pre-commit on'
+        required: false
+        type: string
 jobs:
  security_scan:
    runs-on: ubuntu-latest
