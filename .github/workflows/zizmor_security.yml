@@ -4,7 +4,7 @@ on:
     inputs:
       app-name:
         description: 'Name of the app to run pre-commit on'
-        required: false
+        required: true
         type: string
 jobs:
  security_scan:
