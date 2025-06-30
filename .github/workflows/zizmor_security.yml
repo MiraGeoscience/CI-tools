@@ -1,20 +1,4 @@
 name: Zizmor Security Scan
-on:
- pull_request:
-   types: [opened, synchronize, reopened, ready_for_review]
-   branches:
-     - development
-     - main
-     - release/**
-     - feature/**
-     - hotfix/**
- push:
-   branches:
-     - development
-     - main
-     - release/**
-     - feature/**
-     - hotfix/**
 jobs:
  security_scan:
    runs-on: ubuntu-latest
