@@ -1,4 +1,5 @@
 name: Zizmor analysis
+
 on:
   workflow_call:
     inputs:
@@ -6,18 +7,22 @@ on:
         description: 'Name of the app to run pre-commit on'
         required: true
         type: string
+
 jobs:
- security_scan:
-   runs-on: ubuntu-latest
-   permissions:
-     contents: read
-     actions: read
-   steps:
-     - name: Checkout repository
-       uses: actions/checkout@v4
-       with:
-         persist-credentials: false
-     - name: Run Zizmor Security Scan
-       uses: zizmorcore/zizmor-action@f52a838cfabf134edcbaa7c8b3677dde20045018
-       with:
-         advanced-security: false
+  security_scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Zizmor Security Scan
+        uses: zizmorcore/zizmor-action@f52a838cfabf134edcbaa7c8b3677dde20045018
+        with:
+          advanced-security: false
+
+
