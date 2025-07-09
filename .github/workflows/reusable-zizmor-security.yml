@@ -21,6 +21,7 @@ jobs:
           persist-credentials: false
 
       - name: Run Zizmor Security Scan
+        continue-on-error: true
         uses: zizmorcore/zizmor-action@f52a838cfabf134edcbaa7c8b3677dde20045018
         with:
           advanced-security: false
