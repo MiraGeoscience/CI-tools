@@ -113,6 +113,7 @@ jobs:
           fi
 
       - name: Run Pylint on all files
+        if: ${{ github.event_name == 'push' }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint $source_dir tests
