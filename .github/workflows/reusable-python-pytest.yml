@@ -104,6 +104,9 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+      - name: Windows workaround - install poetry-dynamic-versioning plugin
+        if: ${{ runner.os == 'Windows' && inputs.package-manager == 'poetry' }}
+        run: poetry self add poetry-dynamic-versioning[plugin]
 
       - name: Run Pytest
         run: |
