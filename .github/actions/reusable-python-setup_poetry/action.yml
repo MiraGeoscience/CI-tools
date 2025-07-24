@@ -55,12 +55,13 @@ runs:
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
       run: timeout 10s poetry run pip --version || rm -rf .venv
-    - name: Install poetry-dynamic-versioning plugin (non-Windows)
-      if: runner.os != 'Windows'
+    - name: Install poetry-dynamic-versioning plugin globally
       shell: bash
-      run: poetry self add poetry-dynamic-versioning[plugin]
+      run: poetry self add "poetry-dynamic-versioning[plugin]" --global
     - name: Install dependencies
       shell: bash
+      env:
+        POETRY_DYNAMIC_VERSIONING_FALLBACK: "0.0.0"
       run: |
         extra_args=$(echo '${{ inputs.install-extras }}' | jq -r 'map("-E " + .) | join(" ")')
         poetry install -vvv $(echo "$extra_args")
