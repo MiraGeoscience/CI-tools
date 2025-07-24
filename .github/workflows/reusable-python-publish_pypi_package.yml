@@ -39,6 +39,11 @@ on:
             required: false
             type: number
             default: 20
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -62,6 +67,7 @@ jobs:
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
+            source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
             version-tag: ${{ inputs.version-tag }}
@@ -113,7 +119,7 @@ jobs:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
@@ -146,7 +152,7 @@ jobs:
             -   name: Download build artifact
                 uses: actions/download-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: download-artifact
             -   name: Upload release asset
                 env:
