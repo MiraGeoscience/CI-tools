@@ -55,6 +55,10 @@ runs:
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
       run: timeout 10s poetry run pip --version || rm -rf .venv
+    - name: Install poetry-dynamic-versioning plugin (non-Windows)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: poetry self add poetry-dynamic-versioning[plugin]
     - name: Install dependencies
       shell: bash
       run: |
