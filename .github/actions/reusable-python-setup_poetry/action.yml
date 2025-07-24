@@ -57,7 +57,7 @@ runs:
       run: timeout 10s poetry run pip --version || rm -rf .venv
     - name: Install poetry-dynamic-versioning plugin globally
       shell: bash
-      run: poetry self add "poetry-dynamic-versioning[plugin]" --global
+      run: poetry self add "poetry-dynamic-versioning[plugin]"
     - name: Install dependencies
       shell: bash
       env:
