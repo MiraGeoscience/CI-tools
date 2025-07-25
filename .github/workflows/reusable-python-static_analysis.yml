@@ -36,8 +36,11 @@ on:
         type: string
         default: "['ubuntu-latest']"
     secrets:
+      JFROG_ARTIFACTORY_URL:
+        description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
+        required: false
       JFROG_ARTIFACTORY_TOKEN:
-        description: 'JFrog Artifactory Token'
+        description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
         required: false
 
 env:
@@ -70,6 +73,8 @@ jobs:
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ inputs.python-version }}
+          JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-690-poetry2
         name: Setup poetry env
@@ -108,6 +113,7 @@ jobs:
           fi
 
       - name: Run Pylint on all files
+        if: ${{ github.event_name == 'push' }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint $source_dir tests
