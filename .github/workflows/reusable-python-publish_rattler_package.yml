@@ -78,7 +78,7 @@ jobs:
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Generate package version
-                run: pip install --dry-run ${{ inputs.source-path || '.' }}
+                run: pip install --dry-run --no-deps ${{ inputs.source-path || '.' }}
             -   name: Check if there is a rattler recipe
                 run: |
                     if [ -f ${{ inputs.source-path || '.' }}/recipe.yaml ]; then
