@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: "3.10"
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: true
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
@@ -50,6 +55,7 @@ jobs:
           echo "base-depth=$depth" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
+          lfs: ${{ inputs.lfs }}
           # for non PR events, check out to depth 1 (the default)
           fetch-depth: ${{ steps.base-depth.outputs.base-depth || 1}}
       - name: Fetch target branch
