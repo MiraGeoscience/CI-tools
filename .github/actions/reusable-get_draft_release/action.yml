@@ -37,7 +37,8 @@ runs:
             else
               if [[ "$GITHUB_REF" == refs/tags/* ]]; then
                 CUR_TAG="${GITHUB_REF#refs/tags/}"
-                BRANCH_NAME=$(git branch -r --contains "$CUR_TAG" | head -n 1 | sed 's|\s*origin/||')
+                # Use git for-each-ref to robustly find a branch containing the tag's commit
+                BRANCH_NAME=$(git for-each-ref --format='%(refname:short)' refs/heads/ --contains "$CUR_TAG" | head -n 1)
               else
                 echo "Error: workflow is not running on a valid branch or tag" >&2
                 exit 1
