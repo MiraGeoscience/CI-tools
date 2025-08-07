@@ -4,49 +4,74 @@ inputs:
   GITHUB_TOKEN:
     description: "The GitHub token (secret)"
     required: true
-    type: string
-  existing-release:
-    description: "The tag corresponding to the desired release. If empty, will get it from github.ref"
+  version-tag:
+    description: "Optional tag to fetch or draft a release (an existing tag, or a future tag); uses current ref if not provided"
     required: false
-    type: string
 
 outputs:
   release-tag:
-    description: "The tag for the newly created or existing release (same value as `inputs.existing-release` if provided)"
-    value: ${{ steps.get-or-draft-release.outputs.release-tag || steps.get-existing-release.outputs.release-tag }}
+    description: "The tag for the created or fetched draft release"
+    value: ${{ steps.get-or-draft-release.outputs.release-tag }}
 
 runs:
   using: "composite"
   steps:
     - shell: bash
       run: gh --version
-    - name: Get existing release
-      id: get-existing-release
-      if: ${{ inputs.existing-release }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        GH_REPO: ${{ github.repository }}
-      shell: bash
-      run: >
-        gh release view ${{ inputs.existing-release }}
-        && echo "release-tag=${{ inputs.existing-release }}" >> $GITHUB_OUTPUT
     - name: Get or Draft release
       id: get-or-draft-release
-      if: ${{ !inputs.existing-release }}
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
       shell: bash
-      run: >
-        [[ "$GITHUB_REF" != refs/tags/v* ]]
-        && { echo "Error: workflow is not running on a version tag" >&2; exit 1; }
-        || tag_name=${GITHUB_REF#refs/tags/}
-
-        # if no release is found, draft a new one (as pre-release if the tag says to)
-
-        gh release view $tag_name 2> /dev/null
-        || gh release create --draft
-        $( echo $tag_name | grep -i -q '^v[0-9]\+\(\.[0-9]\+\)\+-[a-z]' && echo --prerelease )
-        -t $tag_name $tag_name
-
-        echo "release-tag=$tag_name" >> $GITHUB_OUTPUT
+      run: |
+        set -euxo pipefail
+        # Determine which tag to use: version-tag input or current ref
+        if [[ -n "${{ inputs.version-tag }}" ]]; then
+          TAG_NAME="${{ inputs.version-tag }}"
+          if git rev-parse "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "Found existing tag '$TAG_NAME'"
+          else
+            if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+              BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+            else
+              if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+                CUR_TAG="${GITHUB_REF#refs/tags/}"
+                BRANCH_NAME=$(git branch -r --contains "$CUR_TAG" | head -n 1 | sed 's|\s*origin/||')
+              else
+                echo "Error: workflow is not running on a valid branch or tag" >&2
+                exit 1
+              fi
+            fi
+        else
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            echo "Error: workflow is not running on a version tag" >&2
+            exit 1
+          fi
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+        fi
+        # Check draft status or create
+        is_draft=$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft' 2>/dev/null || echo "absent")
+        case "$is_draft" in
+          absent)
+            # Only specify --target if the tag does not exist
+            if [[ -n "$BRANCH_NAME" ]]; then
+              echo "Creating draft release for '$TAG_NAME' on branch '$BRANCH_NAME'"
+              GH_ARGS="--target $BRANCH_NAME"
+            else
+              echo "Creating draft release on tag '$TAG_NAME'"
+              GH_ARGS="--verify-tag"
+            fi
+            gh release create --draft $GH_ARGS \
+              $(echo "$TAG_NAME" | grep -i -q '^v[0-9]\+\(\.[0-9]\+\)\+-[a-z]' && echo --prerelease) \
+              -t "$TAG_NAME" "$TAG_NAME"
+            ;;
+          true)
+            echo "Release '$TAG_NAME' exists and is a draft"
+            ;;
+          false)
+            echo "Error: Release '$TAG_NAME' is already published" >&2
+            exit 1
+            ;;
+        esac
+        echo "release-tag=$TAG_NAME" >> $GITHUB_OUTPUT

@@ -44,6 +44,10 @@ on:
             required: false
             type: string
             default: ''
+        future-release:
+            description: 'Optional future release tag to also upload assets (e.g. "v1.2.0"); tag is created when release is published'
+            required: false
+            type: string
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -154,8 +158,21 @@ jobs:
                 with:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: download-artifact
-            -   name: Upload release asset
+            -   name: Upload release asset to current release
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
                 run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-tag }} download-artifact/*
+            -   name: Get future draft release
+                if: ${{ inputs.future-release-tag != '' }}
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@DEVOPS-803
+                id: get-future-release
+                with:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    version-tag: ${{ inputs.future-release-tag }}
+            -   name: Upload release asset to future release
+                if: ${{ inputs.future-release-tag != '' }}
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GH_REPO: ${{ github.repository }}
+                run: gh release upload --clobber ${{ steps.get-future-release.outputs.release-tag }} download-artifact/*
