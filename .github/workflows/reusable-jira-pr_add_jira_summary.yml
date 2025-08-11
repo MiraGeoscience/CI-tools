@@ -9,9 +9,13 @@ on:
       JIRA_BASE_URL:
         required: true
         description: 'The base URL of your JIRA instance'
-      JIRA_BASIC_AUTH:
+      JIRA_API_TOKEN:
         required: true
-        description: 'The base64-encoded username:password for your JIRA instance'
+        description: 'The API token for your JIRA account'
+      JIRA_USER_EMAIL:
+        required: true
+        description: 'The email address for your JIRA account'
+
 
 jobs:
   add_jira_summary:
@@ -20,7 +24,9 @@ jobs:
     env:
       JIRA_PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-      JIRA_BASIC_AUTH: ${{ secrets.JIRA_BASIC_AUTH }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      
     steps:
 
     - name: Find JIRA issue key from branch
@@ -39,7 +45,7 @@ jobs:
       id: jira_summary_from_branch
       run: >
         curl -sS -X GET
-        -H "Authorization: Basic $JIRA_BASIC_AUTH"
+        -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
         -H "Content-Type: application/json"
         "$JIRA_BASE_URL/rest/api/2/issue/${{ steps.jira_key_from_branch.outputs.issue_key }}"
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
@@ -61,7 +67,7 @@ jobs:
       id: jira_summary_from_title
       run: >
         curl -sS -X GET
-        -H "Authorization: Basic $JIRA_BASIC_AUTH"
+        -u "${JIRA_API_TOKEN}:${JIRA_USER_EMAIL}"
         -H "Content-Type: application/json"
         "$JIRA_BASE_URL/rest/api/2/issue/${{ steps.jira_key_from_title.outputs.issue_key }}"
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
