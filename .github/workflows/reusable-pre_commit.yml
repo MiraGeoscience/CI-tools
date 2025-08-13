@@ -21,7 +21,7 @@ on:
         description: 'Boolean to indicate if Github LFS is needed'
         required: false
         type: boolean
-        default: true
+        default: false
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
