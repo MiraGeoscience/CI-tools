@@ -73,6 +73,12 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
+            -   name: Set up Python version
+                uses: actions/setup-python@v5
+                with:
+                    python-version: ${{ inputs.python-version }}
+            -   name: Generate package version
+                run: pip install --dry-run --no-deps ${{ inputs.source-path || '.' }}
             -   name: Check if there is a rattler recipe
                 run: |
                     if [ -f ${{ inputs.source-path || '.' }}/recipe.yaml ]; then
