@@ -16,11 +16,6 @@ on:
             description: 'Python version to use (e.g. 3.10)'
             required: true
             type: string
-        lfs:
-            description: 'Boolean to indicate if Github LFS is needed'
-            required: false
-            type: boolean
-            default: false
         version-tag:
             description: 'Version tag of the package to build'
             required: true
@@ -33,6 +28,11 @@ on:
             description: 'OS to build against (e.g. "ubuntu-latest")'
             required: true
             type: string
+        lfs:
+            description: 'Boolean to indicate if Github LFS is needed'
+            required: false
+            type: boolean
+            default: false
         timeout-minutes:
             description: 'Timeout in minutes for the job'
             required: true

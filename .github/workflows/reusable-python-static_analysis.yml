@@ -25,6 +25,11 @@ on:
         description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
         required: false
         type: string
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
@@ -61,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: false
+          lfs: ${{ inputs.lfs }}
           fetch-depth: 0
       - name: Set up Python version
         uses: actions/setup-python@v5
@@ -76,7 +81,7 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@DEVOPS-545-poetry-autoversioning
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
