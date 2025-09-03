@@ -95,6 +95,8 @@ jobs:
                     pixi-version: v0.39.2
                     cache: false
                     frozen: true
+            - name: Pixi install (production env)
+              run: pixi install -e production --frozen --manifest-path pyproject.toml
             -   name: Hatch build
                 run: pixi run hatch build
 
