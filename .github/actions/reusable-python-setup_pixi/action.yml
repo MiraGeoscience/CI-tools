@@ -30,3 +30,5 @@ runs:
         pixi-version: v0.39.2
         cache: true
         frozen: true
+      env:
+        GIT_LFS_SKIP_SMUDGE: 1
