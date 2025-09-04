@@ -7,8 +7,25 @@ on:
             description: 'Name of the package to build'
             required: true
             type: string
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
         python-version:
-            description: 'Python version to use (eg: 3.10)'
+            description: 'Python version to use (e.g. 3.10)'
+            required: true
+            type: string
+        version-tag:
+            description: 'Version tag of the package to build'
+            required: true
+            type: string
+        virtual-repo-names:
+            description: 'List of repository names to publish on (e.g. ["public-dev-pypi"])'
+            required: true
+            type: string
+        os:
+            description: 'OS to build against (e.g. "ubuntu-latest")'
             required: true
             type: string
         lfs:
@@ -16,19 +33,6 @@ on:
             required: false
             type: boolean
             default: false
-        version-tag:
-            description: 'Version tag of the package to build'
-            required: true
-            type: string
-
-        virtual-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-dev-pypi"])'
-            required: true
-            type: string
-        os:
-            description: 'OS to build against (eg. "ubuntu-latest")'
-            required: true
-            type: string
         timeout-minutes:
             description: 'Timeout in minutes for the job'
             required: true
@@ -62,7 +66,7 @@ jobs:
             version: ${{ steps.get-version.outputs.version }}
         steps:
             -   name: Checkout
-                uses: actions/checkout@v4
+                uses: actions/checkout@v5
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
@@ -80,7 +84,7 @@ jobs:
                         exit 1
                     fi
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            -   uses: jfrog/setup-jfrog-cli@v4.4.1
+            -   uses: jfrog/setup-jfrog-cli@v4.6.0
                 name: Setup JFrog CLI
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
@@ -107,14 +111,15 @@ jobs:
                         poetry config -- http-basic.${first_part} github ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                     done
             -   name: Poetry build
+                working-directory: ${{ inputs.source-path || '.' }}
                 run: poetry build
 
             -   name: Define build path
                 id: define-build-path
                 run: |
-                    DIR_PATH="dist"
+                    DIR_PATH="${{ inputs.source-path || '.' }}/dist/"
                     echo "dir-path: ${DIR_PATH}"
-                    if [[ -z ${DIR_PATH} ]]; then
+                    if [[ ! -d ${DIR_PATH} ]]; then
                         echo "No build path found"
                         exit 1
                     fi
@@ -122,5 +127,5 @@ jobs:
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v4
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ steps.define-build-path.outputs.dir-path }}

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (eg. "conda", "poetry", "pixi")'
+        description: 'Package manager to use (e.g. "conda", "poetry", "pixi")'
         required: true
         type: string
         default: 'poetry'
@@ -17,23 +17,35 @@ on:
         required: false
         type: string
         default: '3.10'
-      virtual-repo-names:
-        description: 'Matrix of virtual repository names to resolve on (eg. ["public-dev-pypi"])'
+      install-extras:
+        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
         required: false
         type: string
+      virtual-repo-names:
+        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
+        required: false
+        type: string
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
         type: number
         default: 20
       os:
-        description: 'Matrix of OS to test against (eg. ["ubuntu-latest", "macos-latest"])'
+        description: 'List of OS to test against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
         type: string
         default: "['ubuntu-latest']"
     secrets:
+      JFROG_ARTIFACTORY_URL:
+        description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
+        required: false
       JFROG_ARTIFACTORY_TOKEN:
-        description: 'JFrog Artifactory Token'
+        description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
         required: false
 
 env:
@@ -52,12 +64,12 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          lfs: false
+          lfs: ${{ inputs.lfs }}
           fetch-depth: 0
       - name: Set up Python version
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{inputs.python-version}}
 
@@ -66,14 +78,19 @@ jobs:
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           python-version: ${{ inputs.python-version }}
+          JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
           cache-number: 1
           runner-os: ${{ runner.os }}
+          install-extras: ${{ inputs.install-extras }}
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
@@ -109,6 +126,7 @@ jobs:
           fi
 
       - name: Run Pylint on all files
+        if: ${{ github.event_name == 'push' }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint $source_dir tests

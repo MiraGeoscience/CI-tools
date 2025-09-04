@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
         package-manager:
-            description: 'Name of the package manager (eg. "poetry")'
+            description: 'Name of the package manager (e.g. "poetry")'
             required: true
             type: string
             default: 'poetry'
@@ -13,7 +13,7 @@ on:
             required: true
             type: string
         python-version:
-            description: 'Python version to use (eg: 3.10)'
+            description: 'Python version to use (e.g. 3.10)'
             required: true
             type: string
         lfs:
@@ -26,11 +26,11 @@ on:
             required: true
             type: string
         virtual-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-pypi-dev"])'
+            description: 'List of virtual repository names to publish on (e.g. ["public-pypi-dev"])'
             required: true
             type: string
         os:
-            description: 'OS to build against (eg. "ubuntu-latest")'
+            description: 'OS to build against (e.g. "ubuntu-latest")'
             required: false
             type: string
             default: 'ubuntu-latest'
@@ -39,6 +39,11 @@ on:
             required: false
             type: number
             default: 20
+        source-path:
+            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            required: false
+            type: string
+            default: ''
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -62,6 +67,7 @@ jobs:
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
+            source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
             version-tag: ${{ inputs.version-tag }}
@@ -126,9 +132,9 @@ jobs:
                         exit 1
                     fi
             -   name: Download build artifact
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v5
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
@@ -159,9 +165,9 @@ jobs:
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             -   name: Download build artifact
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v5
                 with:
-                    name: package-build-pypi
+                    name: ${{ inputs.package-name }}-pip-package-build
                     path: download-artifact
             -   name: Upload release asset
                 env:

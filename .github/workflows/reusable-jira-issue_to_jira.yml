@@ -20,7 +20,7 @@ on:
         required: true
         type: string
       components:
-        description: 'JIRA components (eg. [{"name": "geoh5py"}])'
+        description: 'JIRA components (e.g. [{"name": "geoh5py"}])'
         required: false
         type: string
 
@@ -30,6 +30,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+    - name: Set Jira fields
+      id: set_jira_fields
+      run: |
+        if [[ -z "${{ inputs.components }}" ]]; then
+          echo 'jira_fields={}' >> $GITHUB_OUTPUT
+        else
+          echo 'jira_fields={"components": ${{ inputs.components }} }' >> $GITHUB_OUTPUT
+        fi
     - name: JIRA Login
       uses: atlassian/gajira-login@v3.0.1
       env:
@@ -45,7 +53,7 @@ jobs:
         summary: ${{ github.event.issue.title }}
         description: "_from [GitHub issue #${{ github.event.issue.number }}|${{ github.event.issue.html_url }}]_"
         # Additional fields in JSON format
-        fields: '{"components": ${{ inputs.components }} }'
+        fields: "${{ steps.set_jira_fields.outputs.jira_fields }}"
     - name: Post JIRA link
       uses: peter-evans/create-or-update-comment@v4
       with:

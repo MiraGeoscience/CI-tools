@@ -1,5 +1,9 @@
 name: pre-commit
 
+permissions:
+  contents: read
+  statuses: write
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]

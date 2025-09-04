@@ -8,7 +8,7 @@ on:
         required: false
         type: string
       os:
-        description: 'Matrix of OS to run against (eg. ["ubuntu-latest", "macos-latest"])'
+        description: 'List of OS to run against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
         type: string
         default: "['ubuntu-latest']"
@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: "3.10"
+      lfs:
+        description: 'Boolean to indicate if Github LFS is needed'
+        required: false
+        type: boolean
+        default: false
       timeout-minutes:
         description: 'Timeout in minutes for the job'
         required: false
@@ -41,9 +46,22 @@ jobs:
       SKIP: ${{ inputs.skip }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v4
-      - run: git fetch --deepen=500 origin ${{github.base_ref}}
+      - name: Get base depth
+        id: base-depth
         if: ${{ (github.event_name == 'pull_request') }}
+        run: |
+          depth=$(expr ${{ github.event.pull_request.commits }} + 1)
+          echo "base-depth=$depth"
+          echo "base-depth=$depth" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v5
+        with:
+          lfs: ${{ inputs.lfs }}
+          # for non PR events, check out to depth 1 (the default)
+          fetch-depth: ${{ steps.base-depth.outputs.base-depth || 1}}
+      - name: Fetch target branch
+        if: ${{ (github.event_name == 'pull_request') }}
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
         virtual-repo-names:
-            description: 'Matrix of virtual repository names to publish on (eg. ["public-conda-prod"])'
+            description: 'List of repository names to publish on (e.g. ["public-conda-prod"])'
             required: true
             type: string
         release-tag:
@@ -47,7 +47,7 @@ jobs:
                 run: |
                     mkdir -p download-assets
                     cd download-assets
-                    gh release download ${{ inputs.release-tag }} -p '*.tar.bz2'
+                    gh release download ${{ inputs.release-tag }} -p '*.conda'
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:

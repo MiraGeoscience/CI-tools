@@ -1,5 +1,8 @@
 # File: template-test-minimal-conda-env-install.yml
 parameters:
+  - name: pythonVersion
+    type: string
+    default: '3.10'
   # Determines the type of package repository to use for testing installation (prod or dev).
   - name: environment
     type: string
@@ -8,19 +11,27 @@ parameters:
       - prod
       - dev
   # Maps environment names to the repositories required for each environment.
-  - name: envToRepo
+  - name: envToVirtualRepos
     type: object
     default:
-      all:
-        - geology
-        - geophysics
-      all_deps_only:
-        - geology
-        - geophysics
+      all: geoplus
       geology: geology
       geophysics: geophysics
       interop: public
-      simpeg: geophysics
+      simpeg: public
+  - name: envToRemoteRepos
+    type: object
+    default:
+      all:
+        - conda-forge
+      geology:
+        - conda-forge
+      geophysics:
+        - conda-forge
+      interop:
+        - conda-forge
+      simpeg:
+        - conda-forge
 
 stages:
   - stage: TestInstallationOnMinimalCondaEnv
@@ -37,30 +48,31 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                envFolder="environments"
+                buildEnvFolder="build"
                 artifactFolder="artifact_envFiles"
 
                 # Create test directories and files
-                mkdir -p "$envFolder" "$artifactFolder"
+                mkdir -p "environments" "$artifactFolder"
 
                 # DiscoverFiles
-                files=$(find $envFolder -name "py-3.10-win-64-*.yml")
+                files=$(find $buildEnvFolder -name "py-${{parameters.pythonVersion}}-win-64-*.yml")
                 if [[ -z "$files" ]]; then
-                    echo "No win-64 environment files found in $envFolder"
+                    echo "No win-64 environment files found in $buildEnvFolder"
                     exit 1
                 fi
 
-                envToRepoJson='${{ convertToJson(parameters.envToRepo) }}'
+                envToVirtualReposJson='${{ convertToJson(parameters.envToVirtualRepos) }}'
+                envToRemoteReposJson='${{ convertToJson(parameters.envToRemoteRepos) }}'
 
                 # Initialize the matrix JSON
                 matrix="{}"
 
-                # Iterate through each key-value pair in envToRepo
+                # Iterate through each key-value pair in envToVirtualRepos
                 while read -r entry; do
                   key=$(echo "$entry" | jq -r '.key')
                   value=$(echo "$entry" | jq -r '.value')
                   # Find the corresponding file
-                  matchingFile=$(echo "$files" | grep -m 1 "$key")
+                  matchingFile=$(echo "$files" | grep -m 1 "$key\.conda\.lock")
 
                   if [ -z "$matchingFile" ]; then
                     echo "No matching file found for $key, skipping..."
@@ -75,19 +87,23 @@ stages:
                     repos=$value
                   fi
 
+                  # also add repos from envToRemoteRepos for the current key
+                  remoteRepos=$(echo "$envToRemoteReposJson" | jq -r ".$key | join(\" \")")
+
                   # Create object
                   object_string=$( jq -n \
                                     --arg envType "$key" \
                                     --arg filename "$filename" \
                                     --arg repositories "$repos" \
-                                    '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories }}' )
+                                    --arg remotes "$remoteRepos" \
+                                    '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories, remotes: $remotes }}' )
 
                   # Merge with the main json_obj
                   matrix=$(echo "$matrix" | jq ". + $object_string")
 
                   # Copy matching files to the artifact folder
                   cp "$matchingFile" "$artifactFolder/"
-                done < <(echo "$envToRepoJson" | jq -c 'to_entries[]')
+                done < <(echo "$envToVirtualReposJson" | jq -c 'to_entries[]')
 
                 json_matrix=$(echo $matrix | jq -c .)
 
@@ -101,8 +117,8 @@ stages:
         pool:
           vmImage: 'windows-2022'
         container:
-          image: mirageoscienceltd.jfrog.io/mira-docker-local/windows-servercore-ltsc2022-micromamba:latest
-          endpoint: Docker-Artifactory
+          image: ghcr.io/mirageoscience/windows-servercore-ltsc2022-micromamba:latest
+          endpoint: mira-github-docker
         dependsOn: DiscoverFiles
         strategy:
           matrix: $[ dependencies.DiscoverFiles.outputs['DiscoverFiles.matrix'] ]
@@ -118,47 +134,27 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                $string = "$(repositories)"
-                $array = $string.Split(" ")
                 $conda_channels = ""
-                $i = 0
-                foreach ($repo in $array) {
-                  echo "Adding repository ${repo}-conda-${{ parameters.environment }}"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo}-conda-${{ parameters.environment }}"
-                  micromamba config append channels $url
-                  $conda_channels += $url
-                  if (($array.Length - $i) -gt 1) {
-                    $conda_channels += ","
-                  }
-                    $i++
-                }
-                echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
-          - task: PowerShell@2
-            name: ConfigurePyPISources
-            displayName: Configure PyPI sources
-            inputs:
-              targetType: 'inline'
-              script: |
-                $string = "$(repositories)"
-                $array = $string.Split(" ")
-                $index_url = ""
-                $extra_index_url = ""
-                $i = 0
-                foreach ($repo in $array) {
-                  echo "Adding repository ${repo}-pypi-${{ parameters.environment }}"
-                  $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/pypi/${repo}-pypi-${{ parameters.environment }}/simple"
-                  if ($i -eq 0) {
-                    $index_url = $url
-                  } else {
-                    $extra_index_url += $url
-                    if (($array.Length - $i) -gt 1) {
-                      $extra_index_url += " "
+                $conda_virtual_repos = "$(repositories)".Split(" ")
+                if ($conda_virtual_repos -ne "") {
+                  foreach ($repo in $conda_virtual_repos) {
+                    $repo_name = "${repo}-noremote-conda-${{ parameters.environment }}"
+                    echo "Adding Conda channel for '${repo_name}'"
+                    $url = "https://$(JFROG_ARTIFACTORY_USER):$(JFROG_ARTIFACTORY_TOKEN)@$(JFROG_ARTIFACTORY_URL)/conda/${repo_name}"
+                    if ($conda_channels -ne "") {
+                      $conda_channels += ","
                     }
+                    $conda_channels += $url
                   }
-                  $i++
                 }
-                echo "##vso[task.setvariable variable=extra_index_url;issecret=true]$extra_index_url"
-                echo "##vso[task.setvariable variable=index_url;issecret=true]$index_url"
+
+                $remote_repos = "$(remotes)".Split(" ") -join ","
+                echo "Adding Conda channels: '${remote_repos}'"
+                if ($conda_channels -and $remote_repos) {
+                  $conda_channels += ","
+                }
+                $conda_channels += "${remote_repos}"
+                echo "##vso[task.setvariable variable=conda_channels;issecret=true]$conda_channels"
           - task: PowerShell@2
             name: InstallEnvironment
             displayName: Install environment
@@ -166,10 +162,16 @@ stages:
               targetType: 'inline'
               script: |
                 $Env:CONDA_CHANNELS = "$(conda_channels)"
-                $Env:CONDARC = "$(Pipeline.Workspace)/envFiles"
-                $Env:PIP_INDEX_URL = "$(index_url)"
-                $Env:PIP_EXTRA_INDEX_URL = "$(extra_index_url)"
+                $Env:MAMBA_CHANNEL_ALIAS = "https://repo.prefix.dev"
+                $Env:MAMBA_CHANNEL_PRIORITY = "strict"  # make sure Artifactory takes precedence over conda-forge
                 $Env:PIP_NO_DEPS = 1
                 cd $(Pipeline.Workspace)/envFiles
-                micromamba env create -y -f $(filename) -n $(name)
-            
+                micromamba --no-rc env create -y -f $(filename) -n $(name)
+          - task: PowerShell@2
+            name: CheckEnvironment
+            displayName: Check environment
+            inputs:
+              targetType: 'inline'
+              script: |
+                micromamba --no-rc run -n $(name) python -c "import geoh5py; print(f'geoh5py version: {geoh5py.__version__}')"
+                micromamba --no-rc run -n $(name) python -c "import numpy; print(f'numpy version: {numpy.__version__}')"
