@@ -2,7 +2,7 @@ name: Setup pixi env
 description: Setup pixi environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if poetry.lock has not changed'
+    description: 'Cache number to reset cache if pixi.lock has not changed'
     required: true
     type: number
   runner-os:
