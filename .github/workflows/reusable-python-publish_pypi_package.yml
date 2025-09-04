@@ -77,21 +77,6 @@ jobs:
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-    build_pixi_package:
-        name: Build pixi package
-        if: ${{ inputs.package-manager == 'pixi' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_pixi_package.yml@DEVOPS-584
-        with:
-            package-name: ${{ inputs.package-name }}
-            python-version: ${{ inputs.python-version }}
-            lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag }}
-            virtual-repo-names: ${{ inputs.virtual-repo-names }}
-            os: ${{ inputs.os }}
-            timeout-minutes: ${{ inputs.timeout-minutes }}
-        secrets:
-            JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
-            JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
