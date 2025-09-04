@@ -7,7 +7,7 @@ inputs:
     type: number
   python-version:
     description: 'Python version to decide on the pixi environment to install'
-    required: true
+    required: false
     type: string
   JFROG_ARTIFACTORY_URL:
     description: 'JFrog Artifactory URL'
@@ -15,7 +15,7 @@ inputs:
     type: string
   JFROG_ARTIFACTORY_TOKEN:
     description: 'JFrog Artifactory Token'
-    required: true
+    required: false
     type: string
 
 runs:
@@ -37,7 +37,7 @@ runs:
         cache: true
         locked: true
         auth-host: ${{ inputs.JFROG_ARTIFACTORY_URL }}
-        auth-username: github
+        auth-username: ${{ inputs.JFROG_ARTIFACTORY_TOKEN && 'github' || '' }}
         auth-password: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       env:
         GIT_LFS_SKIP_SMUDGE: 1
