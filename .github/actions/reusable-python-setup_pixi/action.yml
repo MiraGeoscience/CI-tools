@@ -29,6 +29,6 @@ runs:
       with:
         pixi-version: v0.54.1
         cache: true
-        frozen: true
+        locked: true
       env:
         GIT_LFS_SKIP_SMUDGE: 1

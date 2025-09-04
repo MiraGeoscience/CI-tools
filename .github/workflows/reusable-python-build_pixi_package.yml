@@ -94,7 +94,7 @@ jobs:
                 with:
                     pixi-version: v0.54.1
                     cache: false
-                    frozen: true
+                    locked: true
             -   name: Hatch build
                 run: pixi run hatch build
 
