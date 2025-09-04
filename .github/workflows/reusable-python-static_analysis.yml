@@ -68,6 +68,7 @@ jobs:
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
@@ -98,6 +99,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@DEVOPS-584
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}

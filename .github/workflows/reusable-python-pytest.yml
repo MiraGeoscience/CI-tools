@@ -37,7 +37,7 @@ on:
         required: false
         type: string
       virtual-repo-names:
-        description: 'List of repository names to publish on (e.g. ["public-dev-pypi"])'
+        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
         required: false
         type: string
       lfs:
@@ -112,6 +112,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@DEVOPS-584
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
