@@ -33,6 +33,7 @@ runs:
       with:
         pixi-version: v0.54.1
         environments: ${{ steps.get-env-name.outputs.pixi-env }}
+        activate-environment: true
         cache-key: pixi-env${{ inputs.cache-number }}
         cache: true
         locked: true
