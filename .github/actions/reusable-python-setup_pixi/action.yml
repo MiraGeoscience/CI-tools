@@ -9,6 +9,10 @@ inputs:
     description: 'Name of the pixi environment to create'
     required: true
     type: string
+  JFROG_ARTIFACTORY_URL:
+    description: 'JFrog Artifactory URL'
+    required: true
+    type: string
   JFROG_ARTIFACTORY_TOKEN:
     description: 'JFrog Artifactory Token'
     required: true
@@ -24,5 +28,8 @@ runs:
         cache-key: pixi-env${{ inputs.cache-number }}
         cache: true
         locked: true
+        auth-host: ${{ inputs.JFROG_ARTIFACTORY_URL }}
+        auth-username: github
+        auth-password: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       env:
         GIT_LFS_SKIP_SMUDGE: 1
