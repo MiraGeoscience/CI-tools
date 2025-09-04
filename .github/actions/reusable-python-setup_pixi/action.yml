@@ -5,8 +5,8 @@ inputs:
     description: 'Cache number to reset cache if pixi.lock has not changed'
     required: true
     type: number
-  pixi-env:
-    description: 'Name of the pixi environment to create'
+  python-version:
+    description: 'Python version to decide on the pixi environment to install'
     required: true
     type: string
   JFROG_ARTIFACTORY_URL:
@@ -21,10 +21,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - id: get-env-name
+      name: Get pixi environment name
+      shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+      run: |
+        pixi_env="py${PYTHON_VERSION//./}"
+        echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
     - uses: prefix-dev/setup-pixi@v0.9.0
       with:
         pixi-version: v0.54.1
-        environment: ${{ inputs.pixi-env }}
+        environments: ${{ steps.get-env-name.outputs.pixi-env }}
         cache-key: pixi-env${{ inputs.cache-number }}
         cache: true
         locked: true

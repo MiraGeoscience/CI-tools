@@ -105,7 +105,7 @@ jobs:
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
-          pixi-env: ${{ inputs.python-version }}
+          python-version: ${{ inputs.python-version }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
