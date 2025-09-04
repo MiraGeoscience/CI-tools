@@ -2,7 +2,7 @@ name: Setup conda env
 description: Setup conda environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if pixi.lock has not changed'
+    description: 'Cache number to reset cache if conda lock file has not changed'
     required: true
     type: number
   python-version:
