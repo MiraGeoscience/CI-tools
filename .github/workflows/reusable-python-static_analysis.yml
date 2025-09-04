@@ -101,8 +101,6 @@ jobs:
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
-          python-version: ${{ inputs.python-version }}
-          runner-os: ${{ runner.os }}
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'

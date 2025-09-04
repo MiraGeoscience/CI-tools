@@ -5,14 +5,6 @@ inputs:
     description: 'Cache number to reset cache if pixi.lock has not changed'
     required: true
     type: number
-  runner-os:
-    description: 'Runner OS'
-    required: true
-    type: string
-  virtual-repo-names:
-    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
-    required: false
-    type: string
   JFROG_ARTIFACTORY_TOKEN:
     description: 'JFrog Artifactory Token'
     required: true

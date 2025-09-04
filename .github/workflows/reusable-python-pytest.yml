@@ -115,8 +115,6 @@ jobs:
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
-          python-version: ${{ inputs.python-version }}
-          runner-os: ${{ runner.os }}
 
       - name: Run Pytest
         run: |
