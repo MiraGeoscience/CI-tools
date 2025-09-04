@@ -1,6 +1,10 @@
 name: Setup conda env
 description: Setup conda environment for Python
 inputs:
+  cache-number:
+    description: 'Cache number to reset cache if pixi.lock has not changed'
+    required: true
+    type: number
   python-version:
     description: 'Python version to use'
     required: true
@@ -32,6 +36,7 @@ runs:
         micromamba-version: ${{ env.micromamba_version }}
         init-shell: bash
         cache-downloads: true
+        cache-downloads-key: micromamba-dl${{ inputs.cache-number }}
         environment-name: ""
         post-cleanup: none
     - name: Authenticate to Artifactory
@@ -47,6 +52,7 @@ runs:
         environment-name: test_env
         init-shell: bash
         cache-downloads: true
+        cache-downloads-key: micromamba-dl${{ inputs.cache-number }}
         post-cleanup: none
       env:
         PYTHONUTF8: 1
