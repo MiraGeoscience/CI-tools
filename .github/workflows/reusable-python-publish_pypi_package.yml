@@ -117,7 +117,7 @@ jobs:
                         exit 1
                     fi
             -   name: Download build artifact
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v5
                 with:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
@@ -150,7 +150,7 @@ jobs:
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             -   name: Download build artifact
-                uses: actions/download-artifact@v4
+                uses: actions/download-artifact@v5
                 with:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: download-artifact
