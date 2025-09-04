@@ -118,6 +118,7 @@ jobs:
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
+          pixi-env: ${{ inputs.python-version }}
 
       - name: Run Pytest
         run: |
