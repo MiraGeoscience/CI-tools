@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (e.g. "conda", "poetry")'
+        description: 'Package manager to use (e.g. "conda", "poetry", "pixi")'
         required: true
         type: string
         default: 'poetry'
@@ -37,7 +37,7 @@ on:
         required: false
         type: string
       virtual-repo-names:
-        description: 'List of repository names to publish on (e.g. ["public-dev-pypi"])'
+        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
         required: false
         type: string
       lfs:
@@ -84,13 +84,15 @@ jobs:
 
       - name: Set up Python version
         uses: actions/setup-python@v5
+        if: ${{ inputs.package-manager == 'poetry' || inputs.package-manager == 'hatch' }}
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-584
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
+          cache-number: ${{ inputs.cache-number }}
           python-version: ${{ matrix.python-version }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
@@ -112,12 +114,23 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@DEVOPS-584
+        name: Setup pixi env
+        if: ${{ inputs.package-manager == 'pixi' }}
+        with:
+          cache-number: ${{ inputs.cache-number }}
+          python-version: ${{ matrix.python-version }}
+          JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+          JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
       - name: Run Pytest
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pytest --cov --cov-report=xml
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pytest --cov --cov-report=xml
+          elif ${{ inputs.package-manager == 'pixi' }}; then
+            pixi run pytest --cov --cov-report=xml
           else
             hatch run pytest --cov --cov-report=xml
           fi
