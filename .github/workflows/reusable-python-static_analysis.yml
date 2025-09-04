@@ -71,6 +71,7 @@ jobs:
 
       - name: Set up Python version
         uses: actions/setup-python@v5
+        if: ${{ inputs.package-manager == 'poetry' || inputs.package-manager == 'hatch' }}
         with:
           python-version: ${{inputs.python-version}}
 
