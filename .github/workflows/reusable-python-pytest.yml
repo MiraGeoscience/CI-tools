@@ -88,7 +88,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-584
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         with:
@@ -114,7 +114,7 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@DEVOPS-584
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@main
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
