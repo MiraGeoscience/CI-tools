@@ -43,6 +43,7 @@ jobs:
         os: ${{ fromJson(inputs.os) }}
     runs-on: ${{ matrix.os }}
     env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv_cache
       SKIP: ${{ inputs.skip }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
@@ -65,17 +66,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - name: Cache for uv tools
+        uses: actions/cache@v4
         with:
-          enable-cache: true
+          path: ${{ env.UV_CACHE_DIR }}
+          key: uv|pre-commit|${{ env.pythonLocation }}
       - name: Install pre-commit with uv
         run: uv tool install pre-commit
       - name: Cache for pre-commit hooks
         uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+          key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit on modified files
         if: ${{ (github.event_name == 'pull_request') }}
         run: |
