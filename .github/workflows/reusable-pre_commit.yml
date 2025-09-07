@@ -71,6 +71,8 @@ jobs:
         with:
           path: ${{ env.UV_CACHE_DIR }}
           key: uv|pre-commit|${{ env.pythonLocation }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
       - name: Install pre-commit with uv
         run: uv tool install pre-commit
       - name: Cache for pre-commit hooks
@@ -86,3 +88,5 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: |
           uv tool run pre-commit run --hook-stage pre-push --all-files
+      - name: Minimize uv cache
+        run: uv cache prune --ci
