@@ -2,6 +2,32 @@ name: Zizmor analysis
 
 on:
   workflow_call:
+    inputs:
+      fail_on_findings:
+        description: "Fail job when qualifying findings exist (only applies when advanced_security=false)"
+        required: false
+        default: true
+        type: boolean
+      min_severity:
+        description: "Minimum severity: none|unknown|informational|low|medium|high"
+        required: false
+        default: none
+        type: string
+      min_confidence:
+        description: "Minimum confidence: none|unknown|low|medium|high"
+        required: false
+        default: none
+        type: string
+      persona:
+        description: "Audit persona: regular|pedantic|auditor"
+        required: false
+        default: regular
+        type: string
+      advanced_security:
+        description: "Upload SARIF to GitHub Advanced Security (Security tab)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   zizmor:
@@ -11,14 +37,18 @@ jobs:
     permissions:
       contents: read
       actions: read
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           persist-credentials: false
-
       - name: Run Zizmor Security Scan
-        continue-on-error: true
         uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
+        continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
         with:
-          advanced-security: false
+          advanced-security: ${{ inputs.advanced_security }}
+          min-severity:      ${{ inputs.min_severity }}
+          min-confidence:    ${{ inputs.min_confidence }}
+          persona:           ${{ inputs.persona }}
+
