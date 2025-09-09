@@ -40,9 +40,18 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Normalize thresholds
+        run: |
+          SEV="${{ inputs.min_severity }}"
+          CONF="${{ inputs.min_confidence }}"
+          if [ "$SEV" = "none" ]; then SEV="unknown"; fi
+          if [ "$CONF" = "none" ]; then CONF="unknown"; fi
+          echo "MIN_SEVERITY=$SEV" >> "$GITHUB_ENV"
+          echo "MIN_CONFIDENCE=$CONF" >> "$GITHUB_ENV"
 
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
@@ -50,6 +59,5 @@ jobs:
         with:
           advanced-security: ${{ inputs.advanced_security }}
           persona:           ${{ inputs.persona }}
-          min-severity:      ${{ inputs.min_severity   == 'none' && 'unknown' || inputs.min_severity }}
-          min-confidence:    ${{ inputs.min_confidence == 'none' && 'unknown' || inputs.min_confidence }}
-
+          min-severity:      ${{ env.MIN_SEVERITY }}
+          min-confidence:    ${{ env.MIN_CONFIDENCE }}
