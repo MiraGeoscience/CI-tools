@@ -55,9 +55,10 @@ jobs:
 
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
-        continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
+        continue-on-error: false
         with:
           advanced-security: ${{ inputs.advanced_security }}
           persona:           ${{ inputs.persona }}
           min-severity:      ${{ env.MIN_SEVERITY }}
           min-confidence:    ${{ env.MIN_CONFIDENCE }}
+
