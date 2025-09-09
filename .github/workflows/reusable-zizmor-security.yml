@@ -40,42 +40,16 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
 
-      - name: Run Zizmor Security Scan (both thresholds)
-        if: ${{ inputs.min_severity != 'none' && inputs.min_confidence != 'none' }}
+      - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
         continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
         with:
           advanced-security: ${{ inputs.advanced_security }}
           persona:           ${{ inputs.persona }}
-          min-severity:      ${{ inputs.min_severity }}
-          min-confidence:    ${{ inputs.min_confidence }}
+          min-severity:      ${{ inputs.min_severity   == 'none' && 'unknown' || inputs.min_severity }}
+          min-confidence:    ${{ inputs.min_confidence == 'none' && 'unknown' || inputs.min_confidence }}
 
-      - name: Run Zizmor Security Scan (severity only)
-        if: ${{ inputs.min_severity != 'none' && inputs.min_confidence == 'none' }}
-        uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
-        continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
-        with:
-          advanced-security: ${{ inputs.advanced_security }}
-          persona:           ${{ inputs.persona }}
-          min-severity:      ${{ inputs.min_severity }}
-
-      - name: Run Zizmor Security Scan (confidence only)
-        if: ${{ inputs.min_severity == 'none' && inputs.min_confidence != 'none' }}
-        uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
-        continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
-        with:
-          advanced-security: ${{ inputs.advanced_security }}
-          persona:           ${{ inputs.persona }}
-          min-confidence:    ${{ inputs.min_confidence }}
-
-      - name: Run Zizmor Security Scan (no thresholds)
-        if: ${{ inputs.min_severity == 'none' && inputs.min_confidence == 'none' }}
-        uses: zizmorcore/zizmor-action@5ca5fc7a4779c5263a3ffa0e1f693009994446d1
-        continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
-        with:
-          advanced-security: ${{ inputs.advanced_security }}
-          persona:           ${{ inputs.persona }}
