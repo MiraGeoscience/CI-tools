@@ -38,6 +38,7 @@ jobs:
       contents: read
       actions: read
       security-events: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -62,3 +63,8 @@ jobs:
           min-severity:      ${{ env.MIN_SEVERITY }}
           min-confidence:    ${{ env.MIN_CONFIDENCE }}
 
+      - name: Fail job if Zizmor found issues
+        if: ${{ failure() }}
+        run: |
+          echo "Zizmor reported findings above threshold. Failing job."
+          exit 1
