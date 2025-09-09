@@ -61,4 +61,3 @@ jobs:
           persona:           ${{ inputs.persona }}
           min-severity:      ${{ env.MIN_SEVERITY }}
           min-confidence:    ${{ env.MIN_CONFIDENCE }}
-
