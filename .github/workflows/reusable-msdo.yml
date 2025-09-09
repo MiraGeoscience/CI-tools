@@ -2,7 +2,10 @@ name: MSDO analysis
 
 on:
   workflow_call:
-
+    secrets:
+      github_token:
+        description: 'GitHub token to upload the SARIF file'
+        required: true
 jobs:
   msdo:
     name: Security Scan
@@ -26,7 +29,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v2.1.0
         with:
           sarif_file: ${{ steps.msdo.outputs.sarifFile }}
-
+          github_token: ${{ secrets.github_token }}
