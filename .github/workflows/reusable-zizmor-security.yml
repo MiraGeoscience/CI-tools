@@ -47,7 +47,7 @@ jobs:
         continue-on-error: ${{ inputs.advanced_security || !inputs.fail_on_findings }}
         with:
           advanced-security: ${{ inputs.advanced_security }}
-          min-severity:      ${{ inputs.min_severity }}
-          min-confidence:    ${{ inputs.min_confidence }}
+          min-severity:      ${{ inputs.min_severity != 'none' && inputs.min_severity || '' }}
+          min-confidence:    ${{ inputs.min_confidence != 'none' && inputs.min_confidence || '' }}
           persona:           ${{ inputs.persona }}
 
