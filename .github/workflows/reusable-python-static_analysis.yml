@@ -59,6 +59,8 @@ jobs:
       matrix:
         os: ${{ fromJson(inputs.os) }}
     runs-on: ${{ matrix. os}}
+    env:
+      GIT_LFS_SKIP_SMUDGE: "1"
     defaults:
       run:
         shell: 'bash -l {0}'
