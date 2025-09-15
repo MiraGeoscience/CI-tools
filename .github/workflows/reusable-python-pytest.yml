@@ -91,6 +91,8 @@ jobs:
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ matrix.python-version }}
