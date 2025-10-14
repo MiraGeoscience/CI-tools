@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         os: ${{ fromJson(inputs.os) }}
-    runs-on: ${{ matrix. os}}
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: 'bash -l {0}'
@@ -77,6 +77,8 @@ jobs:
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"
         if: ${{ inputs.package-manager == 'conda' }}
         with:
           cache-number: ${{ inputs.cache-number }}
