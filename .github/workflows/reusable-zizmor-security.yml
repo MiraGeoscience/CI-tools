@@ -9,14 +9,14 @@ on:
         default: true
         type: boolean
       min_severity:
-        description: "Minimum severity: none|unknown|informational|low|medium|high"
+        description: "Minimum severity: informational|low|medium|high"
         required: false
-        default: none
+        default: medium
         type: string
       min_confidence:
-        description: "Minimum confidence: none|unknown|low|medium|high"
+        description: "Minimum confidence: low|medium|high"
         required: false
-        default: none
+        default: low
         type: string
       persona:
         description: "Audit persona: regular|pedantic|auditor"
@@ -44,15 +44,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Normalize thresholds
-        run: |
-          SEV="${{ inputs.min_severity }}"
-          CONF="${{ inputs.min_confidence }}"
-          if [ "$SEV" = "none" ]; then SEV="unknown"; fi
-          if [ "$CONF" = "none" ]; then CONF="unknown"; fi
-          echo "MIN_SEVERITY=$SEV" >> "$GITHUB_ENV"
-          echo "MIN_CONFIDENCE=$CONF" >> "$GITHUB_ENV"
-
       - name: Create Zizmor config if not exists
         run: |
           if [ ! -f zizmor.yml ]; then
@@ -72,5 +63,5 @@ jobs:
         with:
           advanced-security: ${{ inputs.advanced_security }}
           persona:           ${{ inputs.persona }}
-          min-severity:      ${{ env.MIN_SEVERITY }}
-          min-confidence:    ${{ env.MIN_CONFIDENCE }}
+          min-severity:      ${{ inputs.min_severity }}
+          min-confidence:    ${{ inputs.min_confidence }}
