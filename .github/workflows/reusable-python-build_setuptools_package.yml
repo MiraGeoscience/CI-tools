@@ -85,7 +85,7 @@ jobs:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Set up Python version
-                uses: actions/setup-python@v5
+                uses: actions/setup-python@v6
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Verify package installation
