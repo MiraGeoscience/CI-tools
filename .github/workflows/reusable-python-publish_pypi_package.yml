@@ -66,7 +66,7 @@ jobs:
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
         permissions:
             contents: read
-        uses: ./.github/workflows/reusable-python-build_poetry_package.yml
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             source-path: ${{ inputs.source-path || '.' }}
@@ -84,7 +84,7 @@ jobs:
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
         permissions:
             contents: read
-        uses: ./.github/workflows/reusable-python-build_setuptools_package.yml
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
