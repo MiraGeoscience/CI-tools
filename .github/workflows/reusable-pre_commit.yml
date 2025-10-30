@@ -61,8 +61,10 @@ jobs:
           persist-credentials: false
       - name: Fetch target branch
         if: ${{ (github.event_name == 'pull_request') }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          git fetch origin ${BASE_REF}:${BASE_REF}
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.python-version }}
@@ -77,8 +79,10 @@ jobs:
           key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit on modified files
         if: ${{ (github.event_name == 'pull_request') }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          uv tool run pre-commit run --hook-stage pre-push --from-ref refs/remotes/origin/${{github.base_ref}} --to-ref .
+          uv tool run pre-commit run --hook-stage pre-push --from-ref refs/remotes/origin/${BASE_REF} --to-ref .
       - name: Run pre-commit on all files
         if: ${{ github.event_name == 'push' }}
         run: |

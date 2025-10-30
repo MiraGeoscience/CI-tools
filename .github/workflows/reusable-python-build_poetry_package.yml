@@ -121,8 +121,10 @@ jobs:
 
             -   name: Define build path
                 id: define-build-path
+                env:
+                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: |
-                    DIR_PATH="${{ inputs.source-path || '.' }}/dist/"
+                    DIR_PATH="${SOURCE_PATH}/dist/"
                     echo "dir-path: ${DIR_PATH}"
                     if [[ ! -d ${DIR_PATH} ]]; then
                         echo "No build path found"

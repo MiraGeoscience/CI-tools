@@ -11,4 +11,7 @@ on:
 jobs:
   call-workflow-add-jira-issue-summary:
     uses: ./.github/workflows/reusable-jira-pr_add_jira_summary.yml
-    secrets: inherit
+    secrets:
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}

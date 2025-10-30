@@ -28,6 +28,7 @@ runs:
     - name: Setup env vars
       shell: bash
       run: |
+        # zizmor-disable-next-line
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> "$GITHUB_ENV"
         echo "micromamba_version=2.1.0-0" >> "$GITHUB_ENV"
