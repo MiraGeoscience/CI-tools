@@ -101,7 +101,7 @@ jobs:
                     BUILD_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
-                    repository_list=$(echo '${INPUTS_SOURCE_REPO_NAMES}' | jq -r '.[]' | xargs)
+                    repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                     fi
