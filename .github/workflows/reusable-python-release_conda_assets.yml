@@ -35,7 +35,7 @@ jobs:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
         steps:
             -   name: Find release from tag
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
+                uses: ./.github/actions/reusable-get_draft_release
                 id: find-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,7 @@ jobs:
                     cd download-assets
                     gh release download ${INPUTS_RELEASE_TAG} -p '*.conda'
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
+                uses: ./.github/actions/reusable-python-publish_to_artifactory
                 with:
                     build-dir-path: download-assets
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch
