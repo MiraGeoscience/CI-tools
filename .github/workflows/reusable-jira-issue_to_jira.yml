@@ -57,7 +57,7 @@ jobs:
         # Additional fields in JSON format
         fields: "${{ steps.set_jira_fields.outputs.jira_fields }}"
     - name: Post JIRA link
-      uses: peter-evans/create-or-update-comment@v4
+      uses: peter-evans/create-or-update-comment@v5
       with:
         # The number of the issue or pull request in which to create a comment.
         issue-number: ${{ github.event.issue.number }}
