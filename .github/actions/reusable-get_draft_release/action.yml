@@ -26,10 +26,11 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
+        INPUTS_EXISTING_RELEASE: ${{ inputs.existing-release }}
       shell: bash
       run: >
-        gh release view ${{ inputs.existing-release }}
-        && echo "release-tag=${{ inputs.existing-release }}" >> $GITHUB_OUTPUT
+        gh release view ${INPUTS_EXISTING_RELEASE}
+        && echo "release-tag=${INPUTS_EXISTING_RELEASE}" >> $GITHUB_OUTPUT
     - name: Get or Draft release
       id: get-or-draft-release
       if: ${{ !inputs.existing-release }}
