@@ -95,7 +95,7 @@ jobs:
                 env:
                   INPUTS_VIRTUAL_REPO_NAMES: ${{ inputs.virtual-repo-names }}
                 run: |
-                    repository_list=$(echo '${INPUTS_VIRTUAL_REPO_NAMES}' | jq -r '.[]')
+                    repository_list=$(echo "${INPUTS_VIRTUAL_REPO_NAMES}" | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"
                     done

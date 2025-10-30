@@ -43,7 +43,7 @@ runs:
         INPUTS_VIRTUAL_REPO_NAMES: ${{ inputs.virtual-repo-names }}
         INPUTS_JFROG_ARTIFACTORY_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       run: |
-        repository_list=$(echo '${INPUTS_VIRTUAL_REPO_NAMES}' | jq -r '.[]')
+        repository_list=$(echo "${INPUTS_VIRTUAL_REPO_NAMES}" | jq -r '.[]')
         for repo_name in ${repository_list}; do
           first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
           echo "Adding repository $repo_name under $first_part"
@@ -64,5 +64,5 @@ runs:
       env:
         INPUTS_INSTALL_EXTRAS: ${{ inputs.install-extras }}
       run: |
-        extra_args=$(echo '${INPUTS_INSTALL_EXTRAS}' | jq -r 'map("-E " + .) | join(" ")')
+        extra_args=$(echo "${INPUTS_INSTALL_EXTRAS}" | jq -r 'map("-E " + .) | join(" ")')
         poetry install -vvv $(echo "$extra_args")
