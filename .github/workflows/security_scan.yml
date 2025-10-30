@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+  push:
+    branches:
+      - develop
+      - main
+      - release/**
+      - feature/**
+      - hotfix/**
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  call-workflow-zizmor:
+    name: Zizmor analysis
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-zizmor-security.yml@DEVOPS-917
+    with:
+      annotations: true
