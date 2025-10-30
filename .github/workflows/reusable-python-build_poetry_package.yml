@@ -70,14 +70,17 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
+                    persist-credentials: false
             -   name: Get version
                 id: get-version
+                env:
+                  INPUTS_VERSION_TAG: ${{ inputs.version-tag }}
                 run: |
-                    if [ "${{ inputs.version-tag }}" = "v0.0.0" ]; then
+                    if [ "${INPUTS_VERSION_TAG}" = "v0.0.0" ]; then
                         echo "Version tag not available"
                         exit 1
                     fi
-                    VERSION=$(echo "${{ inputs.version-tag }}" | sed 's/v//')
+                    VERSION=$(echo "${INPUTS_VERSION_TAG}" | sed 's/v//')
                     echo "version: ${VERSION}"
                     if [ -z "${VERSION}" ]; then
                         echo "Version is not available"
@@ -99,11 +102,13 @@ jobs:
                     curl -sSL https://install.python-poetry.org | POETRY_HOME=$HOME/.poetry python -
                     echo "$HOME/.poetry/bin" >> $GITHUB_PATH
             -   name: Configure poetry
+                env:
+                  INPUTS_VIRTUAL_REPO_NAMES: ${{ inputs.virtual-repo-names }}
                 run: |
                     poetry config virtualenvs.create true
                     poetry config virtualenvs.in-project true
 
-                    repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+                    repository_list=$(echo '${INPUTS_VIRTUAL_REPO_NAMES}' | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
                         echo "Adding repository $repo_name under $first_part"
@@ -116,8 +121,10 @@ jobs:
 
             -   name: Define build path
                 id: define-build-path
+                env:
+                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: |
-                    DIR_PATH="${{ inputs.source-path || '.' }}/dist/"
+                    DIR_PATH="${SOURCE_PATH}/dist/"
                     echo "dir-path: ${DIR_PATH}"
                     if [[ ! -d ${DIR_PATH} ]]; then
                         echo "No build path found"

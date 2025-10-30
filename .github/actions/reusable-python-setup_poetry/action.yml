@@ -39,12 +39,15 @@ runs:
         installer-parallel: true
     - name: Config repos for Poetry
       shell: bash
+      env:
+        INPUTS_VIRTUAL_REPO_NAMES: ${{ inputs.virtual-repo-names }}
+        INPUTS_JFROG_ARTIFACTORY_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       run: |
-        repository_list=$(echo '${{ inputs.virtual-repo-names }}' | jq -r '.[]')
+        repository_list=$(echo '${INPUTS_VIRTUAL_REPO_NAMES}' | jq -r '.[]')
         for repo_name in ${repository_list}; do
           first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
           echo "Adding repository $repo_name under $first_part"
-          poetry config -- http-basic.${first_part} github ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+          poetry config -- http-basic.${first_part} github ${INPUTS_JFROG_ARTIFACTORY_TOKEN}
         done
     - name: Set up cache
       uses: actions/cache@v4
@@ -58,6 +61,8 @@ runs:
       run: timeout 10s poetry run pip --version || rm -rf .venv
     - name: Install dependencies
       shell: bash
+      env:
+        INPUTS_INSTALL_EXTRAS: ${{ inputs.install-extras }}
       run: |
-        extra_args=$(echo '${{ inputs.install-extras }}' | jq -r 'map("-E " + .) | join(" ")')
+        extra_args=$(echo '${INPUTS_INSTALL_EXTRAS}' | jq -r 'map("-E " + .) | join(" ")')
         poetry install -vvv $(echo "$extra_args")

@@ -3,11 +3,6 @@ name: Zizmor analysis
 on:
   workflow_call:
     inputs:
-      fail_on_findings:
-        description: "Fail job when qualifying findings exist (only applies when advanced_security=false)"
-        required: false
-        default: true
-        type: boolean
       min_severity:
         description: "Minimum severity: informational|low|medium|high"
         required: false
@@ -28,6 +23,11 @@ on:
         required: false
         default: false
         type: boolean
+      annotations:
+        description: "Emits GitHub annotations for findings. Incompatible with advanced_security=true"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   zizmor:
@@ -35,6 +35,7 @@ jobs:
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     permissions:
+      security-events: write
       contents: read
       actions: read
 
@@ -62,6 +63,7 @@ jobs:
         uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
         with:
           advanced-security: ${{ inputs.advanced_security }}
-          persona:           ${{ inputs.persona }}
-          min-severity:      ${{ inputs.min_severity }}
-          min-confidence:    ${{ inputs.min_confidence }}
+          annotations: ${{ inputs.annotations }}
+          persona: ${{ inputs.persona }}
+          min-severity: ${{ inputs.min_severity }}
+          min-confidence: ${{ inputs.min_confidence }}

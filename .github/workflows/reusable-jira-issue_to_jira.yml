@@ -32,11 +32,13 @@ jobs:
     steps:
     - name: Set Jira fields
       id: set_jira_fields
+      env:
+        INPUTS_COMPONENTS: ${{ inputs.components }}
       run: |
-        if [[ -z "${{ inputs.components }}" ]]; then
+        if [[ -z "${INPUTS_COMPONENTS}" ]]; then
           echo 'jira_fields={}' >> $GITHUB_OUTPUT
         else
-          echo 'jira_fields={"components": ${{ inputs.components }} }' >> $GITHUB_OUTPUT
+          echo 'jira_fields={"components": ${INPUTS_COMPONENTS} }' >> $GITHUB_OUTPUT
         fi
     - name: JIRA Login
       uses: atlassian/gajira-login@v3.0.1
