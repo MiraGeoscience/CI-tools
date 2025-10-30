@@ -76,7 +76,7 @@ jobs:
         with:
           python-version: ${{inputs.python-version}}
 
-      - uses: ./.github/actions/reusable-python-setup_conda
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@main
         name: Setup conda env
         env:
           GIT_LFS_SKIP_SMUDGE: "1"
@@ -87,7 +87,7 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: ./.github/actions/reusable-python-setup_poetry
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@main
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
@@ -97,14 +97,14 @@ jobs:
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: ./.github/actions/reusable-python-setup_hatch
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@main
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: ./.github/actions/reusable-python-setup_pixi
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@main
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:

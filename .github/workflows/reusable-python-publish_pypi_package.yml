@@ -66,7 +66,7 @@ jobs:
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
         permissions:
             contents: read
-        uses: ./.github/workflows/reusable-python-build_poetry_package.yml
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             source-path: ${{ inputs.source-path || '.' }}
@@ -84,7 +84,7 @@ jobs:
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
         permissions:
             contents: read
-        uses: ./.github/workflows/reusable-python-build_setuptools_package.yml
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
@@ -128,7 +128,7 @@ jobs:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
-                uses: ./.github/actions/reusable-python-publish_to_artifactory
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
@@ -153,7 +153,7 @@ jobs:
         if: ${{ always() && contains(needs.*.result, 'success') }}
         steps:
             -   name: Get draft release
-                uses: ./.github/actions/reusable-get_draft_release
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@main
                 id: get-draft-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
