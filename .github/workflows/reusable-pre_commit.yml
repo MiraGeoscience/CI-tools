@@ -63,12 +63,9 @@ jobs:
         if: ${{ (github.event_name == 'pull_request') }}
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: |
-          git fetch origin ${BASE_REF}:${BASE_REF}
+        run: git fetch origin ${BASE_REF}:${BASE_REF}
       - name: Remove git credentials
-        if: ${{ (github.event_name == 'pull_request') }}
-        run: |
-          git config --unset-all http.https://github.com/.extraheader
+        run: git config --unset-all http.https://github.com/.extraheader
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.python-version }}
