@@ -168,6 +168,8 @@ jobs:
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
     add_release_asset:
         name: Add release asset
+        permissions:
+            contents: write
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: publish_package_on_artifactory
