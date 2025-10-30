@@ -3,11 +3,6 @@ name: Zizmor analysis
 on:
   workflow_call:
     inputs:
-      fail_on_findings:
-        description: "Fail job when qualifying findings exist (only applies when advanced_security=false)"
-        required: false
-        default: true
-        type: boolean
       min_severity:
         description: "Minimum severity: informational|low|medium|high"
         required: false
