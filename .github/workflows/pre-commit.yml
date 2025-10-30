@@ -28,4 +28,4 @@ concurrency:
 jobs:
   call-workflow-pre-commmit:
     name: Pre-Commit
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-pre_commit.yml@main
+    uses: ./.github/workflows/reusable-pre_commit.yml
