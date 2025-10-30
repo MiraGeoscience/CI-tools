@@ -138,7 +138,7 @@ jobs:
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
             -   name: Archive build artifact
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v5
                 with:
                     name: ${{ inputs.package-name }}-conda-package-build
                     path: ${{ runner.temp }}/output/**/*.conda
