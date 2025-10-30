@@ -28,6 +28,11 @@ on:
         required: false
         default: false
         type: boolean
+      annotations:
+        description: "Emits GitHub annotations for findings. Incompatible with advanced_security=true"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   zizmor:
@@ -62,6 +67,7 @@ jobs:
         uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
         with:
           advanced-security: ${{ inputs.advanced_security }}
-          persona:           ${{ inputs.persona }}
-          min-severity:      ${{ inputs.min_severity }}
-          min-confidence:    ${{ inputs.min_confidence }}
+          annotations: ${{ inputs.annotations }}
+          persona: ${{ inputs.persona }}
+          min-severity: ${{ inputs.min_severity }}
+          min-confidence: ${{ inputs.min_confidence }}
