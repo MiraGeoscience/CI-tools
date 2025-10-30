@@ -132,7 +132,7 @@ jobs:
                     fi
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
             -   name: Archive build artifact
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v5
                 with:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ steps.define-build-path.outputs.dir-path }}
