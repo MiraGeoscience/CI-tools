@@ -27,8 +27,7 @@ runs:
         persist-credentials: false
     - name: Setup env vars
       shell: bash
-      run: |
-        # zizmor-disable-next-line
+      run: |  # zizmor: ignore[github-env] safe as it only exports static values
         os_conda=$( [[ $RUNNER_OS == "Linux" ]] && echo "linux" || echo "win")
         echo "os_conda=$os_conda" >> "$GITHUB_ENV"
         echo "micromamba_version=2.1.0-0" >> "$GITHUB_ENV"
