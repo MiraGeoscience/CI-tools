@@ -108,7 +108,7 @@ jobs:
                     poetry config virtualenvs.create true
                     poetry config virtualenvs.in-project true
 
-                    repository_list=$(echo '${INPUTS_VIRTUAL_REPO_NAMES}' | jq -r '.[]')
+                    repository_list=$(echo "${INPUTS_VIRTUAL_REPO_NAMES}" | jq -r '.[]')
                     for repo_name in ${repository_list}; do
                         first_part=$(echo "$repo_name" | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
                         echo "Adding repository $repo_name under $first_part"
