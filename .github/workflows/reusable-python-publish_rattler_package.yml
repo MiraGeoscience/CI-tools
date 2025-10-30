@@ -73,6 +73,7 @@ jobs:
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
+                    persist-credentials: false
             -   name: Set up Python version
                 uses: actions/setup-python@v6
                 with:
@@ -89,11 +90,14 @@ jobs:
                     fi
             -   name: Configure channels and Auth
                 id: config-channels
+                env:
+                  INPUTS_SOURCE_REPO_NAMES: ${{ inputs.source-repo-names }}
+                  INPUTS_CONDA_CHANNELS: ${{ inputs.conda-channels }}
                 run: |
                     BUILD_ARGS=""
                     RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
 
-                    repository_list=$(echo '${{ inputs.source-repo-names }}' | jq -r '.[]' | xargs)
+                    repository_list=$(echo '${INPUTS_SOURCE_REPO_NAMES}' | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                     fi
@@ -104,7 +108,7 @@ jobs:
                         BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
 
-                    channel_list=$(echo '${{ inputs.conda-channels }}' | jq -r '.[]' | xargs)
+                    channel_list=$(echo '${INPUTS_CONDA_CHANNELS}' | jq -r '.[]' | xargs)
                     for channel_name in ${channel_list}; do
                         BUILD_ARGS+=" --channel ${channel_name}"
                     done

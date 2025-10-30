@@ -68,6 +68,7 @@ jobs:
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python version
         uses: actions/setup-python@v6
@@ -115,9 +116,9 @@ jobs:
       - name: Capture modified files
         if: github.event_name == 'pull_request'
         run: >-
-          git fetch --deepen=500 origin ${{github.base_ref}}
+          git fetch --deepen=500 origin ${GITHUB_BASE_REF}
           && echo "FILES_PARAM=$(
-          git diff --diff-filter=AM --name-only refs/remotes/origin/${{github.base_ref}}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
+          git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
           )" >> $GITHUB_ENV
 
       - name: Run Pylint on modified files

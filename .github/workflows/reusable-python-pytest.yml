@@ -81,6 +81,7 @@ jobs:
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python version
         uses: actions/setup-python@v6

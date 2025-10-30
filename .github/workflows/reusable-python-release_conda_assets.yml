@@ -44,10 +44,11 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
+                    INPUTS_RELEASE_TAG: ${{ inputs.release-tag }}
                 run: |
                     mkdir -p download-assets
                     cd download-assets
-                    gh release download ${{ inputs.release-tag }} -p '*.conda'
+                    gh release download ${INPUTS_RELEASE_TAG} -p '*.conda'
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@main
                 with:

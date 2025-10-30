@@ -28,9 +28,12 @@ runs:
         JF_ACCESS_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
     - name: Publish package to Artifactory
       shell: bash
+      env:
+        INPUTS_BUILD_DIR_PATH: ${{ inputs.build-dir-path }}
+        INPUTS_ARTIFACTORY_DIR_PATH: ${{ inputs.artifactory-dir-path}}
       run: |
-        for file in ${{ inputs.build-dir-path }}/*; do
+        for file in ${INPUTS_BUILD_DIR_PATH}/*; do
           filename=$(basename "${file}")
-          echo "Uploading in: ${{ inputs.artifactory-dir-path }}: $filename"
-          jf rt u ${file} ${{ inputs.artifactory-dir-path}}/$filename
+          echo "Uploading in: ${INPUTS_ARTIFACTORY_DIR_PATH}: $filename"
+          jf rt u ${file} ${INPUTS_ARTIFACTORY_DIR_PATH}/$filename
         done

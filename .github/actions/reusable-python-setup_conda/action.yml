@@ -23,6 +23,8 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Setup env vars
       shell: bash
       run: |
@@ -42,8 +44,11 @@ runs:
     - name: Authenticate to Artifactory
       if: ${{ inputs.JFROG_ARTIFACTORY_URL && inputs.JFROG_ARTIFACTORY_TOKEN }}
       shell: 'bash -l {0}'
+      env:
+        INPUTS_JFROG_ARTIFACTORY_URL: ${{ inputs.JFROG_ARTIFACTORY_URL }}
+        INPUTS_JFROG_ARTIFACTORY_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       run: |
-        micromamba auth login ${{ inputs.JFROG_ARTIFACTORY_URL }} -u github -p ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+        micromamba auth login ${INPUTS_JFROG_ARTIFACTORY_URL} -u github -p ${INPUTS_JFROG_ARTIFACTORY_TOKEN}
     - name: Create conda env
       uses: mamba-org/setup-micromamba@v2
       with:
