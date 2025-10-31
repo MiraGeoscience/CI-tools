@@ -35,7 +35,7 @@ jobs:
     publish_pypi_assets:
         name: Publish PyPI assets
         permissions:
-            contents: read
+            contents: write
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
