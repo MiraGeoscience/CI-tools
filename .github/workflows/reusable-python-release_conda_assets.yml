@@ -28,7 +28,7 @@ jobs:
     publish_conda_asset:
         name: Publish Conda asset
         permissions:
-            contents: read
+            contents: write
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
