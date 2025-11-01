@@ -35,7 +35,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Zizmor Config
-        uses: MiraGeoscience/CI-tools/.github/actions/setup-zizmor-config@DEVOPS-917_evolution
+        uses: MiraGeoscience/CI-tools/.github/actions/setup-zizmor-config@v2.1
 
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
