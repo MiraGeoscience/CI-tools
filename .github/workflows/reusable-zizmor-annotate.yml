@@ -25,6 +25,7 @@ jobs:
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     permissions:
+      checks: write
       contents: read
       actions: read
 
@@ -41,7 +42,7 @@ jobs:
         uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
         with:
           advanced-security: false
-          annotations: false
+          annotations: true
           persona: ${{ inputs.persona }}
           min-severity: ${{ inputs.min_severity }}
           min-confidence: ${{ inputs.min_confidence }}

@@ -1,0 +1,18 @@
+name: 'Setup Zizmor Config'
+description: 'Creates a default zizmor.yml if one does not exist'
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure default zizmor.yml
+      shell: bash
+      run: |
+        if [ ! -f zizmor.yml ]; then
+          echo "Creating a custom zizmor.yml configuration file for CI..."
+          cat > zizmor.yml << 'EOF'
+        rules:
+          dependabot-cooldown:
+            disable: true
+        EOF
+        else
+          echo "⊘ Found existing zizmor.yml configuration file"
+        fi
