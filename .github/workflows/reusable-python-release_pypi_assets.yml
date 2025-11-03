@@ -35,6 +35,7 @@ jobs:
     publish_pypi_assets:
         name: Publish PyPI assets
         permissions:
+            id-token: write
             contents: write
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: 'ubuntu-latest'
