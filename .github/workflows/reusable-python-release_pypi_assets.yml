@@ -23,9 +23,6 @@ on:
         JFROG_ARTIFACTORY_TOKEN:
             description: 'JFrog Artifactory Token'
             required: true
-        PYPI_TOKEN:
-            description: 'PyPI Token'
-            required: false
 
 defaults:
     run:
@@ -75,4 +72,3 @@ jobs:
                     verbose: true
                     packages-dir: download-assets/
                     repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
-                    password: ${{ secrets.PYPI_TOKEN }}
