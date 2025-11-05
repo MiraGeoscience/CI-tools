@@ -43,6 +43,11 @@ on:
             required: false
             type: string
             default: ''
+        build-experimental:
+            description: 'Enable rattler-build experimental features'
+            required: false
+            type: boolean
+            default: false
 
     secrets:
         JFROG_ARTIFACTORY_URL:
@@ -137,6 +142,7 @@ jobs:
                     recipe-path: ${{ github.workspace}}/${{ inputs.source-path }}/recipe.yaml
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
+                    RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
             -   name: Archive build artifact
                 uses: actions/upload-artifact@v5
                 with:
