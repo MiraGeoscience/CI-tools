@@ -106,7 +106,9 @@ jobs:
             is-publishable: ${{ steps.check-version.outputs.is-publishable }}
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
+              with:
+                persist-credentials: false
             - name: Setup Python
               uses: actions/setup-python@v6
               with:
@@ -119,8 +121,10 @@ jobs:
                 activate-environment: true
             - name: Check if version is publishable
               id: check-version
+              env:
+                VERSION_TAG: ${{ inputs.version-tag }}
               run: |
-                if uv run version_checks publishable "${{ inputs.version-tag }}"; then
+                if uv run version_checks publishable $VERSION_TAG; then
                   echo "is-publishable=true" >> "$GITHUB_OUTPUT"
                 else
                   echo "is-publishable=false" >> "$GITHUB_OUTPUT"
