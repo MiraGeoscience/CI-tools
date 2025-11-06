@@ -1,0 +1,17 @@
+[project]
+name = "github-ci-scripts"
+version = "0.1.0"
+description = "Helper scripts for GitHub CI workflows."
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "typer",
+    "packaging",
+]
+
+[project.scripts]
+version-checks = "version_checks:app"
+
+[tool.uv]
+package = true

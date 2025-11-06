@@ -96,14 +96,43 @@ jobs:
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+    is_publishable:
+        name: Is package is to be published
+        permissions:
+            contents: read
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        outputs:
+            is-publishable: ${{ steps.check-version.outputs.is-publishable }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                python-version: '3.12'
+            - name: Setup uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                enable-cache: true
+                working-directory: .github/scripts
+                activate-environment: true
+            - name: Check if version is publishable
+              id: check-version
+              run: |
+                if uv run version_checks publishable "${{ inputs.version-tag }}"; then
+                  echo "is-publishable=true" >> "$GITHUB_OUTPUT"
+                else
+                  echo "is-publishable=false" >> "$GITHUB_OUTPUT"
+                fi
     publish_package:
         name: Publish package
         permissions:
             contents: read
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: [ build_poetry_package, build_setuptools_package ]
-        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' }}
+        needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
+        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
         strategy:
             fail-fast: false
             matrix:
