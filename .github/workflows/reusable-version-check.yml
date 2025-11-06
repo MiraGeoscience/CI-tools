@@ -24,10 +24,17 @@ jobs:
     outputs:
       is-publishable: ${{ steps.check-version.outputs.is-publishable }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          persist-credentials: false
+      - name: Create pyproject.toml
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir version-check
+          cat > version-check/pyproject.toml << EOF
+          [project]
+          name = "version-check"
+          version = "0.1.0"
+          dependencies = ["packaging"]
+          requires-python = ">=3.12"
+          EOF
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -36,16 +43,27 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          working-directory: .github/scripts
           activate-environment: true
+          working-directory: ${{ runner.temp }}/version-check
       - name: Check if version is publishable
         id: check-version
         env:
-          VERSION_TAG: ${{ inputs.version-tag || github.ref_name }}
+          VERSION_TAG: ${{ inputs.version-tag }}
         run: |
-          RESULT=$(uv run version_checks publishable $VERSION_TAG)
-          if [ "$RESULT" = "yes" ]; then
-            echo "is-publishable=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "is-publishable=false" >> "$GITHUB_OUTPUT"
-          fi
+          uv run python -c "
+          from packaging.version import parse
+          import os
+
+          v = parse(os.environ['VERSION_TAG'])
+          skip_publish = (
+              v.dev is not None or
+              (v.pre and v.pre[0] == 'a' and v.pre[1] == 0)
+          )
+
+          if skip_publish:
+              print('is-publishable=false')
+          else:
+              print('is-publishable=true')
+          " | while IFS='=' read -r key value; do
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done
