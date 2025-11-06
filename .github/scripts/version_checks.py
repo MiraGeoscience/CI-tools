@@ -1,14 +1,25 @@
+import sys
 import typer
-from packaging.version import parse
+from packaging.version import parse, InvalidVersion
 
 app = typer.Typer()
+
+def _parse_or_exit(version_string: str):
+    """
+    Parse a version string, exiting if invalid.
+    """
+    try:
+        return parse(version_string)
+    except InvalidVersion:
+        print(f"Invalid version string: {version_string}", file=sys.stderr)
+        raise typer.Exit(1)
 
 def _is_publishable(version_string: str) -> bool:
     """
     Checks if a version string is publishable.
     Returns False for alpha 0 releases and dev versions.
     """
-    v = parse(version_string)
+    v = _parse_or_exit(version_string)
     if not v.is_prerelease:
         return True
 
@@ -25,23 +36,17 @@ def normalize(version: str):
     """
     Prints the normalized version string.
     """
-    print(f"Normalized version: {parse(version)}")
+    print(f"Normalized version: {_parse_or_exit(version)}")
 
 @app.command()
 def publishable(version: str):
     """
     Check if a version is publishable.
 
-    Print whether the version is publishable,
-    and exit with code 0 if it is, or code 1 if it is not.
+    Print "yes" or "no" depending on whether the version is publishable.
     """
     result = _is_publishable(version)
-    if result:
-        print(f"Version {version} is publishable.")
-        raise typer.Exit(code=0)
-    else:
-        print(f"Version {version} is NOT publishable.")
-        raise typer.Exit(code=1)
+    print("yes" if result else "no")
 
 if __name__ == "__main__":
     app()

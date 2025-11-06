@@ -41,9 +41,10 @@ jobs:
       - name: Check if version is publishable
         id: check-version
         env:
-          VERSION_TAG: ${{ inputs.version-tag }}
+          VERSION_TAG: ${{ inputs.version-tag || github.ref_name }}
         run: |
-          if uv run version_checks publishable $VERSION_TAG; then
+          RESULT=$(uv run version_checks publishable $VERSION_TAG)
+          if [ "$RESULT" = "yes" ]; then
             echo "is-publishable=true" >> "$GITHUB_OUTPUT"
           else
             echo "is-publishable=false" >> "$GITHUB_OUTPUT"
