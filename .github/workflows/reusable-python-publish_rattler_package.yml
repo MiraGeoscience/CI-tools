@@ -43,6 +43,10 @@ on:
             required: false
             type: string
             default: ''
+        version-tag:
+            description: 'Version tag of the package to build (defaults to github.ref_name if not provided)'
+            required: false
+            type: string
         build-experimental:
             description: 'Enable rattler-build experimental features'
             required: false
@@ -150,38 +154,10 @@ jobs:
                     retention-days: 7
 
     is_publishable:
-        name: Is package is to be published
-        permissions:
-            contents: read
-        runs-on: 'ubuntu-latest'
-        timeout-minutes: 5
-        outputs:
-            is-publishable: ${{ steps.check-version.outputs.is-publishable }}
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v5
-              with:
-                persist-credentials: false
-            - name: Setup Python
-              uses: actions/setup-python@v6
-              with:
-                python-version: '3.12'
-            - name: Setup uv
-              uses: astral-sh/setup-uv@v7
-              with:
-                enable-cache: true
-                working-directory: .github/scripts
-                activate-environment: true
-            - name: Check if version is publishable
-              id: check-version
-              env:
-                VERSION_TAG: ${{ inputs.version-tag }}
-              run: |
-                if uv run version_checks publishable $VERSION_TAG; then
-                  echo "is-publishable=true" >> "$GITHUB_OUTPUT"
-                else
-                  echo "is-publishable=false" >> "$GITHUB_OUTPUT"
-                fi
+        name: Check version publishability
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@DEVOPS-928
+        with:
+          version-tag: ${{ inputs.version-tag || github.ref_name }}
 
     publish_package_on_artifactory:
         name: Publish package
