@@ -48,7 +48,6 @@ on:
             required: false
             type: boolean
             default: false
-
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
@@ -150,12 +149,46 @@ jobs:
                     path: ${{ runner.temp }}/output/**/*.conda
                     retention-days: 7
 
-    publish_package_on_artifactory:
-        name: Publish package
-        if: github.repository_owner == 'MiraGeoscience'
+    is_publishable:
+        name: Is package is to be published
+        permissions:
+            contents: read
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: build_rattler_package
+        outputs:
+            is-publishable: ${{ steps.check-version.outputs.is-publishable }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+              with:
+                persist-credentials: false
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                python-version: '3.12'
+            - name: Setup uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                enable-cache: true
+                working-directory: .github/scripts
+                activate-environment: true
+            - name: Check if version is publishable
+              id: check-version
+              env:
+                VERSION_TAG: ${{ inputs.version-tag }}
+              run: |
+                if uv run version_checks publishable $VERSION_TAG; then
+                  echo "is-publishable=true" >> "$GITHUB_OUTPUT"
+                else
+                  echo "is-publishable=false" >> "$GITHUB_OUTPUT"
+                fi
+
+    publish_package_on_artifactory:
+        name: Publish package
+        if: ${{ github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
+        needs: [build_rattler_package, is_publishable]
         strategy:
             matrix:
                 publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
@@ -172,6 +205,7 @@ jobs:
                     artifactory-dir-path: ${{ matrix.publish-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
     add_release_asset:
         name: Add release asset
         permissions:

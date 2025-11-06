@@ -44,7 +44,6 @@ on:
             required: false
             type: string
             default: ''
-
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
@@ -79,6 +78,7 @@ jobs:
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
@@ -96,6 +96,7 @@ jobs:
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
     is_publishable:
         name: Is package is to be published
         permissions:
@@ -129,6 +130,7 @@ jobs:
                 else
                   echo "is-publishable=false" >> "$GITHUB_OUTPUT"
                 fi
+
     publish_package:
         name: Publish package
         permissions:
@@ -176,6 +178,7 @@ jobs:
                     packages-dir: ${{ env.build-dir-path }}/
                     repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
                     password: ${{ secrets.PYPI_TOKEN }}
+
     add_release_asset:
         name: Add release asset
         permissions:
