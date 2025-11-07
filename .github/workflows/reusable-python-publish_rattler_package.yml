@@ -60,6 +60,9 @@ on:
             description: 'JFrog Artifactory Token'
             required: true
 
+permissions:
+    contents: read
+
 defaults:
     run:
         shell: 'bash -l {0}'

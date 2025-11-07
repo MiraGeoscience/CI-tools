@@ -55,6 +55,9 @@ on:
             description: 'PyPI Token'
             required: false
 
+permissions:
+    contents: read
+
 defaults:
     run:
         shell: 'bash -l {0}'
@@ -63,8 +66,6 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
-        permissions:
-            contents: read
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
@@ -82,8 +83,6 @@ jobs:
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
-        permissions:
-            contents: read
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
@@ -105,8 +104,6 @@ jobs:
 
     publish_package:
         name: Publish package
-        permissions:
-            contents: read
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
         needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
