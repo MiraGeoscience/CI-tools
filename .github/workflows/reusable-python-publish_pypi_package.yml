@@ -98,7 +98,7 @@ jobs:
 
     is_publishable:
         name: Check version publishability
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@DEVOPS-928
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@v2
         with:
           version-tag: ${{ inputs.version-tag || github.ref_name }}
 
