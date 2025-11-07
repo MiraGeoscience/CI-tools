@@ -43,10 +43,10 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          activate-environment: true
           working-directory: ${{ runner.temp }}/version-check
       - name: Check if version is publishable
         id: check-version
+        working-directory: ${{ runner.temp }}/version-check
         env:
           VERSION_TAG: ${{ inputs.version-tag }}
         run: |
