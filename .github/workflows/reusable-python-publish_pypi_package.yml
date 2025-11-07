@@ -21,10 +21,6 @@ on:
             required: false
             type: boolean
             default: true
-        version-tag:
-            description: 'Version tag of the package to build'
-            required: true
-            type: string
         virtual-repo-names:
             description: 'List of virtual repository names to publish on (e.g. ["public-pypi-dev"])'
             required: true
@@ -44,7 +40,10 @@ on:
             required: false
             type: string
             default: ''
-
+        version-tag:
+            description: 'Version tag of the package to build (defaults to github.ref_name if not provided)'
+            required: false
+            type: string
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
@@ -56,6 +55,9 @@ on:
             description: 'PyPI Token'
             required: false
 
+permissions:
+    contents: read
+
 defaults:
     run:
         shell: 'bash -l {0}'
@@ -64,46 +66,48 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
-        permissions:
-            contents: read
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag }}
+            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
-        permissions:
-            contents: read
         uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@main
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag }}
+            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
         secrets:
             JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
             JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
+    is_publishable:
+        name: Check version publishability
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@v2
+        with:
+          version-tag: ${{ inputs.version-tag || github.ref_name }}
+
     publish_package:
         name: Publish package
-        permissions:
-            contents: read
+        needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
+        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: [ build_poetry_package, build_setuptools_package ]
-        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' }}
         strategy:
             fail-fast: false
             matrix:
@@ -143,14 +147,14 @@ jobs:
                     packages-dir: ${{ env.build-dir-path }}/
                     repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
                     password: ${{ secrets.PYPI_TOKEN }}
+
     add_release_asset:
         name: Add release asset
+        needs: publish_package
         permissions:
             contents: write
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: [ publish_package ]
-        if: ${{ always() && contains(needs.*.result, 'success') }}
         steps:
             -   name: Get draft release
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v2

@@ -1,0 +1,70 @@
+name: Check Version
+
+on:
+  workflow_call:
+    inputs:
+      version-tag:
+        description: 'Version tag to check'
+        required: true
+        type: string
+    outputs:
+      is-publishable:
+        description: 'Whether the version is publishable'
+        value: ${{ jobs.is_publishable.outputs.is-publishable }}
+
+permissions: {}
+
+jobs:
+  is_publishable:
+    name: Check if version is publishable
+    permissions:
+      contents: read
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 5
+    outputs:
+      is-publishable: ${{ steps.check-version.outputs.is-publishable }}
+    steps:
+      - name: Create pyproject.toml
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir version-check
+          cat > version-check/pyproject.toml << EOF
+          [project]
+          name = "version-check"
+          version = "0.1.0"
+          dependencies = ["packaging"]
+          requires-python = ">=3.12"
+          EOF
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          working-directory: ${{ runner.temp }}/version-check
+      - name: Check if version is publishable
+        id: check-version
+        working-directory: ${{ runner.temp }}/version-check
+        env:
+          VERSION_TAG: ${{ inputs.version-tag }}
+        run: |
+          uv run python -c "
+          from packaging.version import parse
+          import os
+
+          v = parse(os.environ['VERSION_TAG'])
+          skip_publish = (
+              v.dev is not None or
+              (v.pre and v.pre[0] == 'a' and v.pre[1] == 0)
+          )
+          print(f'Publishable version {v}: {not skip_publish}')
+
+          github_output = os.environ['GITHUB_OUTPUT']
+          with open(github_output, mode='a', encoding='utf-8') as f:
+              if skip_publish:
+                  f.write('is-publishable=false\n')
+              else:
+                  f.write('is-publishable=true\n')
+          "

@@ -43,12 +43,15 @@ on:
             required: false
             type: string
             default: ''
+        version-tag:
+            description: 'Version tag of the package to build (defaults to github.ref_name if not provided)'
+            required: false
+            type: string
         build-experimental:
             description: 'Enable rattler-build experimental features'
             required: false
             type: boolean
             default: false
-
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: 'JFrog Artifactory URL'
@@ -56,6 +59,9 @@ on:
         JFROG_ARTIFACTORY_TOKEN:
             description: 'JFrog Artifactory Token'
             required: true
+
+permissions:
+    contents: read
 
 defaults:
     run:
@@ -150,12 +156,18 @@ jobs:
                     path: ${{ runner.temp }}/output/**/*.conda
                     retention-days: 7
 
-    publish_package_on_artifactory:
+    is_publishable:
+        name: Check version publishability
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@v2
+        with:
+          version-tag: ${{ inputs.version-tag || github.ref_name }}
+
+    publish_package:
         name: Publish package
-        if: github.repository_owner == 'MiraGeoscience'
+        needs: [build_rattler_package, is_publishable]
+        if: ${{ github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: build_rattler_package
         strategy:
             matrix:
                 publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
@@ -172,13 +184,14 @@ jobs:
                     artifactory-dir-path: ${{ matrix.publish-repo-name}}/noarch
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+
     add_release_asset:
         name: Add release asset
+        needs: publish_package
         permissions:
             contents: write
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: publish_package_on_artifactory
         steps:
             -   name: Get draft release
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v2
