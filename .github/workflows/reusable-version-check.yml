@@ -59,11 +59,12 @@ jobs:
               v.dev is not None or
               (v.pre and v.pre[0] == 'a' and v.pre[1] == 0)
           )
+          print(f'Publishable version {v}: {not skip_publish}')
 
-          if skip_publish:
-              print('is-publishable=false')
-          else:
-              print('is-publishable=true')
-          " | while IFS='=' read -r key value; do
-            echo "$key=$value" >> "$GITHUB_OUTPUT"
-          done
+          github_output = os.environ['GITHUB_OUTPUT']
+          with open(github_output, mode='a', encoding='utf-8') as f:
+              if skip_publish:
+                  f.write('is-publishable=false\n')
+              else:
+                  f.write('is-publishable=true\n')
+          "
