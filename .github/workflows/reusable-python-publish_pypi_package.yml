@@ -104,10 +104,10 @@ jobs:
 
     publish_package:
         name: Publish package
-        runs-on: 'ubuntu-latest'
-        timeout-minutes: 5
         needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
         if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
+        runs-on: 'ubuntu-latest'
+        timeout-minutes: 5
         strategy:
             fail-fast: false
             matrix:
@@ -150,12 +150,11 @@ jobs:
 
     add_release_asset:
         name: Add release asset
+        needs: publish_package
         permissions:
             contents: write
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: [ publish_package ]
-        if: ${{ always() && contains(needs.*.result, 'success') }}
         steps:
             -   name: Get draft release
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v2

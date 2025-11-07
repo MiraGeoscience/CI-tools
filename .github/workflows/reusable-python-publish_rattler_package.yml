@@ -162,12 +162,12 @@ jobs:
         with:
           version-tag: ${{ inputs.version-tag || github.ref_name }}
 
-    publish_package_on_artifactory:
+    publish_package:
         name: Publish package
+        needs: [build_rattler_package, is_publishable]
         if: ${{ github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: [build_rattler_package, is_publishable]
         strategy:
             matrix:
                 publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
@@ -187,11 +187,11 @@ jobs:
 
     add_release_asset:
         name: Add release asset
+        needs: publish_package
         permissions:
             contents: write
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5
-        needs: publish_package_on_artifactory
         steps:
             -   name: Get draft release
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v2
