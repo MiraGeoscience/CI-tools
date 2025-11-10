@@ -151,6 +151,7 @@ jobs:
     add_release_asset:
         name: Add release asset
         needs: publish_package
+        if: ${{ always() && needs.publish_package.result == 'success' }}
         permissions:
             contents: write
         runs-on: 'ubuntu-latest'
