@@ -18,7 +18,7 @@ inputs:
     required: false
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: JFrog Artifactory Token
+    description: JFrog Artifactory Token (secret)
     required: true
     type: string
 

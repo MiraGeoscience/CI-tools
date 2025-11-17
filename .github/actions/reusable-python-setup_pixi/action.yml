@@ -10,11 +10,11 @@ inputs:
     required: false
     type: string
   JFROG_ARTIFACTORY_URL:
-    description: JFrog Artifactory URL
+    description: JFrog Artifactory URL (secret)
     required: true
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: JFrog Artifactory Token
+    description: JFrog Artifactory Token (secret)
     required: false
     type: string
 
