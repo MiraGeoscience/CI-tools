@@ -33,11 +33,17 @@ on:
         type: string
         default: "['windows-latest']"
       install-extras:
-        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
+        description: 'Extra dependencies for pip to install (e.g. ["torch", "cuda"])'
+        required: false
+        type: string
+      conda-channels:
+        description: 'List of conda channels to pull from (e.g. ["conda-forge", "pytorch"])'
         required: false
         type: string
       virtual-repo-names:
-        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
+        description: >
+          List of repository names to resolve on for pip or Conda
+          (e.g. ["public-pypi-dev"], or ["public-conda-dev"])'
         required: false
         type: string
       lfs:
@@ -89,7 +95,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v2
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-867
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         env:
@@ -97,6 +103,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ matrix.python-version }}
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 

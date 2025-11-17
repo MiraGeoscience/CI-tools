@@ -9,6 +9,14 @@ inputs:
     description: 'Python version to use'
     required: true
     type: string
+  virtual-repo-names:
+    description: 'List of repository names to pull from (e.g. ["geology-conda-dev", "geophysics-conda-dev"])'
+    required: false
+    type: string
+  conda-channels:
+    description: 'List of conda channels to pull from (e.g. ["conda-forge", "pytorch"])'
+    required: false
+    type: string
   JFROG_ARTIFACTORY_URL:
     description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
     required: false
@@ -49,6 +57,33 @@ runs:
         INPUTS_JFROG_ARTIFACTORY_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       run: |
         micromamba auth login ${INPUTS_JFROG_ARTIFACTORY_URL} -u github -p ${INPUTS_JFROG_ARTIFACTORY_TOKEN}
+    - name: Configure Conda channels
+      id: config-channels
+      shell: 'bash -l {0}'
+      env:
+        INPUTS_SOURCE_REPO_NAMES: ${{ inputs.virtual-repo-names }}
+        INPUTS_CONDA_CHANNELS: ${{ inputs.conda-channels }}
+      run: |
+        conda_channels=""
+        repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
+        echo "Using local Conda channels: ${repository_list}"
+        for repo_name in ${repository_list}; do
+          url="https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+          conda_channels="${conda_channels}${url},"
+        done
+
+        channel_list=$(echo "${INPUTS_CONDA_CHANNELS}" | jq -r '.[]' | xargs)
+        # at the minimum use conda-forge
+        if [[ -z $channel_list ]]; then
+          channel_list=conda-forge
+        fi
+        echo "Using regular Conda channels: $channel_list"
+        for channel_name in ${channel_list}; do
+          conda_channels="${conda_channels}${channel_name},"
+        done
+        conda_channels="${conda_channels%,}"
+
+        echo "channels=$conda_channels" >> $GITHUB_OUTPUT
     - name: Create conda env
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -63,5 +98,7 @@ runs:
         PYTHONUTF8: 1
         CONDA_CHANNEL_PRIORITY: strict
         MAMBA_CHANNEL_PRIORITY: strict
-        PIP_NO_DEPS: 1 # all dependencies are installed from conda
+        CONDA_CHANNELS: ${{ steps.config-channels.outputs.channels }}
+        MAMBA_CHANNELS: ${{ steps.config-channels.outputs.channels }}
+        PIP_NO_DEPS: 1  # all dependencies are explicitly listed in the conda lock file
         CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'

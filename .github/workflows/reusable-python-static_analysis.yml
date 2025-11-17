@@ -22,7 +22,9 @@ on:
         required: false
         type: string
       virtual-repo-names:
-        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
+        description: >
+          List of repository names to resolve on for pip or Conda
+          (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
       lfs:
@@ -87,7 +89,7 @@ jobs:
         with:
           python-version: ${{inputs.python-version}}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v2
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-867
         name: Setup conda env
         env:
           GIT_LFS_SKIP_SMUDGE: "1"
@@ -95,6 +97,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.python-version }}
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
