@@ -4,12 +4,12 @@ on:
   workflow_call:
     inputs:
       version-tag:
-        description: 'Version tag to check'
+        description: Version tag to check
         required: true
         type: string
     outputs:
       is-publishable:
-        description: 'Whether the version is publishable'
+        description: Whether the version is publishable
         value: ${{ jobs.is_publishable.outputs.is-publishable }}
 
 permissions: {}
@@ -19,7 +19,7 @@ jobs:
     name: Check if version is publishable
     permissions:
       contents: read
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       is-publishable: ${{ steps.check-version.outputs.is-publishable }}

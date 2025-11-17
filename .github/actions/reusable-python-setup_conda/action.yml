@@ -2,11 +2,11 @@ name: Setup conda env
 description: Setup conda environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if conda lock file has not changed'
+    description: Cache number to reset cache if conda lock file has not changed
     required: true
     type: number
   python-version:
-    description: 'Python version to use'
+    description: Python version to use
     required: true
     type: string
   virtual-repo-names:
@@ -18,17 +18,17 @@ inputs:
     required: false
     type: string
   JFROG_ARTIFACTORY_URL:
-    description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
+    description: JFrog Artifactory URL, needed if packages are on Artifactory
     required: false
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
+    description: JFrog Artifactory Token, needed if packages are on Artifactory
     required: false
     type: string
 
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - uses: actions/checkout@v5
       with:
@@ -101,4 +101,4 @@ runs:
         CONDA_CHANNELS: ${{ steps.config-channels.outputs.channels }}
         MAMBA_CHANNELS: ${{ steps.config-channels.outputs.channels }}
         PIP_NO_DEPS: 1  # all dependencies are explicitly listed in the conda lock file
-        CONDA_LOCK_ENV_FILE: 'environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml'
+        CONDA_LOCK_ENV_FILE: environments/py-${{ inputs.python-version }}-${{ env.os_conda }}-64-dev.conda.lock.yml

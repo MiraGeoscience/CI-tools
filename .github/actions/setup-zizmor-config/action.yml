@@ -1,7 +1,7 @@
-name: 'Setup Zizmor Config'
-description: 'Creates a default zizmor.yml if one does not exist'
+name: Setup Zizmor Config
+description: Creates a default zizmor.yml if one does not exist
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Ensure default zizmor.yml
       shell: bash

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       app-name:
-        description: 'Name of the app to run pre-commit on'
+        description: Name of the app to run pre-commit on
         required: false
         type: string
       os:
@@ -13,25 +13,25 @@ on:
         type: string
         default: "['ubuntu-latest']"
       python-version:
-        description: 'Python version used with pre-commit'
+        description: Python version used with pre-commit
         required: false
         type: string
         default: "3.10"
       lfs:
-        description: 'Boolean to indicate if Github LFS is needed'
+        description: Boolean to indicate if GitHub LFS is needed
         required: false
         type: boolean
         default: false
       timeout-minutes:
-        description: 'Timeout in minutes for the job'
+        description: Timeout in minutes for the job
         required: false
         type: number
         default: 20
       skip:
-        description: 'comma separated list of hooks to skip'
+        description: comma separated list of hooks to skip
         required: false
         type: string
-        default: "pylint"
+        default: pylint
 
 jobs:
   pre-commit:

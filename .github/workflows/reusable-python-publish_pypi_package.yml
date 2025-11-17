@@ -4,20 +4,20 @@ on:
   workflow_call:
     inputs:
         package-manager:
-            description: 'Name of the package manager (e.g. "poetry")'
+            description: Name of the package manager (e.g. "poetry")
             required: true
             type: string
-            default: 'poetry'
+            default: poetry
         package-name:
-            description: 'Name of the package to build'
+            description: Name of the package to build
             required: true
             type: string
         python-version:
-            description: 'Python version to use (e.g. 3.10)'
+            description: Python version to use (e.g. 3.10)
             required: true
             type: string
         lfs:
-            description: 'Boolean to indicate if Github LFS is needed'
+            description: Boolean to indicate if GitHub LFS is needed
             required: false
             type: boolean
             default: true
@@ -26,33 +26,33 @@ on:
             required: true
             type: string
         os:
-            description: 'OS to build against (e.g. "ubuntu-latest")'
+            description: OS to build against (e.g. "ubuntu-latest")
             required: false
             type: string
-            default: 'ubuntu-latest'
+            default: ubuntu-latest
         timeout-minutes:
-            description: 'Timeout in minutes for the job'
+            description: Timeout in minutes for the job
             required: false
             type: number
             default: 20
         source-path:
-            description: 'Path to the source code (e.g. "src"), where the recipe.yaml is located'
+            description: Path to the source code (e.g. "src"), where the recipe.yaml is located
             required: false
             type: string
             default: ''
         version-tag:
-            description: 'Version tag of the package to build (defaults to github.ref_name if not provided)'
+            description: Version tag of the package to build (defaults to github.ref_name if not provided)
             required: false
             type: string
     secrets:
         JFROG_ARTIFACTORY_URL:
-            description: 'JFrog Artifactory URL'
+            description: JFrog Artifactory URL
             required: true
         JFROG_ARTIFACTORY_TOKEN:
-            description: 'JFrog Artifactory Token'
+            description: JFrog Artifactory Token
             required: true
         PYPI_TOKEN:
-            description: 'PyPI Token'
+            description: PyPI Token
             required: false
 
 permissions:
@@ -106,7 +106,7 @@ jobs:
         name: Publish package
         needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
         if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
-        runs-on: 'ubuntu-latest'
+        runs-on: ubuntu-latest
         timeout-minutes: 5
         strategy:
             fail-fast: false
@@ -154,7 +154,7 @@ jobs:
         if: ${{ always() && needs.publish_package.result == 'success' }}
         permissions:
             contents: write
-        runs-on: 'ubuntu-latest'
+        runs-on: ubuntu-latest
         timeout-minutes: 5
         steps:
             -   name: Get draft release

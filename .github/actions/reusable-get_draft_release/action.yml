@@ -2,21 +2,21 @@ name: Get or Draft Release
 description: Find or create a new draft release for the current tag
 inputs:
   GITHUB_TOKEN:
-    description: "The GitHub token (secret)"
+    description: The GitHub token (secret)
     required: true
     type: string
   existing-release:
-    description: "The tag corresponding to the desired release. If empty, will get it from github.ref"
+    description: The tag corresponding to the desired release. If empty, will get it from github.ref
     required: false
     type: string
 
 outputs:
   release-tag:
-    description: "The tag for the newly created or existing release (same value as `inputs.existing-release` if provided)"
+    description: The tag for the newly created or existing release (same value as `inputs.existing-release` if provided)
     value: ${{ steps.get-or-draft-release.outputs.release-tag || steps.get-existing-release.outputs.release-tag }}
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - shell: bash
       run: gh --version

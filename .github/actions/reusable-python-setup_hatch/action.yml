@@ -2,16 +2,16 @@ name: Setup hatch env
 description: Setup hatch environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if pyproject.toml has not changed'
+    description: Cache number to reset cache if pyproject.toml has not changed
     required: true
     type: number
   runner-os:
-    description: 'Runner OS'
+    description: Runner OS
     required: true
     type: string
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Get full Python version
       id: full-python-version

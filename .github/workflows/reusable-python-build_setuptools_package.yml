@@ -4,15 +4,15 @@ on:
   workflow_call:
     inputs:
         package-name:
-            description: 'Name of the package to build'
+            description: Name of the package to build
             required: true
             type: string
         python-version:
-            description: 'Python version to use (e.g. 3.10)'
+            description: Python version to use (e.g. 3.10)
             required: true
             type: string
         version-tag:
-            description: 'Version tag of the package to build'
+            description: Version tag of the package to build
             required: true
             type: string
         virtual-repo-names:
@@ -20,31 +20,31 @@ on:
             required: true
             type: string
         os:
-            description: 'OS to build against (e.g. "ubuntu-latest")'
+            description: OS to build against (e.g. "ubuntu-latest")
             required: true
             type: string
         lfs:
-            description: 'Boolean to indicate if Github LFS is needed'
+            description: Boolean to indicate if GitHub LFS is needed
             required: false
             type: boolean
             default: false
         timeout-minutes:
-            description: 'Timeout in minutes for the job'
+            description: Timeout in minutes for the job
             required: true
             type: number
     outputs:
         build-dir-path:
-            description: 'Path to the build directory'
+            description: Path to the build directory
             value: ${{ jobs.build_package.outputs.build-dir-path }}
         version:
-            description: 'Version of the package'
+            description: Version of the package
             value: ${{ jobs.build_package.outputs.version }}
     secrets:
         JFROG_ARTIFACTORY_URL:
-            description: 'JFrog Artifactory URL'
+            description: JFrog Artifactory URL
             required: true
         JFROG_ARTIFACTORY_TOKEN:
-            description: 'JFrog Artifactory Token'
+            description: JFrog Artifactory Token
             required: true
 
 defaults:
