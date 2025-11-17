@@ -16,7 +16,7 @@ on:
             required: true
             type: string
         virtual-repo-names:
-            description: 'List of repository names to publish on (e.g. ["public-dev-pypi"])'
+            description: 'List of repository names to resolve on (e.g. ["public-pypi-dev"])'
             required: true
             type: string
         os:

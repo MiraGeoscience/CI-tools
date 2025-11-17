@@ -20,7 +20,7 @@ on:
             required: true
             type: string
         publish-repo-names:
-            description: 'List of repository names to publish on (e.g. ["public-conda-dev"])'
+            description: 'List of repository names to publish to (e.g. ["public-conda-dev", "geophysics-conda-dev"])'
             required: true
             type: string
         os:

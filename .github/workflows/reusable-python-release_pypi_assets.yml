@@ -8,7 +8,9 @@ on:
             required: true
             type: string
         virtual-repo-names:
-            description: 'List of repository names to publish on (e.g. ["public-pypi-prod"])'
+            description: >
+                List of repository names to publish to
+                (e.g. ["public-pypi-prod", "geophysics-pypi-prod"])
             required: true
             type: string
         release-tag:

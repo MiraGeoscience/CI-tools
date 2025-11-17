@@ -18,7 +18,7 @@ on:
         type: string
         default: '3.10'
       install-extras:
-        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
+        description: 'Extra dependencies for pip to install (e.g. ["torch", "cuda"])'
         required: false
         type: string
       virtual-repo-names:

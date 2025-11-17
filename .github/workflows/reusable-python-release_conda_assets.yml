@@ -4,7 +4,9 @@ on:
   workflow_call:
     inputs:
         virtual-repo-names:
-            description: 'List of repository names to publish on (e.g. ["public-conda-prod"])'
+            description: >
+                List of repository names to publish to
+                (e.g. ["public-conda-prod", "geophysics-conda-prod"])
             required: true
             type: string
         release-tag:

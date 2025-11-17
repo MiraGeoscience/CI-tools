@@ -22,7 +22,7 @@ on:
             type: boolean
             default: true
         virtual-repo-names:
-            description: 'List of virtual repository names to publish on (e.g. ["public-pypi-dev"])'
+            description: 'List of virtual repository names to publish to (e.g. ["public-pypi-dev", "geophysics-pypi-dev"])'
             required: true
             type: string
         os:
