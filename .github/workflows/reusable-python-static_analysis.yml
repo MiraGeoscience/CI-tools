@@ -89,7 +89,7 @@ jobs:
         with:
           python-version: ${{inputs.python-version}}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@DEVOPS-867
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v2
         name: Setup conda env
         env:
           GIT_LFS_SKIP_SMUDGE: "1"
