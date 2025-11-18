@@ -4,10 +4,10 @@ on:
   workflow_call:
     inputs:
       package-manager:
-        description: 'Package manager to use (e.g. "conda", "poetry", "pixi")'
+        description: Package manager to use (e.g. "conda", "poetry", "pixi")
         required: true
         type: string
-        default: 'poetry'
+        default: poetry
       python-versions:
         description: 'List of Python versions to test against (e.g. ["3.10", "3.11", "3.12"])'
         required: false
@@ -19,47 +19,53 @@ on:
         type: string
         default: "['ubuntu-latest']"
       cache-number:
-        description: 'Cache number to reset cache if poetry.lock has not changed'
+        description: Cache number to reset cache if poetry.lock has not changed
         required: false
         type: number
         default: 1
       codecov-reference-python-version:
-        description: 'Python version to use as reference for Codecov'
+        description: Python version to use as reference for Codecov
         required: false
         type: string
       codecov-reference-os:
-        description: 'List of OS to use as reference for Codecov'
+        description: List of OS to use as reference for Codecov
         required: false
         type: string
         default: "['windows-latest']"
       install-extras:
-        description: 'Extra dependencies to install (e.g. ["torch", "cuda"])'
+        description: 'Extra dependencies for pip to install (e.g. ["torch", "cuda"])'
+        required: false
+        type: string
+      conda-channels:
+        description: 'List of conda channels to pull from (e.g. ["conda-forge", "pytorch"])'
         required: false
         type: string
       virtual-repo-names:
-        description: 'List of repository names to resolve on (e.g. ["public-dev-pypi"])'
+        description: >
+          List of repository names to resolve on for pip or Conda
+          (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
       lfs:
-        description: 'Boolean to indicate if Github LFS is needed'
+        description: Boolean to indicate if GitHub LFS is needed
         required: false
         type: boolean
         default: false
       timeout-minutes:
-        description: 'Timeout in minutes for the job'
+        description: Timeout in minutes for the job
         required: false
         type: number
         default: 20
 
     secrets:
       CODECOV_TOKEN:
-        description: 'Codecov token'
+        description: Codecov token
         required: false
       JFROG_ARTIFACTORY_URL:
-        description: 'JFrog Artifactory URL, needed if packages are on Artifactory'
+        description: JFrog Artifactory URL, needed if packages are on Artifactory
         required: false
       JFROG_ARTIFACTORY_TOKEN:
-        description: 'JFrog Artifactory Token, needed if packages are on Artifactory'
+        description: JFrog Artifactory Token, needed if packages are on Artifactory
         required: false
 
 jobs:
@@ -97,6 +103,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ matrix.python-version }}
+          virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 

@@ -2,24 +2,24 @@ name: Publish to Artifactory
 description: Publish package to JFrog Artifactory
 inputs:
   build-dir-path:
-    description: 'Path to the build directory'
+    description: Path to the build directory
     required: true
     type: string
   artifactory-dir-path:
-    description: 'Path for the package in Artifactory containing the repository name'
+    description: Path for the package in Artifactory containing the repository name
     required: true
     type: string
   JFROG_ARTIFACTORY_URL:
-    description: 'JFrog Artifactory URL'
+    description: JFrog Artifactory URL (secret)
     required: true
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: 'JFrog Artifactory Token'
+    description: JFrog Artifactory Token (secret)
     required: true
     type: string
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Setup JFrog CLI
       uses: jfrog/setup-jfrog-cli@v4.4.1

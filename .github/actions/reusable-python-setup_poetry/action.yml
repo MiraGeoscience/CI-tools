@@ -2,11 +2,11 @@ name: Setup poetry env
 description: Setup poetry environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if poetry.lock has not changed'
+    description: Cache number to reset cache if poetry.lock has not changed
     required: true
     type: number
   runner-os:
-    description: 'Runner OS'
+    description: Runner OS
     required: true
     type: string
   install-extras:
@@ -14,16 +14,16 @@ inputs:
     required: false
     type: string
   virtual-repo-names:
-    description: 'Matrix of virtual repository names to resolve (eg. ["public-dev-pypi"])'
+    description: 'Matrix of virtual repository names to resolve on (eg. ["public-pypi-dev"])'
     required: false
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: 'JFrog Artifactory Token'
+    description: JFrog Artifactory Token (secret)
     required: true
     type: string
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Get full Python version
       id: full-python-version

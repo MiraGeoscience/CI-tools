@@ -4,20 +4,22 @@ on:
   workflow_call:
     inputs:
         virtual-repo-names:
-            description: 'List of repository names to publish on (e.g. ["public-conda-prod"])'
+            description: >
+                List of repository names to publish to
+                (e.g. ["public-conda-prod", "geophysics-conda-prod"])
             required: true
             type: string
         release-tag:
-            description: 'Tag for the existing (draft) release to publish assets from'
+            description: Tag for the existing (draft) release to publish assets from
             required: true
             type: string
 
     secrets:
         JFROG_ARTIFACTORY_URL:
-            description: 'JFrog Artifactory URL'
+            description: JFrog Artifactory URL
             required: true
         JFROG_ARTIFACTORY_TOKEN:
-            description: 'JFrog Artifactory Token'
+            description: JFrog Artifactory Token
             required: true
 
 defaults:

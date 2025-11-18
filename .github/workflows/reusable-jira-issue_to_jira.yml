@@ -7,16 +7,16 @@ on:
     secrets:
       JIRA_BASE_URL:
         required: true
-        description: 'The base URL of your JIRA instance'
+        description: The base URL of your JIRA instance
       JIRA_API_TOKEN:
         required: true
-        description: 'The API token for your JIRA account'
+        description: The API token for your JIRA account
       JIRA_USER_EMAIL:
         required: true
-        description: 'The email address for your JIRA account'
+        description: The email address for your JIRA account
     inputs:
       project-key:
-        description: 'The JIRA project key'
+        description: The JIRA project key
         required: true
         type: string
       components:

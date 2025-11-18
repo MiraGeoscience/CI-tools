@@ -2,24 +2,24 @@ name: Setup pixi env
 description: Setup pixi environment for Python
 inputs:
   cache-number:
-    description: 'Cache number to reset cache if pixi.lock has not changed'
+    description: Cache number to reset cache if pixi.lock has not changed
     required: true
     type: number
   python-version:
-    description: 'Python version to decide on the pixi environment to install'
+    description: Python version to decide on the pixi environment to install
     required: false
     type: string
   JFROG_ARTIFACTORY_URL:
-    description: 'JFrog Artifactory URL'
+    description: JFrog Artifactory URL (secret)
     required: true
     type: string
   JFROG_ARTIFACTORY_TOKEN:
-    description: 'JFrog Artifactory Token'
+    description: JFrog Artifactory Token (secret)
     required: false
     type: string
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - id: get-env-name
       name: Get pixi environment name
