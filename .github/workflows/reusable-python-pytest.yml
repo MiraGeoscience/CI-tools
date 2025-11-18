@@ -43,7 +43,7 @@ on:
       virtual-repo-names:
         description: >
           List of repository names to resolve on for pip or Conda
-          (e.g. ["public-pypi-dev"], or ["public-conda-dev"])'
+          (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
       lfs:
