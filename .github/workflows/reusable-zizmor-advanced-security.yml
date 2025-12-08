@@ -39,7 +39,7 @@ jobs:
         uses: MiraGeoscience/CI-tools/.github/actions/setup-zizmor-config@v2
 
       - name: Run Zizmor Security Scan
-        uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
+        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4
         with:
           advanced-security: true
           annotations: false
