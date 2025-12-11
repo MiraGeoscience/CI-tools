@@ -50,23 +50,36 @@ jobs:
     - name: Check issue status
       if: ${{ steps.jira_key_from_title.outputs.issue_key }}
       run: | 
-        echo "Checking if issue is in open or future sprint"
         jql="Sprint in (openSprints(), futureSprints()) and issue=${{ steps.jira_key_from_title.outputs.issue_key }}"
         jqlencoded=$(jq -R -r @uri <<<"$jql")
         response=$(curl -s --request GET \
-                   --url $JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded \
+                   --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory" \
                    --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                    --header 'Accept: application/json' \
-                   --header 'Content-Type: application/json' | jq '.issues | length')
+                   --header 'Content-Type: application/json')
 
         if [ $? -ne 0 ]; then
             echo "Jira API: error"
             exit 1
         fi
 
-        if [ $response -eq 0 ]; then
-            echo "Error: Jira issue is not in open or future sprint"
+        echo "response was: $(echo $response|jq)"
+        error=""
+
+        echo "Checking if issue is in open or future sprint"
+        sprint=$(echo $response | jq '.issues | length')
+        if [ $sprint -eq 0 ]; then
+            error="Error: Jira issue is not in open or future sprint"
+        fi
+
+        echo "Checking if issue is In Progress"
+        status=$(echo $response| jq -r '.issues[0].fields.statusCategory.name')
+        if [ "$status" != "In Progress" ]; then
+            error="$error Error: Jira issue is not In Progress"
+        fi
+
+        if [[ ! -z "$error" ]]; then
+            echo $error
             exit 1
         fi
 
-        echo "response was: $response"
