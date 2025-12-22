@@ -173,7 +173,7 @@ jobs:
                 publish-repo-name: ${{ fromJson(inputs.publish-repo-names) }}
         steps:
             -   name: Download build artifact
-                uses: actions/download-artifact@v6
+                uses: actions/download-artifact@v7
                 with:
                     name: ${{ inputs.package-name }}-conda-package-build
                     path: build-dir
@@ -199,7 +199,7 @@ jobs:
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             -   name: Download build artifact
-                uses: actions/download-artifact@v6
+                uses: actions/download-artifact@v7
                 with:
                     name: ${{ inputs.package-name }}-conda-package-build
                     path: download-artifact
