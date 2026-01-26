@@ -22,17 +22,18 @@ env:
   JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
+permissions: {}
 jobs:
   get_issue_key:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      issue_key_from_branch: steps.jira_key_from_branch.output.issue_key
-      issue_key_from_title: steps.jira_key_from_title.output.issue_key
+      issue_key_from_branch: steps.issue_key_from_branch.output.issue_key
+      issue_key_from_title: steps.issue_key_from_title.output.issue_key
 
     steps:
     - name: Find JIRA issue key from branch
-      id: jira_key_from_branch
+      id: issue_key_from_branch
       env:
         HEAD_REF: ${{ github.head_ref }}
       run: >
@@ -43,7 +44,7 @@ jobs:
         )" >> $GITHUB_OUTPUT
 
     - name: Find JIRA issue key from title
-      id: jira_key_from_title
+      id: issue_key_from_title
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: >
@@ -63,7 +64,7 @@ jobs:
 
     - name: Get JIRA summary from branch
       if: ${{ needs.get_issue_key.outputs.issue_key_from_branch }}
-      id: jira_summary_from_branch
+      id: issue_summary_from_branch
       run: >
         curl -sS -X GET
         -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
@@ -73,7 +74,7 @@ jobs:
 
     - name: Get JIRA summary from title
       if: ${{ !steps.jira_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_title }}
-      id: jira_summary_from_title
+      id: issue_summary_from_title
       run: >
         curl -sS -X GET
         -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
@@ -83,17 +84,17 @@ jobs:
 
     - name: Extract PR title
       id: get_pr_title
-      if: ${{ steps.jira_summary_from_branch.outputs.summary || steps.jira_summary_from_title.outputs.summary }}
+      if: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         echo "text=$(echo $PR_TITLE | sed -E "s/^\s*[?[A-Z]+[-# ]*[0-9]+]?[-: ]*(.*)/\1/i")" >> $GITHUB_OUTPUT
 
     - name: Add comment
-      if: ${{ steps.jira_summary_from_branch.outputs.summary || steps.jira_summary_from_title.outputs.summary }}
+      if: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
       env:
-        ISSUE_SUMMARY: ${{ steps.jira_summary_from_branch.outputs.summary || steps.jira_summary_from_title.outputs.summary }}
-        ISSUE_KEY: ${{ steps.jira_summary_from_branch.outputs.summary && steps.jira_key_from_branch.outputs.issue_key || steps.jira_key_from_title.outputs.issue_key }}
+        ISSUE_SUMMARY: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
+        ISSUE_KEY: ${{ steps.issue_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_branch || needs.get_issue_key.outputs.issue_key_from_title }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
         PR_BODY: ${{ github.event.pull_request.body }}
       run: >
@@ -114,6 +115,8 @@ jobs:
     timeout-minutes: 20
     needs: get_issue_key
 
+    steps:
+
     - name: Check issue key
       if: ${{ !needs.get_issue_key.outputs.issue_key_from_title && !needs.get_issue_key.outputs.issue_key_from_branch }}
       run: |
@@ -121,7 +124,7 @@ jobs:
 
     - name: Check issue status
       if: ${{ needs.get_issue_key.outputs.issue_key_from_title || needs.get_issue_key.outputs.issue_key_from_branch }}
-      run: | 
+      run: |
         issue_key=${{ needs.get_issue_key.output.issue_key_from_title }}
         if [ -z "$issue_key" ]; then
             issue_key=${{ needs.get_issue_key.output.issue_key_from_branch }}
@@ -139,7 +142,6 @@ jobs:
             exit 1
         fi
 
-        echo "response was: $(echo $response|jq)"
         error=""
 
         echo "Checking if issue is in open or future sprint"
@@ -151,11 +153,10 @@ jobs:
         echo "Checking if issue is In Progress"
         status=$(echo $response| jq -r '.issues[0].fields.statusCategory.name')
         if [ "$status" != "In Progress" ]; then
-            error="$error Error: Jira issue is not In Progress"
+            error="$error\nError: Jira issue is not In Progress"
         fi
 
         if [[ ! -z "$error" ]]; then
-            echo $error
+            echo -e $error
             exit 1
         fi
-
