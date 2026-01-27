@@ -23,6 +23,7 @@ env:
   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
 permissions: {}
+
 jobs:
   get_issue_key:
     runs-on: ubuntu-latest

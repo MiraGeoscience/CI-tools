@@ -17,6 +17,8 @@ on:
         description: The API token for your JIRA account
 
 
+permissions: {}
+
 jobs:
   add_jira_summary:
     if: ${{ github.event.action == 'opened' }}
