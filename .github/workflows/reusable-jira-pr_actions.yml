@@ -126,9 +126,9 @@ jobs:
     - name: Check issue status
       if: ${{ needs.get_issue_key.outputs.issue_key_from_title || needs.get_issue_key.outputs.issue_key_from_branch }}
       run: |
-        issue_key=${{ needs.get_issue_key.output.issue_key_from_title }}
+        issue_key=${{ needs.get_issue_key.outputs.issue_key_from_title }}
         if [ -z "$issue_key" ]; then
-            issue_key=${{ needs.get_issue_key.output.issue_key_from_branch }}
+            issue_key=${{ needs.get_issue_key.outputs.issue_key_from_branch }}
         fi
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
         jqlencoded=$(jq -R -r @uri <<<"$jql")
