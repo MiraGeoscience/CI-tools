@@ -29,8 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      issue_key_from_branch: steps.issue_key_from_branch.output.issue_key
-      issue_key_from_title: steps.issue_key_from_title.output.issue_key
+      issue_key_from_branch: ${{ steps.issue_key_from_branch.outputs.issue_key }}
+      issue_key_from_title: ${{ steps.issue_key_from_title.outputs.issue_key }}
 
     steps:
     - name: Find JIRA issue key from branch
