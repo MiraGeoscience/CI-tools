@@ -74,7 +74,7 @@ jobs:
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
 
     - name: Get JIRA summary from title
-      if: ${{ !steps.jira_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_title }}
+      if: ${{ !steps.issue_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_title }}
       id: issue_summary_from_title
       run: >
         curl -sS -X GET
@@ -145,14 +145,18 @@ jobs:
 
         error=""
 
+        echo "issue key: $issue_key"
+
         echo "Checking if issue is in open or future sprint"
         sprint=$(echo $response | jq '.issues | length')
+        echo "sprint: $sprint"
         if [ $sprint -eq 0 ]; then
             error="Error: Jira issue is not in open or future sprint"
         fi
 
         echo "Checking if issue is In Progress"
         status=$(echo $response| jq -r '.issues[0].fields.statusCategory.name')
+        echo "status: $status"
         if [ "$status" != "In Progress" ]; then
             error="$error\nError: Jira issue is not In Progress"
         fi
