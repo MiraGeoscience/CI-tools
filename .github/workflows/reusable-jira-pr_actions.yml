@@ -69,10 +69,10 @@ jobs:
           echo "WARNING: branch and title issue keys do not match"
         fi
 
-        if [ ! -z "$from_branch" ]; then
-          issue_key="$from_branch"
-        else
+        if [ ! -z "$from_title" ]; then
           issue_key="$from_title"
+        else
+          issue_key="$from_branch"
         fi
 
         echo "issue_key=$issue_key" >> $GITHUB_OUTPUT
@@ -86,11 +86,11 @@ jobs:
 
     steps:
 
-    - name: Get JIRA summary from branch
+    - name: Get JIRA summary
       if: ${{ needs.get_issue_key.outputs.issue_key }}
       id: issue_summary
       run: >
-        curl -sS -X GET
+        curl -fsS -X GET
         -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
         -H "Content-Type: application/json"
         "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key }}"
@@ -118,7 +118,7 @@ jobs:
         --arg TITLE_TEXT "$(cat <<< ${TITLE_TEXT:-$ISSUE_SUMMARY})"
         --arg PR_BODY "$(cat <<< $PR_BODY)"
         -c '{"title": ($ISSUE_ID + ": " + $TITLE_TEXT), "body": ("**" + $ISSUE_ID + " - " + $ISSUE_SUMMARY + "**\n" + $PR_BODY)}' <<< {}
-        | curl -sS -X POST -d @-
+        | curl -fsS -X POST -d @-
         -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}"
         -H "Content-Type: application/json"
         "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/${{ github.event.pull_request.number }}"
@@ -141,8 +141,9 @@ jobs:
       run: |
         issue_key=${{ needs.get_issue_key.outputs.issue_key }}
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
+
         jqlencoded=$(jq -R -r @uri <<<"$jql")
-        response=$(curl -s --request GET \
+        response=$(curl -fsS --request GET \
                    --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory" \
                    --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                    --header 'Accept: application/json' \
