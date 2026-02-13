@@ -1,5 +1,5 @@
-# This workflow will comment the PR with the JIRA issue summary
-# if a JIRA issue number is detected in the branch name or title
+# This workflow will update the PR title and body with the JIRA issue summary
+# when a JIRA issue number is detected in the branch name or title
 
 name: Jira issue jobs
 
