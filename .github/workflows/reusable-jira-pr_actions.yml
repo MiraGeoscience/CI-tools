@@ -31,6 +31,7 @@ jobs:
     outputs:
       issue_key_from_branch: ${{ steps.issue_key_from_branch.outputs.issue_key }}
       issue_key_from_title: ${{ steps.issue_key_from_title.outputs.issue_key }}
+      issue_key: ${{ steps.issue_key.outputs.issue_key }}
 
     steps:
     - name: Find JIRA issue key from branch
@@ -55,6 +56,28 @@ jobs:
         | tr [:lower:] [:upper:]
         )" >> $GITHUB_OUTPUT
 
+    - name: Set issue key
+      id: issue_key
+      run: >
+        from_branch="${{ steps.issue_key_from_branch.outputs.issue_key }}"
+        from_title="${{ steps.issue_key_from_title.outputs.issue_key }}"
+
+        echo "from_branch: $from_branch"
+        echo "from_title: $from_title"
+
+        if [ "$from_branch" != "$from_title" ]; then
+          echo "WARNING: branch and title issue keys do not match"
+        fi
+
+        if [ ! -z "$from_branch" ]; then
+          issue_key="$from_branch"
+        else
+          issue_key="$from_title"
+        fi
+
+        echo "issue_key=$issue_key" >> $GITHUB_OUTPUT
+
+
   add_jira_summary:
     if: ${{ github.event.action == 'opened' }}
     runs-on: ubuntu-latest
@@ -64,38 +87,28 @@ jobs:
     steps:
 
     - name: Get JIRA summary from branch
-      if: ${{ needs.get_issue_key.outputs.issue_key_from_branch }}
-      id: issue_summary_from_branch
+      if: ${{ needs.get_issue_key.outputs.issue_key }}
+      id: issue_summary
       run: >
         curl -sS -X GET
         -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
         -H "Content-Type: application/json"
-        "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key_from_branch }}"
-        | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
-
-    - name: Get JIRA summary from title
-      if: ${{ !steps.issue_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_title }}
-      id: issue_summary_from_title
-      run: >
-        curl -sS -X GET
-        -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
-        -H "Content-Type: application/json"
-        "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key_from_title }}"
+        "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key }}"
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
 
     - name: Extract PR title
       id: get_pr_title
-      if: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
+      if: ${{ steps.issue_summary.outputs.summary }}
       env:
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         echo "text=$(echo $PR_TITLE | sed -E "s/^\s*[?[A-Z]+[-# ]*[0-9]+]?[-: ]*(.*)/\1/i")" >> $GITHUB_OUTPUT
 
     - name: Add comment
-      if: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
+      if: ${{ steps.issue_summary.outputs.summary }}
       env:
-        ISSUE_SUMMARY: ${{ steps.issue_summary_from_branch.outputs.summary || steps.issue_summary_from_title.outputs.summary }}
-        ISSUE_KEY: ${{ steps.issue_summary_from_branch.outputs.summary && needs.get_issue_key.outputs.issue_key_from_branch || needs.get_issue_key.outputs.issue_key_from_title }}
+        ISSUE_SUMMARY: ${{ steps.issue_summary.outputs.summary }}
+        ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
         PR_BODY: ${{ github.event.pull_request.body }}
       run: >
@@ -119,17 +132,14 @@ jobs:
     steps:
 
     - name: Check issue key
-      if: ${{ !needs.get_issue_key.outputs.issue_key_from_title && !needs.get_issue_key.outputs.issue_key_from_branch }}
+      if: ${{ !needs.get_issue_key.outputs.issue_key }}
       run: |
         echo "Could not determine Jira issue"
 
     - name: Check issue status
-      if: ${{ needs.get_issue_key.outputs.issue_key_from_title || needs.get_issue_key.outputs.issue_key_from_branch }}
+      if: ${{ needs.get_issue_key.outputs.issue_key }}
       run: |
-        issue_key=${{ needs.get_issue_key.outputs.issue_key_from_title }}
-        if [ -z "$issue_key" ]; then
-            issue_key=${{ needs.get_issue_key.outputs.issue_key_from_branch }}
-        fi
+        issue_key=${{ needs.get_issue_key.outputs.issue_key }}
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
         jqlencoded=$(jq -R -r @uri <<<"$jql")
         response=$(curl -s --request GET \
