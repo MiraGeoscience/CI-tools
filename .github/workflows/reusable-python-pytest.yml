@@ -83,7 +83,7 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
