@@ -1,0 +1,179 @@
+# This workflow will update the PR title and body with the JIRA issue summary
+# when a JIRA issue number is detected in the branch name or title
+
+name: Jira issue jobs
+
+on:
+  workflow_call:
+    secrets:
+      JIRA_BASE_URL:
+        required: true
+        description: The base URL of your JIRA instance
+      JIRA_USER_EMAIL:
+        required: true
+        description: The email address for your JIRA account
+      JIRA_API_TOKEN:
+        required: true
+        description: The API token for your JIRA account
+
+env:
+  JIRA_PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
+  JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+  JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+permissions: {}
+
+jobs:
+  get_issue_key:
+    if: ${{ github.event.pull_request.user.login != 'dependabot' && github.event.pullrequest.user.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      issue_key_from_branch: ${{ steps.issue_key_from_branch.outputs.issue_key }}
+      issue_key_from_title: ${{ steps.issue_key_from_title.outputs.issue_key }}
+      issue_key: ${{ steps.issue_key.outputs.issue_key }}
+
+    steps:
+    - name: Find JIRA issue key from branch
+      id: issue_key_from_branch
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+      run: >
+        echo "issue_key=$(
+        echo $HEAD_REF | grep -osiE "$JIRA_PATTERN"
+        | head -n1 | sed -E "s/\W*$JIRA_PATTERN/\1-\2/i"
+        | tr [:lower:] [:upper:]
+        )" >> $GITHUB_OUTPUT
+
+    - name: Find JIRA issue key from title
+      id: issue_key_from_title
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: >
+        echo "issue_key=$(
+        echo $PR_TITLE | grep -osiE "^\s*\[?\s*$JIRA_PATTERN"
+        | head -n1 | sed -E "s/\W*$JIRA_PATTERN/\1-\2/i"
+        | tr [:lower:] [:upper:]
+        )" >> $GITHUB_OUTPUT
+
+    - name: Set issue key
+      id: issue_key
+      run: >
+        from_branch="${{ steps.issue_key_from_branch.outputs.issue_key }}"
+        from_title="${{ steps.issue_key_from_title.outputs.issue_key }}"
+
+        echo "from_branch: $from_branch"
+        echo "from_title: $from_title"
+
+        if [ "$from_branch" != "$from_title" ]; then
+          echo "WARNING: branch and title issue keys do not match"
+        fi
+
+        if [ ! -z "$from_title" ]; then
+          issue_key="$from_title"
+        else
+          issue_key="$from_branch"
+        fi
+
+        echo "issue_key=$issue_key" >> $GITHUB_OUTPUT
+
+
+  add_jira_summary:
+    if: ${{ github.event.action == 'opened' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: get_issue_key
+
+    steps:
+
+    - name: Get JIRA summary
+      if: ${{ needs.get_issue_key.outputs.issue_key }}
+      id: issue_summary
+      run: >
+        curl -fsS -X GET
+        -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
+        -H "Content-Type: application/json"
+        "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key }}"
+        | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
+
+    - name: Extract PR title
+      id: get_pr_title
+      if: ${{ steps.issue_summary.outputs.summary }}
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        echo "text=$(echo $PR_TITLE | sed -E "s/^\s*[?[A-Z]+[-# ]*[0-9]+]?[-: ]*(.*)/\1/i")" >> $GITHUB_OUTPUT
+
+    - name: Add comment
+      if: ${{ steps.issue_summary.outputs.summary }}
+      env:
+        ISSUE_SUMMARY: ${{ steps.issue_summary.outputs.summary }}
+        ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
+        TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
+        PR_BODY: ${{ github.event.pull_request.body }}
+      run: >
+        jq
+        --arg ISSUE_ID "$(cat <<< $ISSUE_KEY)"
+        --arg ISSUE_SUMMARY "$(cat <<< $ISSUE_SUMMARY)"
+        --arg TITLE_TEXT "$(cat <<< ${TITLE_TEXT:-$ISSUE_SUMMARY})"
+        --arg PR_BODY "$(cat <<< $PR_BODY)"
+        -c '{"title": ($ISSUE_ID + ": " + $TITLE_TEXT), "body": ("**" + $ISSUE_ID + " - " + $ISSUE_SUMMARY + "**\n" + $PR_BODY)}' <<< {}
+        | curl -fsS -X POST -d @-
+        -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}"
+        -H "Content-Type: application/json"
+        "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/${{ github.event.pull_request.number }}"
+        > /dev/null
+
+  check_jira_issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: get_issue_key
+
+    steps:
+
+    - name: Check issue key
+      if: ${{ !needs.get_issue_key.outputs.issue_key }}
+      run: |
+        echo "Could not determine Jira issue"
+
+    - name: Check issue status
+      if: ${{ needs.get_issue_key.outputs.issue_key }}
+      run: |
+        issue_key=${{ needs.get_issue_key.outputs.issue_key }}
+        jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
+
+        jqlencoded=$(jq -R -r @uri <<<"$jql")
+        response=$(curl -fsS --request GET \
+                   --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory" \
+                   --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+                   --header 'Accept: application/json' \
+                   --header 'Content-Type: application/json')
+
+        if [ $? -ne 0 ]; then
+            echo "Jira API: error"
+            exit 1
+        fi
+
+        error=""
+
+        echo "issue key: $issue_key"
+
+        echo "Checking if issue is in open or future sprint"
+        sprint=$(echo $response | jq '.issues | length')
+        echo "sprint: $sprint"
+        if [ $sprint -eq 0 ]; then
+            error="Error: Jira issue is not in open or future sprint"
+        fi
+
+        echo "Checking if issue is In Progress"
+        status=$(echo $response| jq -r '.issues[0].fields.statusCategory.name')
+        echo "status: $status"
+        if [ "$status" != "In Progress" ]; then
+            error="$error\nError: Jira issue is not In Progress"
+        fi
+
+        if [[ ! -z "$error" ]]; then
+            echo -e $error
+            exit 1
+        fi

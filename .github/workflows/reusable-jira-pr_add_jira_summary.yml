@@ -17,8 +17,11 @@ on:
         description: The API token for your JIRA account
 
 
+permissions: {}
+
 jobs:
   add_jira_summary:
+    if: ${{ github.event.action == 'opened' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
