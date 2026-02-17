@@ -150,7 +150,7 @@ jobs:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                     RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
             -   name: Archive build artifact
-                uses: actions/upload-artifact@v5
+                uses: actions/upload-artifact@v6
                 with:
                     name: ${{ inputs.package-name }}-conda-package-build
                     path: ${{ runner.temp }}/output/**/*.conda
