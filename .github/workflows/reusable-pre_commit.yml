@@ -53,7 +53,7 @@ jobs:
           depth=$(expr ${{ github.event.pull_request.commits }} + 1)
           echo "base-depth=$depth"
           echo "base-depth=$depth" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: ${{ inputs.lfs }}
           # for non PR events, check out to depth 1 (the default)
