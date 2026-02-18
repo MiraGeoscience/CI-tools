@@ -22,7 +22,9 @@ env:
   JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
-permissions: {}
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   get_issue_key:
