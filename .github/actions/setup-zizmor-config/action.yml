@@ -6,17 +6,20 @@ runs:
     - name: Ensure default zizmor.yml
       shell: bash
       run: |
-        if [[ ! -f zizmor.yml || $(wc -l < zizmor.yml) -eq 1 ]]; then
+        # Create zizmor config if missing
+        if [[ ! -f zizmor.yml ]]; then
           echo "Creating a custom zizmor.yml configuration file for CI..."
-          cat > zizmor.yml << 'EOF'
-        rules:
-          dependabot-cooldown:
-            disable: true
-          unpinned-uses:
-            config:
-              policies:
-                MiraGeoscience/*: any
-        EOF
-        else
-          echo "⊘ Found existing zizmor.yml configuration file"
+          echo $'rules:\n' > zizmor.yml
         fi
+
+        # Patch (merge) with extra config
+        echo "Patching zizmor.yml configuration file for CI..."
+        yq -i '
+          .rules |= (. // {}) |
+          .rules."dependabot-cooldown" |= (. // {}) |
+          .rules."dependabot-cooldown".disable |= true |
+          .rules."unpinned-uses" |= (. // {}) |
+          .rules."unpinned-uses".config |= (. // {}) |
+          .rules."unpinned-uses".config.policies |= (. // {}) |
+          .rules."unpinned-uses".config.policies."MiraGeoscience/*" |= "ref-pin"
+        ' zizmor.yml
