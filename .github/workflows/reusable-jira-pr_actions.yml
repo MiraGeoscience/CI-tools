@@ -150,6 +150,7 @@ jobs:
                    --header 'Accept: application/json' \
                    --header 'Content-Type: application/json')
 
+        echo "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory"
         echo "response=$response"
 
         if [ $? -ne 0 ]; then
