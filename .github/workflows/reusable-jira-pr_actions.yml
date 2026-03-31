@@ -150,6 +150,8 @@ jobs:
                    --header 'Accept: application/json' \
                    --header 'Content-Type: application/json')
 
+        echo "response=$response"
+
         if [ $? -ne 0 ]; then
             echo "Jira API: error"
             exit 1
