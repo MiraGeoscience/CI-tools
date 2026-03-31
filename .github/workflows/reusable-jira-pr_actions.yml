@@ -152,6 +152,7 @@ jobs:
 
         echo "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory"
         echo "response=$response"
+        echo "email: $JIRA_USER_EMAIL"
 
         if [ $? -ne 0 ]; then
             echo "Jira API: error"
