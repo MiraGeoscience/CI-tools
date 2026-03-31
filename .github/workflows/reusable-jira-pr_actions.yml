@@ -144,7 +144,7 @@ jobs:
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
 
         jqlencoded=$(jq -R -r @uri <<<"$jql")
-        response=$(curl -fsS --request GET \
+        response=$(curl -vvv -fsS --request GET \
                    --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory" \
                    --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                    --header 'Accept: application/json' \
