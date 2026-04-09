@@ -118,7 +118,7 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v2
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.2
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
