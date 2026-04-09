@@ -29,9 +29,9 @@ runs:
       run: |
         pixi_env="py${PYTHON_VERSION//./}"
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
-    - uses: prefix-dev/setup-pixi@v0.9.0
+    - uses: prefix-dev/setup-pixi@v0.9.5
       with:
-        pixi-version: v0.54.1
+        pixi-version: v0.66.0
         environments: ${{ steps.get-env-name.outputs.pixi-env }}
         activate-environment: true
         cache-key: pixi-env${{ inputs.cache-number }}
