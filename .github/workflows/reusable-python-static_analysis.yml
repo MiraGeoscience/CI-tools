@@ -42,6 +42,11 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
+      cache-number:
+        description: Cache number to reset cache if poetry.lock has not changed
+        required: false
+        type: number
+        default: 1
     secrets:
       JFROG_ARTIFACTORY_URL:
         description: JFrog Artifactory URL, needed if packages are on Artifactory
@@ -118,7 +123,7 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v2
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.2
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
