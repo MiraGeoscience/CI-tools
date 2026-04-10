@@ -42,6 +42,11 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
+      cache-number:
+        description: Cache number to reset cache if poetry.lock has not changed
+        required: false
+        type: number
+        default: 1
     secrets:
       JFROG_ARTIFACTORY_URL:
         description: JFrog Artifactory URL, needed if packages are on Artifactory
