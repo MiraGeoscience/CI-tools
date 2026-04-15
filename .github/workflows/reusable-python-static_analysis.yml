@@ -87,8 +87,8 @@ jobs:
 
       - name: Remove git credentials
         run: |
-          git config --local --unset-all http.https://github.com/.extraheader; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
-          git config --local --unset-all include.path; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
+          git config --local --unset-all http.https://github.com/.extraheader || [ $? -eq 5 ]
+          git config --local --unset-all include.path || [ $? -eq 5 ]
 
       - name: Set up Python version
         uses: actions/setup-python@v6

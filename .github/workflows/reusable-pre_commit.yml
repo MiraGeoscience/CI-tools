@@ -66,8 +66,8 @@ jobs:
         run: git fetch origin ${BASE_REF}:${BASE_REF}
       - name: Remove git credentials
         run: |
-          git config --local --unset-all http.https://github.com/.extraheader; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
-          git config --local --unset-all include.path; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
+          git config --local --unset-all http.https://github.com/.extraheader || [ $? -eq 5 ]
+          git config --local --unset-all include.path || [ $? -eq 5 ]
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.python-version }}
