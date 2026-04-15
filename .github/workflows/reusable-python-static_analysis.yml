@@ -86,7 +86,9 @@ jobs:
           )" >> $GITHUB_ENV
 
       - name: Remove git credentials
-        run: git config --local --unset-all include.path
+        run: |
+          git config --local --unset-all http.https://github.com/.extraheader; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
+          git config --local --unset-all include.path; rc=$?; [ $rc -eq 0 ] || [ $rc -eq 5 ] || exit $rc
 
       - name: Set up Python version
         uses: actions/setup-python@v6
