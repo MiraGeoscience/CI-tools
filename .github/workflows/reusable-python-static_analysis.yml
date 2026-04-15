@@ -71,7 +71,7 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
@@ -86,7 +86,7 @@ jobs:
           )" >> $GITHUB_ENV
 
       - name: Remove git credentials
-        run: git config --unset-all http.https://github.com/.extraheader
+        run: git config --local --unset-all include.path
 
       - name: Set up Python version
         uses: actions/setup-python@v6
