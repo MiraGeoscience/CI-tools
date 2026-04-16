@@ -9,6 +9,11 @@ inputs:
     description: Python version to decide on the pixi environment to install
     required: false
     type: string
+  environment:
+    description: >
+      Pixi environment name to install. When provided, takes precedence over
+      the name derived from python-version (py<version-without-dots>).
+    required: false
   JFROG_ARTIFACTORY_URL:
     description: JFrog Artifactory URL (secret)
     required: true
@@ -26,8 +31,13 @@ runs:
       shell: bash
       env:
         PYTHON_VERSION: ${{ inputs.python-version }}
+        ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        pixi_env="py${PYTHON_VERSION//./}"
+        if [ -n "$ENVIRONMENT" ]; then
+          pixi_env="$ENVIRONMENT"
+        else
+          pixi_env="py${PYTHON_VERSION//./}"
+        fi
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
     - uses: prefix-dev/setup-pixi@v0.9.5
       with:

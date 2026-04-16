@@ -46,6 +46,12 @@ on:
           (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
+      pixi-environment:
+        description: >
+          Pixi environment name to install. When provided, takes precedence over
+          the name derived from python-version (py<version-without-dots>).
+        required: false
+        type: string
       lfs:
         description: Boolean to indicate if GitHub LFS is needed
         required: false
@@ -124,12 +130,13 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.2
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ matrix.python-version }}
+          environment: ${{ inputs.pixi-environment }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
