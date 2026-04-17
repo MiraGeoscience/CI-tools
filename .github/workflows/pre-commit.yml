@@ -26,6 +26,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-pre-commmit:
+  call-workflow-pre-commit:
     name: Pre-Commit
     uses: ./.github/workflows/reusable-pre_commit.yml
