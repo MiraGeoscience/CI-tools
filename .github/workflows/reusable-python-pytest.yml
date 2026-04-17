@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
+      test-cmd:
+        description: Test command to run, if different from pytest with coverage
+        required: false
+        type: string
+        default: "pytest --cov --cov-report=xml"
       cache-number:
         description: Cache number to reset cache if poetry.lock has not changed
         required: false
@@ -141,15 +146,17 @@ jobs:
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
       - name: Run Pytest
+        env:
+          TEST_CMD: ${{ inputs.test-cmd || 'pytest --cov --cov-report=xml'}}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
-            pytest --cov --cov-report=xml
+            $TEST_CMD
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pytest --cov --cov-report=xml
+            poetry run $TEST_CMD
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run pytest --cov --cov-report=xml
+            pixi run $TEST_CMD
           else
-            hatch run pytest --cov --cov-report=xml
+            hatch run $TEST_CMD
           fi
 
       - name: Codecov
