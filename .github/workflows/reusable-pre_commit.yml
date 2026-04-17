@@ -3,10 +3,6 @@ name: Pre-commit
 on:
   workflow_call:
     inputs:
-      app-name:
-        description: Name of the app to run pre-commit on
-        required: false
-        type: string
       os:
         description: 'List of OS to run against (e.g. ["ubuntu-latest", "macos-latest"])'
         required: false
