@@ -53,8 +53,8 @@ on:
         type: string
       pixi-environment:
         description: >
-          Pixi environment name to install. When provided, takes precedence over
-          the name derived from python-version (py<version-without-dots>).
+          JSON list of Pixi environment names to install (e.g. '["test-engine", "test-evals"]').
+          When provided, drives the matrix instead of python-versions.
         required: false
         type: string
       lfs:
@@ -86,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
+        python-version: ${{ fromJSON(inputs.pixi-environment || inputs.python-versions) }}
         os: ${{ fromJson(inputs.os)}}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -140,8 +140,8 @@ jobs:
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
-          python-version: ${{ matrix.python-version }}
-          environment: ${{ inputs.pixi-environment }}
+          python-version: ${{ inputs.pixi-environment && '' || matrix.python-version }}
+          environment: ${{ inputs.pixi-environment && matrix.python-version || '' }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
