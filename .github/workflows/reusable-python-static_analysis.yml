@@ -158,11 +158,11 @@ jobs:
       - name: Run Pylint on all files
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint $source_dir
+            pylint --verbose $source_dir
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint $source_dir
+            poetry run pylint --verbose $source_dir
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run pylint $source_dir
+            pixi run pylint --verbose $source_dir
           else
-            hatch run pylint $source_dir
+            hatch run pylint --verbose $source_dir
           fi
