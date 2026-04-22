@@ -1,0 +1,36 @@
+name: Move major/minor tags on release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  move-tags:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag is annotated
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! git cat-file -t "$TAG" | grep -q '^tag$'; then
+            echo "ERROR: $TAG is a lightweight tag. Only annotated tags are allowed."
+            exit 1
+          fi
+
+      - name: Move vX and vX.Y tags
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          MAJOR="${TAG%%.*}"
+          MINOR="${TAG%.*}"
+          echo "Full tag : $TAG"
+          echo "Major tag: $MAJOR"
+          echo "Minor tag: $MINOR"
+          git tag -f "$MAJOR"
+          git tag -f "$MINOR"
+          git push origin -f "$MAJOR" "$MINOR"
