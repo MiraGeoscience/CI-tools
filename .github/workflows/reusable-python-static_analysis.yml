@@ -33,6 +33,10 @@ on:
           the name derived from python-version (py<version-without-dots>).
         required: false
         type: string
+      lint-cmd:
+        description: Lint command to run, if different from pylint on the app source directory
+        required: false
+        type: string
       lfs:
         description: Boolean to indicate if GitHub LFS is needed
         required: false
@@ -138,7 +142,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.python-version }}
-          environment: ${{ inputs.pixi-environment }}
+          environment-name: ${{ inputs.pixi-environment }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
@@ -156,13 +160,15 @@ jobs:
           fi
 
       - name: Run Pylint on all files
+        env:
+          LINT_CMD: ${{ inputs.lint-cmd || format('pylint --verbose {0}', inputs.app-name) }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint --verbose $source_dir
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pylint --verbose $source_dir
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run pylint --verbose $source_dir
+            pixi run $LINT_CMD
           else
             hatch run pylint --verbose $source_dir
           fi

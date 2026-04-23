@@ -141,7 +141,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.pixi-environment && '' || matrix.python-version }}
-          environment: ${{ inputs.pixi-environment && matrix.python-version || '' }}
+          environment-name: ${{ inputs.pixi-environment && matrix.python-version || '' }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 

@@ -9,7 +9,7 @@ inputs:
     description: Python version to decide on the pixi environment to install
     required: false
     type: string
-  environment:
+  environment-name:
     description: >
       Pixi environment name to install. When provided, takes precedence over
       the name derived from python-version (py<version-without-dots>).
@@ -31,7 +31,7 @@ runs:
       shell: bash
       env:
         PYTHON_VERSION: ${{ inputs.python-version }}
-        ENVIRONMENT: ${{ inputs.environment }}
+        ENVIRONMENT: ${{ inputs.environment-name }}
       run: |
         if [ -n "$ENVIRONMENT" ]; then
           pixi_env="$ENVIRONMENT"
