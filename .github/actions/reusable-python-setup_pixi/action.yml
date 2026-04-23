@@ -39,7 +39,7 @@ runs:
         elif [ -n "$PYTHON_VERSION" ]; then
           pixi_env="py${PYTHON_VERSION//./}"
         else
-          echo "::error::Either 'environment' or 'python-version' must be provided."
+          echo "::error::Either 'environment-name' (ENVIRONMENT) or 'python-version' must be provided."
           exit 1
         fi
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"

@@ -29,7 +29,9 @@ on:
         type: number
         default: 1
       codecov-reference-python-version:
-        description: Python version to use as reference for Codecov
+        description: >
+          Python version to use as reference for Codecov. When using pixi-environments,
+          set this to the pixi environment name that should upload coverage.
         required: false
         type: string
       codecov-reference-os:
@@ -51,7 +53,7 @@ on:
           (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
-      pixi-environment:
+      pixi-environments:
         description: >
           JSON list of Pixi environment names to install (e.g. '["test-engine", "test-evals"]').
           When provided, drives the matrix instead of python-versions.
@@ -86,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON((inputs.package-manager == 'pixi' && inputs.pixi-environment) || inputs.python-versions) }}
+        python-version: ${{ fromJSON((inputs.package-manager == 'pixi' && inputs.pixi-environments) || inputs.python-versions) }}
         os: ${{ fromJson(inputs.os)}}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -140,8 +142,8 @@ jobs:
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
-          python-version: ${{ inputs.pixi-environment && '' || matrix.python-version }}
-          environment-name: ${{ inputs.pixi-environment && matrix.python-version || '' }}
+          python-version: ${{ inputs.pixi-environments && '' || matrix.python-version }}
+          environment-name: ${{ inputs.pixi-environments && matrix.python-version || '' }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
