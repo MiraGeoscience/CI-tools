@@ -160,6 +160,7 @@ jobs:
           fi
 
       - name: Run Pylint on all files
+        if: ${{ github.event_name != 'pull_request' || !env.FILES_PARAM }}
         env:
           LINT_CMD: ${{ inputs.lint-cmd || format('pylint --verbose {0}', inputs.app-name) }}
         run: |

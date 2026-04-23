@@ -86,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(inputs.pixi-environment || inputs.python-versions) }}
+        python-version: ${{ fromJSON((inputs.package-manager == 'pixi' && inputs.pixi-environment) || inputs.python-versions) }}
         os: ${{ fromJson(inputs.os)}}
     runs-on: ${{ matrix.os }}
     defaults:
