@@ -19,7 +19,9 @@ on:
         type: string
         default: "['ubuntu-latest']"
       test-cmd:
-        description: Test command to run, if different from pytest with coverage
+        description: >
+          Test command to run, if different from pytest with coverage.
+          Applies to conda, poetry, and hatch only. Use pixi-task for pixi.
         required: false
         type: string
         default: "pytest --cov --cov-report=xml"
@@ -57,6 +59,18 @@ on:
         description: >
           JSON list of Pixi environment names to install (e.g. '["test-engine", "test-evals"]').
           When provided, drives the matrix instead of python-versions.
+        required: false
+        type: string
+      pixi-task:
+        description: >
+          Pixi task name to run tests (e.g. 'test-engine'). Must match a task
+          defined in pixi.toml. Validated against available tasks before execution.
+        required: false
+        type: string
+      pixi-task-args:
+        description: >
+          JSON list of extra arguments to pass to the pixi task after '--'
+          (e.g. '["-k", "test_interpolation"]'). Optional.
         required: false
         type: string
       lfs:
@@ -147,16 +161,33 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
+      - name: Validate pixi task
+        if: ${{ inputs.package-manager == 'pixi' }}
+        env:
+          PIXI_TASK: ${{ inputs.pixi-task }}
+        run: |
+          if ! pixi task list | grep -qw "$PIXI_TASK"; then
+            echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
+            exit 1
+          fi
+
       - name: Run Pytest
         env:
-          TEST_CMD: ${{ inputs.test-cmd || 'pytest --cov --cov-report=xml'}}
+          TEST_CMD: ${{ inputs.test-cmd || 'pytest --cov --cov-report=xml' }}
+          PIXI_TASK: ${{ inputs.pixi-task }}
+          PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             $TEST_CMD
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run $TEST_CMD
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run $TEST_CMD
+            if [ -n "$PIXI_TASK_ARGS" ]; then
+              readarray -t args < <(echo "$PIXI_TASK_ARGS" | python3 -c "import json,sys; print('\n'.join(json.load(sys.stdin)))")
+              pixi run "$PIXI_TASK" -- "${args[@]}"
+            else
+              pixi run "$PIXI_TASK"
+            fi
           else
             hatch run $TEST_CMD
           fi

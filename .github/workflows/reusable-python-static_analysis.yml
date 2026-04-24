@@ -27,18 +27,23 @@ on:
           (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
-      pixi-environments:
+      pixi-environment:
         description: >
-          JSON list with a single Pixi environment name to install
-          (e.g. '["test-engine"]'). When provided, takes precedence over
-          the name derived from python-version (py<version-without-dots>).
+          Pixi environment name to install (e.g. 'test-engine'). When provided,
+          takes precedence over the name derived from python-version (py<version-without-dots>).
         required: false
         type: string
-      lint-cmd:
+      pixi-task:
         description: >
-          Lint command to run on all files (non-PR or PR with no modified files).
+          Pixi task name to run linting (e.g. 'lint-engine'). Must match a task
+          defined in pixi.toml. Validated against available tasks before execution.
           Only applies to the pixi package manager; conda/poetry/hatch use pylint directly.
-          Defaults to pylint on the app source directory and tests.
+        required: false
+        type: string
+      pixi-task-args:
+        description: >
+          JSON list of extra arguments to pass to the pixi task after '--'
+          (e.g. '["-v"]'). Optional.
         required: false
         type: string
       lfs:
@@ -146,19 +151,37 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.python-version }}
-          environment-name: ${{ inputs.pixi-environments && fromJSON(inputs.pixi-environments)[0] || '' }}
+          environment-name: ${{ inputs.pixi-environment }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
+      - name: Validate pixi task
+        if: ${{ inputs.package-manager == 'pixi' }}
+        env:
+          PIXI_TASK: ${{ inputs.pixi-task }}
+        run: |
+          if ! pixi task list | grep -qw "$PIXI_TASK"; then
+            echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
+            exit 1
+          fi
+
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
+        env:
+          PIXI_TASK: ${{ inputs.pixi-task }}
+          PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint $FILES_PARAM
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pylint $FILES_PARAM
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run pylint $FILES_PARAM
+            if [ -n "$PIXI_TASK_ARGS" ]; then
+              readarray -t args < <(echo "$PIXI_TASK_ARGS" | python3 -c "import json,sys; print('\n'.join(json.load(sys.stdin)))")
+              pixi run "$PIXI_TASK" -- "${args[@]}"
+            else
+              pixi run "$PIXI_TASK"
+            fi
           else
             hatch run pylint $FILES_PARAM
           fi
@@ -166,14 +189,20 @@ jobs:
       - name: Run Pylint on all files
         if: ${{ github.event_name != 'pull_request' || !env.FILES_PARAM }}
         env:
-          LINT_CMD: ${{ inputs.lint-cmd || format('pylint --verbose {0} tests', inputs.app-name) }}
+          PIXI_TASK: ${{ inputs.pixi-task }}
+          PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint --verbose $source_dir tests
           elif ${{ inputs.package-manager == 'poetry' }}; then
             poetry run pylint --verbose $source_dir tests
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            pixi run $LINT_CMD
+            if [ -n "$PIXI_TASK_ARGS" ]; then
+              readarray -t args < <(echo "$PIXI_TASK_ARGS" | python3 -c "import json,sys; print('\n'.join(json.load(sys.stdin)))")
+              pixi run "$PIXI_TASK" -- "${args[@]}"
+            else
+              pixi run "$PIXI_TASK"
+            fi
           else
             hatch run pylint --verbose $source_dir tests
           fi
