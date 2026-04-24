@@ -160,7 +160,12 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
-          if ! pixi task list | grep -oE '[a-zA-Z][a-zA-Z0-9_-]*' | grep -qFx "$PIXI_TASK"; then
+          if [ -z "$PIXI_TASK" ]; then
+            echo "::error::Input 'pixi-task' is required when package-manager is 'pixi'."
+            exit 1
+          fi
+
+          if ! pixi task list --json | python3 -c "import json, sys; target = sys.argv[1]; data = json.load(sys.stdin); has_task = lambda node: (isinstance(node, dict) and ((node.get('name') == target and any(key in node for key in ('cmd', 'depends_on', 'cwd', 'clean_env'))) or any(has_task(value) for value in node.values()))) or (isinstance(node, list) and any(has_task(item) for item in node)); sys.exit(0 if has_task(data) else 1)" "$PIXI_TASK"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
