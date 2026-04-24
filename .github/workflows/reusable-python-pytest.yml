@@ -166,7 +166,7 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
-          if ! pixi task list | grep -qw "$PIXI_TASK"; then
+          if ! pixi task list | tr ',' '\n' | tr -d ' \r' | grep -qFx "$PIXI_TASK"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
