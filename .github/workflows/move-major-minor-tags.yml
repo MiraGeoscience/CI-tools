@@ -15,14 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure tag is annotated
-        run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          if ! git cat-file -t "$TAG" | grep -q '^tag$'; then
-            echo "ERROR: $TAG is a lightweight tag. Only annotated tags are allowed."
-            exit 1
-          fi
-
       - name: Move vX and vX.Y tags
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
