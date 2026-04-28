@@ -3,7 +3,7 @@ name: Move major/minor tags on release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v*.*.*'
 
 jobs:
   move-tags:
@@ -26,11 +26,13 @@ jobs:
       - name: Move vX and vX.Y tags
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
+          TARGET="$(git rev-parse "${TAG}^{}")"
           MAJOR="${TAG%%.*}"
           MINOR="${TAG%.*}"
           echo "Full tag : $TAG"
+          echo "Target   : $TARGET"
           echo "Major tag: $MAJOR"
           echo "Minor tag: $MINOR"
-          git tag -f "$MAJOR"
-          git tag -f "$MINOR"
+          git tag -f "$MAJOR" "$TARGET"
+          git tag -f "$MINOR" "$TARGET"
           git push origin -f "$MAJOR" "$MINOR"
