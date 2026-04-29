@@ -25,6 +25,11 @@ jobs:
           echo "Target   : $TARGET"
           echo "Major tag: $MAJOR"
           echo "Minor tag: $MINOR"
+          # Only move major/minor tags for annotated tags (not lightweight)
+          if [ "$(git cat-file -t "${TAG}")" != "tag" ]; then
+            echo "Skipping: '${TAG}' is a lightweight tag, not an annotated tag."
+            exit 0
+          fi
           git tag -f "$MAJOR" "$TARGET"
           git tag -f "$MINOR" "$TARGET"
           git push origin -f "$MAJOR" "$MINOR"
