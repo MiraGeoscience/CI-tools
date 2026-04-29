@@ -18,13 +18,6 @@ on:
         required: false
         type: string
         default: "['ubuntu-latest']"
-      test-cmd:
-        description: >
-          Test command to run, if different from pytest with coverage.
-          Applies to conda, poetry, and hatch only. Use pixi-task for pixi.
-        required: false
-        type: string
-        default: "pytest --cov --cov-report=xml"
       cache-number:
         description: Cache number to reset cache if poetry.lock has not changed
         required: false
@@ -162,39 +155,38 @@ jobs:
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
       - name: Validate pixi task
-        if: ${{ inputs.package-manager == 'pixi' }}
+        if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task }}
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
-          if [ -z "$PIXI_TASK" ]; then
-            echo "::error::Input 'pixi-task' is required when package-manager is 'pixi'."
-            exit 1
-          fi
-
-            if ! pixi task list --json | python3 -c "import json, sys; target = sys.argv[1]; data = json.load(sys.stdin); has_task = lambda node: (isinstance(node, dict) and ((node.get('name') == target and any(key in node for key in ('cmd', 'depends_on', 'cwd', 'clean_env'))) or any(has_task(value) for value in node.values()))) or (isinstance(node, list) and any(has_task(item) for item in node)); sys.exit(0 if has_task(data) else 1)" "$PIXI_TASK"; then
+          if ! pixi task list --json | python -c "import json, sys; target = sys.argv[1]; data = json.load(sys.stdin); has_task = lambda node: (isinstance(node, dict) and ((node.get('name') == target and any(key in node for key in ('cmd', 'depends_on', 'cwd', 'clean_env'))) or any(has_task(value) for value in node.values()))) or (isinstance(node, list) and any(has_task(item) for item in node)); sys.exit(0 if has_task(data) else 1)" "$PIXI_TASK"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
 
       - name: Run Pytest
         env:
-          TEST_CMD: ${{ inputs.test-cmd || 'pytest --cov --cov-report=xml' }}
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
-            $TEST_CMD
+            pytest --cov --cov-report=xml
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run $TEST_CMD
+            poetry run pytest --cov --cov-report=xml
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            if [ -n "$PIXI_TASK_ARGS" ]; then
-              readarray -t args < <(echo "$PIXI_TASK_ARGS" | python3 -c "import json,sys; print('\n'.join(json.load(sys.stdin)))")
-              pixi run "$PIXI_TASK" -- "${args[@]}"
+            if [ -n "$PIXI_TASK" ]; then
+              if [ -n "$PIXI_TASK_ARGS" ]; then
+                args_output=$(printf '%s' "$PIXI_TASK_ARGS" | python -c "import json, sys; data = json.load(sys.stdin); assert isinstance(data, list) and all(isinstance(x, str) for x in data), 'pixi-task-args must be a JSON array of strings'; print('\n'.join(data))") || { echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."; exit 1; }
+                readarray -t args <<< "$args_output"
+                pixi run "$PIXI_TASK" -- "${args[@]}"
+              else
+                pixi run "$PIXI_TASK"
+              fi
             else
-              pixi run "$PIXI_TASK"
+              pixi run pytest --cov --cov-report=xml
             fi
           else
-            hatch run $TEST_CMD
+            hatch run pytest --cov --cov-report=xml
           fi
 
       - name: Codecov
