@@ -1,4 +1,4 @@
-name: Pytest on any OS
+﻿name: Pytest on any OS
 
 on:
   workflow_call:
@@ -159,7 +159,8 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
-          if ! pixi task list --json | python -c "import json, sys; target = sys.argv[1]; data = json.load(sys.stdin); has_task = lambda node: (isinstance(node, dict) and ((node.get('name') == target and any(key in node for key in ('cmd', 'depends_on', 'cwd', 'clean_env'))) or any(has_task(value) for value in node.values()))) or (isinstance(node, list) and any(has_task(item) for item in node)); sys.exit(0 if has_task(data) else 1)" "$PIXI_TASK"; then
+          jq_filter='any(.. | objects; .name == $task and (has("cmd") or has("depends_on") or has("cwd") or has("clean_env")))'
+          if ! pixi task list --json | jq -e --arg task "$PIXI_TASK" "$jq_filter"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
