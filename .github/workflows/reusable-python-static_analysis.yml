@@ -1,4 +1,4 @@
-name: Static analysis
+﻿name: Static analysis
 
 on:
   workflow_call:
@@ -166,6 +166,16 @@ jobs:
             exit 1
           fi
 
+      - name: Validate pixi task args
+        if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task-args }}
+        env:
+          PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
+        run: |
+          if ! echo "$PIXI_TASK_ARGS" | jq -e 'type == "array" and all(.[]; type == "string")' > /dev/null; then
+            echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."
+            exit 1
+          fi
+
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         env:
@@ -180,8 +190,7 @@ jobs:
             read -r -a files <<< "$FILES_PARAM"
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                args_output=$(printf '%s' "$PIXI_TASK_ARGS" | python -c "import json, sys; data = json.load(sys.stdin); assert isinstance(data, list) and all(isinstance(x, str) for x in data), 'pixi-task-args must be a JSON array of strings'; print('\n'.join(data))") || { echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."; exit 1; }
-                readarray -t args <<< "$args_output"
+                mapfile -t args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
                 pixi run "$PIXI_TASK" -- "${args[@]}" "${files[@]}"
               else
                 pixi run "$PIXI_TASK" -- "${files[@]}"
@@ -206,9 +215,7 @@ jobs:
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                args_output=$(printf '%s' "$PIXI_TASK_ARGS" | python -c "import json, sys; data = json.load(sys.stdin); assert isinstance(data, list) and all(isinstance(x, str) for x in data), 'pixi-task-args must be a JSON array of strings'; print('\n'.join(data))") || { echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."; exit 1; }
-                readarray -t args <<< "$args_output"
-                pixi run "$PIXI_TASK" -- "${args[@]}"
+                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run "$PIXI_TASK" --
               else
                 pixi run "$PIXI_TASK"
               fi
