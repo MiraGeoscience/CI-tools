@@ -1,4 +1,4 @@
-﻿name: Pytest on any OS
+name: Pytest on any OS
 
 on:
   workflow_call:
