@@ -190,7 +190,7 @@ jobs:
             read -r -a files <<< "$FILES_PARAM"
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                mapfile -t args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
+                readarray -t args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
                 pixi run "$PIXI_TASK" -- "${args[@]}" "${files[@]}"
               else
                 pixi run "$PIXI_TASK" -- "${files[@]}"
