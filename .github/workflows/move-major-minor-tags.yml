@@ -1,0 +1,35 @@
+name: Move major/minor tags on release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  move-tags:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Move vX and vX.Y tags
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          TARGET="$(git rev-parse "${TAG}^{}")"
+          MAJOR="${TAG%%.*}"
+          MINOR="${TAG%.*}"
+          echo "Full tag : $TAG"
+          echo "Target   : $TARGET"
+          echo "Major tag: $MAJOR"
+          echo "Minor tag: $MINOR"
+          # Only move major/minor tags for annotated tags (not lightweight)
+          if [ "$(git cat-file -t "${TAG}")" != "tag" ]; then
+            echo "Skipping: '${TAG}' is a lightweight tag, not an annotated tag."
+            exit 0
+          fi
+          git tag -f "$MAJOR" "$TARGET"
+          git tag -f "$MINOR" "$TARGET"
+          git push origin -f "$MAJOR" "$MINOR"
