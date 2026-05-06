@@ -167,14 +167,7 @@ jobs:
             exit 1
           fi
           task_cwd=$(echo "$pixi_json" | jq -r --arg task "$PIXI_TASK" '.. | objects | select(.name == $task) | .cwd // empty' | head -1)
-          if [ -n "$task_cwd" ]; then
-            delimiter="PIXI_TASK_CWD_EOF_$(date +%s%N)"
-            {
-              printf 'PIXI_TASK_CWD<<%s\n' "$delimiter"
-              printf '%s\n' "$task_cwd"
-              printf '%s\n' "$delimiter"
-            } >> "$GITHUB_ENV"
-          fi
+          [ -n "$task_cwd" ] && echo "PIXI_TASK_CWD=$task_cwd" >> $GITHUB_ENV
 
       - name: Validate pixi task args
         if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task-args }}
