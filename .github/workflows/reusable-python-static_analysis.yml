@@ -166,12 +166,12 @@ jobs:
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
-          cwd=$(echo "$pixi_json" | jq -r --arg task "$PIXI_TASK" '.. | objects | select(.name == $task) | .cwd // empty' | head -1)
-          if [ -n "$cwd" ]; then
+          task_cwd=$(echo "$pixi_json" | jq -r --arg task "$PIXI_TASK" '.. | objects | select(.name == $task) | .cwd // empty' | head -1)
+          if [ -n "$task_cwd" ]; then
             delimiter="PIXI_TASK_CWD_EOF_$(date +%s%N)"
             {
               printf 'PIXI_TASK_CWD<<%s\n' "$delimiter"
-              printf '%s\n' "$cwd"
+              printf '%s\n' "$task_cwd"
               printf '%s\n' "$delimiter"
             } >> "$GITHUB_ENV"
           fi
