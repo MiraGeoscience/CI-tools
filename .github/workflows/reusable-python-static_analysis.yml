@@ -167,7 +167,14 @@ jobs:
             exit 1
           fi
           cwd=$(echo "$pixi_json" | jq -r --arg task "$PIXI_TASK" '.. | objects | select(.name == $task) | .cwd // empty' | head -1)
-          [ -n "$cwd" ] && echo "PIXI_TASK_CWD=$cwd" >> $GITHUB_ENV
+          if [ -n "$cwd" ]; then
+            delimiter="PIXI_TASK_CWD_EOF_$(date +%s%N)"
+            {
+              printf 'PIXI_TASK_CWD<<%s\n' "$delimiter"
+              printf '%s\n' "$cwd"
+              printf '%s\n' "$delimiter"
+            } >> "$GITHUB_ENV"
+          fi
 
       - name: Validate pixi task args
         if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task-args }}
@@ -192,7 +199,16 @@ jobs:
           elif ${{ inputs.package-manager == 'pixi' }}; then
             read -r -a files <<< "$FILES_PARAM"
             if [ -n "$PIXI_TASK_CWD" ]; then
-              readarray -t files < <(printf '%s\n' "${files[@]}" | grep "^${PIXI_TASK_CWD%/}/" | sed "s|^${PIXI_TASK_CWD%/}/||")
+              prefix="${PIXI_TASK_CWD%/}/"
+              filtered_files=()
+              for file in "${files[@]}"; do
+                case "$file" in
+                  "$prefix"*)
+                    filtered_files+=("${file#"$prefix"}")
+                    ;;
+                esac
+              done
+              files=("${filtered_files[@]}")
             fi
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
