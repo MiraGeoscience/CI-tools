@@ -160,11 +160,14 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
+          pixi_json=$(pixi task list --json)
           jq_filter='any(.. | objects; .name == $task and (has("cmd") or has("depends_on") or has("cwd") or has("clean_env")))'
-          if ! pixi task list --json | jq -e --arg task "$PIXI_TASK" "$jq_filter"; then
+          if ! echo "$pixi_json" | jq -e --arg task "$PIXI_TASK" "$jq_filter"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
+          task_cwd=$(echo "$pixi_json" | jq -r --arg task "$PIXI_TASK" '.. | objects | select(.name == $task) | .cwd // empty' | head -1)
+          [ -n "$task_cwd" ] && echo "PIXI_TASK_CWD=$task_cwd" >> $GITHUB_ENV
 
       - name: Validate pixi task args
         if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task-args }}
@@ -188,6 +191,18 @@ jobs:
             poetry run pylint $FILES_PARAM
           elif ${{ inputs.package-manager == 'pixi' }}; then
             read -r -a files <<< "$FILES_PARAM"
+            if [ -n "$PIXI_TASK_CWD" ]; then
+              prefix="${PIXI_TASK_CWD%/}/"
+              filtered_files=()
+              for file in "${files[@]}"; do
+                case "$file" in
+                  "$prefix"*)
+                    filtered_files+=("${file#"$prefix"}")
+                    ;;
+                esac
+              done
+              files=("${filtered_files[@]}")
+            fi
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
                 readarray -t args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
