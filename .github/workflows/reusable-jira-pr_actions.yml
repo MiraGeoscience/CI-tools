@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   get_issue_key:
-    if: ${{ github.event.pull_request.user.login != 'dependabot' && github.event.pullrequest.user.type != 'Bot' }}
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -128,6 +128,7 @@ jobs:
         > /dev/null
 
   check_jira_issue:
+    if: ${{ needs.get_issue_key.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: get_issue_key
