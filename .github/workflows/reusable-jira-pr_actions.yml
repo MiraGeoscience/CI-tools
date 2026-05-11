@@ -82,7 +82,7 @@ jobs:
 
 
   add_jira_summary:
-    if: ${{ github.event.action == 'opened' }}
+    if: ${{ needs.get_issue_key.result == 'success' && github.event.action == 'opened' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: get_issue_key
