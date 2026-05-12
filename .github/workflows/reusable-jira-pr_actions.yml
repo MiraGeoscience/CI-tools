@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   get_issue_key:
-    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/') }}
+    if: ${{ github.event.pull_request.user.type != 'Bot' && github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
