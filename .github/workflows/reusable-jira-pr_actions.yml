@@ -38,6 +38,7 @@ jobs:
     steps:
     - name: Find JIRA issue key from branch
       id: issue_key_from_branch
+      if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
       env:
         HEAD_REF: ${{ github.head_ref }}
       run: >
