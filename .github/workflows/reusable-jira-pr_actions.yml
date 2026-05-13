@@ -81,7 +81,6 @@ jobs:
         echo "issue_key=$issue_key" >> $GITHUB_OUTPUT
 
     - name: Fail if no Jira key and not expected bot PR
-      # zizmor: ignore[spoofable-secrets] -- github.actor is intentional: detects non-bot pushes to bot-created PRs
       if: ${{ !steps.issue_key.outputs.issue_key &&
               !(github.actor == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/') && startsWith(github.event.pull_request.title, 'Bump ')) &&
               !(github.actor == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config') }}
