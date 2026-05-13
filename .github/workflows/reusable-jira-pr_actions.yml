@@ -28,7 +28,6 @@ permissions:
 
 jobs:
   get_issue_key:
-    if: ${{ github.event.pull_request.user.type != 'Bot' && github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -79,6 +78,14 @@ jobs:
         fi
 
         echo "issue_key=$issue_key" >> $GITHUB_OUTPUT
+
+    - name: Fail if no Jira key and not expected bot PR
+      if: ${{ !steps.issue_key.outputs.issue_key &&
+              !(github.actor == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/') && startsWith(github.event.pull_request.title, 'Bump ')) &&
+              !(github.actor == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config') }}
+      run: |
+        echo "::error::No Jira issue key found. Please include one in your PR title (e.g. ABC-123: your title)"
+        exit 1
 
 
   add_jira_summary:
