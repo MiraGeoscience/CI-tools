@@ -1,16 +1,4 @@
 rules:
   unpinned-uses:
     disable: true
-  bot-conditions:
-    ignore:
-      - .github/workflows/reusable-jira-pr_actions.yml:84
-      - .github/workflows/reusable-jira-pr_actions.yml:85
-      - .github/workflows/reusable-jira-pr_actions.yml:86
-      - .github/workflows/reusable-jira-pr_actions.yml:87
-      - .github/workflows/reusable-jira-pr_actions.yml:95
-      - .github/workflows/reusable-jira-pr_actions.yml:96
-      - .github/workflows/reusable-jira-pr_actions.yml:97
-      - .github/workflows/reusable-jira-pr_actions.yml:98
-      - .github/workflows/reusable-jira-pr_actions.yml:99
-      - .github/workflows/reusable-jira-pr_actions.yml:100
-      - .github/workflows/reusable-jira-pr_actions.yml:101
+
