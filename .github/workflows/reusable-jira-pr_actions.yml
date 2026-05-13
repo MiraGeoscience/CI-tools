@@ -38,7 +38,7 @@ jobs:
     steps:
     - name: Find JIRA issue key from branch
       id: issue_key_from_branch
-      if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
+      if: ${{ !startsWith(github.head_ref, 'dependabot/') && github.head_ref != 'pre-commit-ci-update-config' }}
       env:
         HEAD_REF: ${{ github.head_ref }}
       run: >
