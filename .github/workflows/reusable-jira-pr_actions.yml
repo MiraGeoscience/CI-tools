@@ -82,7 +82,7 @@ jobs:
 
     - name: Fail if no Jira key and not expected bot PR
       if: ${{ !steps.issue_key.outputs.issue_key &&
-              !(github.event.sender.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github-actions/') && contains(github.head_ref, '/mirageo-ci-') && startsWith(github.event.pull_request.title, 'Bump ')) &&
+              !(github.event.sender.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github-actions/') && contains(github.head_ref, '/mirageo-ci-tools') && startsWith(github.event.pull_request.title, 'Bump ')) &&
               !(github.event.sender.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config') }}
       run: |
         echo "::error::No Jira issue key found. Please include one in your PR title (e.g. ABC-123: your title)"
