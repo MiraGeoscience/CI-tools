@@ -87,6 +87,9 @@ on:
       JFROG_ARTIFACTORY_TOKEN:
         description: JFrog Artifactory Token, needed if packages are on Artifactory
         required: false
+      GH_TOKEN:
+        description: GitHub token for accessing private repositories (e.g. from a GitHub App)
+        required: false
 
 jobs:
   pytest:
@@ -143,6 +146,16 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+
+      - name: Configure git for private GitHub repos
+        if: ${{ inputs.package-manager == 'pixi' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ -n "$GH_TOKEN" ]; then
+            git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          fi
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
