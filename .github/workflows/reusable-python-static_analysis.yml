@@ -66,7 +66,7 @@ on:
         required: false
         type: number
         default: 1
-      gh-app-repos:
+      private-github-repos:
         description: >
           Comma-separated list of repositories to request a GitHub App token for
           (e.g. 'scigeoh5,petro-lingo'). When provided, GH_APP_ID and GH_APP_PRIVATE_KEY
@@ -159,42 +159,23 @@ jobs:
           runner-os: ${{ runner.os }}
 
       - name: Generate GitHub App token for private repos
-        if: ${{ inputs.package-manager == 'pixi' && inputs.gh-app-repos != '' }}
+        if: ${{ inputs.package-manager == 'pixi' && inputs.private-github-repos != '' }}
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: ${{ inputs.gh-app-repos }}
+          repositories: ${{ inputs.private-github-repos }}
 
       - name: Configure git for private GitHub repos
-        if: ${{ inputs.package-manager == 'pixi' && inputs.gh-app-repos != '' }}
+        if: ${{ inputs.package-manager == 'pixi' && inputs.private-github-repos != '' }}
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          if [ -n "$GH_TOKEN" ]; then
-            AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-            git config --global http.https://github.com/.extraheader "Authorization: Basic $AUTH"
-          fi
-
-      - name: Debug git config and environment
-        if: ${{ inputs.package-manager == 'pixi' }}
-        shell: bash
-        run: |
-          echo "=== git version ==="
-          git version
-          echo "=== whoami ==="
-          whoami
-          echo "=== HOME ==="
-          echo "$HOME"
-          echo "=== git-related env vars ==="
-          env | grep -i git || echo "(none)"
-          echo "=== effective git config (global) ==="
-          git config --global --list --show-origin || echo "(no global config)"
-          echo "=== ~/.git-credentials exists ==="
-          ls -la ~/.git-credentials 2>/dev/null || echo "(not found)"
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git config --global http.https://github.com/MiraGeoscience/.extraheader "Authorization: Basic $AUTH"
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
