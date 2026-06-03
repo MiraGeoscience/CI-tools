@@ -66,6 +66,13 @@ on:
         required: false
         type: number
         default: 1
+      gh-app-repos:
+        description: >
+          Comma-separated list of repositories to request a GitHub App token for
+          (e.g. 'scigeoh5,petro-lingo'). When provided, GH_APP_ID and GH_APP_PRIVATE_KEY
+          secrets must also be passed.
+        required: false
+        type: string
     secrets:
       JFROG_ARTIFACTORY_URL:
         description: JFrog Artifactory URL, needed if packages are on Artifactory
@@ -73,8 +80,11 @@ on:
       JFROG_ARTIFACTORY_TOKEN:
         description: JFrog Artifactory Token, needed if packages are on Artifactory
         required: false
-      GH_TOKEN:
-        description: GitHub token for accessing private repositories (e.g. from a GitHub App)
+      GH_APP_ID:
+        description: GitHub App ID for accessing private repositories
+        required: false
+      GH_APP_PRIVATE_KEY:
+        description: GitHub App private key for accessing private repositories
         required: false
 
 env:
@@ -148,11 +158,21 @@ jobs:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
+      - name: Generate GitHub App token for private repos
+        if: ${{ inputs.package-manager == 'pixi' && inputs.gh-app-repos != '' }}
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ inputs.gh-app-repos }}
+
       - name: Configure git for private GitHub repos
-        if: ${{ inputs.package-manager == 'pixi' }}
+        if: ${{ inputs.package-manager == 'pixi' && inputs.gh-app-repos != '' }}
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           if [ -n "$GH_TOKEN" ]; then
             AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
