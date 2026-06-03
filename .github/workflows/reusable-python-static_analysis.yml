@@ -155,9 +155,26 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ -n "$GH_TOKEN" ]; then
-            git config --global credential.helper store
-            printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > ~/.git-credentials
+            AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+            git config --global http.https://github.com/.extraheader "Authorization: Basic $AUTH"
           fi
+
+      - name: Debug git config and environment
+        if: ${{ inputs.package-manager == 'pixi' }}
+        shell: bash
+        run: |
+          echo "=== git version ==="
+          git version
+          echo "=== whoami ==="
+          whoami
+          echo "=== HOME ==="
+          echo "$HOME"
+          echo "=== git-related env vars ==="
+          env | grep -i git || echo "(none)"
+          echo "=== effective git config (global) ==="
+          git config --global --list --show-origin || echo "(no global config)"
+          echo "=== ~/.git-credentials exists ==="
+          ls -la ~/.git-credentials 2>/dev/null || echo "(not found)"
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
