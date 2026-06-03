@@ -154,7 +154,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ -n "$GH_TOKEN" ]; then
-            git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+            git config --global credential.helper store
+            printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > ~/.git-credentials
           fi
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
