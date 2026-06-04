@@ -1,4 +1,4 @@
-﻿name: Static analysis
+name: Static analysis
 
 on:
   workflow_call:
@@ -90,7 +90,7 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
