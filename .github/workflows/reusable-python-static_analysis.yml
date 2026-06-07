@@ -98,11 +98,14 @@ jobs:
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
-        run: >-
+        run: |
           git fetch --deepen=500 origin ${GITHUB_BASE_REF}
-          && echo "FILES_PARAM=$(
-          git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- | grep -E "^(${source_dir}|tests)/.*\.py$" | xargs
-          )" >> $GITHUB_ENV
+          {
+            echo 'FILES_PARAM<<_EOF_'
+            git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- \
+              | grep -E "^(${source_dir}|tests)/.*\.py$"
+            echo '_EOF_'
+          } >> $GITHUB_ENV
 
       - name: Remove git credentials
         shell: bash
@@ -185,12 +188,12 @@ jobs:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
+          mapfile -t files <<< "$FILES_PARAM"
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint $FILES_PARAM
+            pylint "${files[@]}"
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint $FILES_PARAM
+            poetry run pylint "${files[@]}"
           elif ${{ inputs.package-manager == 'pixi' }}; then
-            read -r -a files <<< "$FILES_PARAM"
             if [ -n "$PIXI_TASK_CWD" ]; then
               prefix="${PIXI_TASK_CWD%/}/"
               filtered_files=()
@@ -214,7 +217,7 @@ jobs:
               pixi run pylint "${files[@]}"
             fi
           else
-            hatch run pylint $FILES_PARAM
+            hatch run pylint "${files[@]}"
           fi
 
       - name: Run Pylint on all files
