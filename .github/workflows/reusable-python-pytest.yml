@@ -165,23 +165,22 @@ jobs:
           echo "GIT_LFS_SKIP_SMUDGE=1" >> "$GITHUB_ENV"
 
       - name: Generate GitHub App token for private repos
-        if: ${{ inputs.package-manager == 'pixi' && inputs.private-github-repos != '' }}
+        if: ${{ inputs.private-github-repos != '' }}
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
           repositories: ${{ inputs.private-github-repos }}
 
       - name: Configure git for private GitHub repos
-        if: ${{ inputs.package-manager == 'pixi' && inputs.private-github-repos != '' }}
+        if: ${{ inputs.private-github-repos != '' }}
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git config --global http.https://github.com/MiraGeoscience/.extraheader "Authorization: Basic $AUTH"
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git config --global "http.https://github.com/${GITHUB_REPOSITORY_OWNER}/.extraheader" "Authorization: Basic $AUTH"
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
