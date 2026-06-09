@@ -39,12 +39,14 @@ on:
             type: number
             default: 20
         source-path:
-            description: Path to the source code (e.g. "src"), where the recipe.yaml is located
+            description: |
+                Path to the package folder (typically with pyproject.toml or setup.py).
+                Defaults to the root of the repository.
             required: false
             type: string
-            default: ''
+            default: '.'
         recipe-path:
-            description: Path to the recipe file (optional, overrides automatic detection)
+            description: Path to the recipe file. Defaults to looking for a recipe.yaml in the source-path.
             required: false
             type: string
             default: ''
@@ -72,17 +74,17 @@ defaults:
     run:
         shell: 'bash -l {0}'
 
-env:
-    # cover for both conda and mamba
-    CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
-    MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
-
 jobs:
     build_rattler_package:
         name: Build package with rattler
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: ubuntu-latest
         timeout-minutes: ${{ inputs.timeout-minutes }}
+        env:
+            CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
+            MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev # cover for both conda and mamba
+            SOURCE_PATH: ${{ inputs.source-path || '.' }}
+            RECIPE_PATH: ${{ inputs.recipe-path || format('{0}/{1}', inputs.source-path || '.', 'recipe.yaml') }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v6
@@ -95,14 +97,10 @@ jobs:
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Generate package version
-                env:
-                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: pip install --dry-run --no-deps "${SOURCE_PATH}"
             -   name: Check if there is a rattler recipe
-                env:
-                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: |
-                    if [ -f "${SOURCE_PATH}/recipe.yaml" ]; then
+                    if [ -f "${RECIPE_PATH}" ]; then
                         echo "Rattler recipe found"
                     else
                         echo "Rattler recipe not found"
@@ -142,23 +140,6 @@ jobs:
                     printenv RATTLER_AUTH_FILE
                     cat < $RATTLER_AUTH_FILE
                     cat < ${{ runner.temp }}/credentials.json
-            -   name: Find recipe
-                id: find-recipe
-                if: ${{ !inputs.recipe-path }}
-                env:
-                    RECIPE_PATH: ${{ inputs.recipe-path }}
-                run: |
-                    # look for recipe first in conda.recipe/, then in recipe/, then at the root
-                    shopt -s nullglob
-                    recipe_matches=("$SOURCE_PATH"/{conda.recipe/,recipe/,}recipe.y{a,}ml)
-                    if [ -z "${recipe_matches[0]}" ]; then
-                        echo "::error::No recipe file found"
-                        exit 1
-                    fi
-                    if [ ${#recipe_matches[@]} -gt 1 ]; then
-                        echo "::warning::Multiple recipe files found, using ${recipe_matches[0]}"
-                    fi
-                    echo "recipe-file=${recipe_matches[0]}" >> "$GITHUB_OUTPUT"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.38
                 with:
@@ -167,7 +148,7 @@ jobs:
                         --output-dir ${{ runner.temp }}/output
                         --channel-priority strict
                         ${{ steps.config-channels.outputs.BUILD_ARGS }}
-                    recipe-path: ${{ inputs.recipe-path || format('{0}/{1}', github.workspace, steps.find-recipe.outputs.recipe-file) }}
+                    recipe-path: ${{ env.RECIPE_PATH }}
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                     RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
