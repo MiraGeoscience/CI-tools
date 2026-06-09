@@ -101,9 +101,9 @@ jobs:
             -   name: Check if there is a rattler recipe
                 run: |
                     if [ -f "${RECIPE_PATH}" ]; then
-                        echo "Rattler recipe found"
+                        echo "::notice::Rattler recipe found"
                     else
-                        echo "Rattler recipe not found"
+                        echo "::error::Rattler recipe not found"
                         exit 1
                     fi
             -   name: Configure channels and Auth
