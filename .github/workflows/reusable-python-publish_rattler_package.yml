@@ -97,12 +97,12 @@ jobs:
             -   name: Generate package version
                 env:
                     SOURCE_PATH: ${{ inputs.source-path || '.' }}
-                run: pip install --dry-run --no-deps ${SOURCE_PATH}
+                run: pip install --dry-run --no-deps "${SOURCE_PATH}"
             -   name: Check if there is a rattler recipe
                 env:
                     SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: |
-                    if [ -f ${SOURCE_PATH}/recipe.yaml ]; then
+                    if [ -f "${SOURCE_PATH}/recipe.yaml" ]; then
                         echo "Rattler recipe found"
                     else
                         echo "Rattler recipe not found"
@@ -150,9 +150,9 @@ jobs:
                 run: |
                     # look for recipe first in conda.recipe/, then in recipe/, then at the root
                     shopt -s nullglob
-                    recipe_matches=($SOURCE_PATH/{conda.recipe/,recipe/,}recipe.y{a,}ml)
+                    recipe_matches=("$SOURCE_PATH"/{conda.recipe/,recipe/,}recipe.y{a,}ml)
                     if [ -z "${recipe_matches[0]}" ]; then
-                        echo "::error::No recipe file or directory found"
+                        echo "::error::No recipe file found"
                         exit 1
                     fi
                     if [ ${#recipe_matches[@]} -gt 1 ]; then
