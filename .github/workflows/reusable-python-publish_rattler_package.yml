@@ -43,6 +43,11 @@ on:
             required: false
             type: string
             default: ''
+        recipe-path:
+            description: Path to the recipe file (optional, overrides automatic detection)
+            required: false
+            type: string
+            default: ''
         version-tag:
             description: Version tag of the package to build (defaults to github.ref_name if not provided)
             required: false
@@ -137,14 +142,34 @@ jobs:
                     printenv RATTLER_AUTH_FILE
                     cat < $RATTLER_AUTH_FILE
                     cat < ${{ runner.temp }}/credentials.json
+            -   name: Find recipe
+                id: find-recipe
+                if: ${{ !inputs.recipe-path }}
+                env:
+                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
+                    RECIPE_PATH: ${{ inputs.recipe-path }}
+                # if recipe-path is provided, use it; otherwise look for recipe in source-path
+                run: |
+                    # look for recipe first in conda.recipe/, then in recipe/, then at the root
+                    shopt -s nullglob
+                    recipe_matches=($SOURCE_PATH/{conda.recipe/,recipe/,}recipe.y{a,}ml)
+                    if [ -z "${recipe_matches[0]}" ]; then
+                        echo "::error::No recipe file or directory found"
+                        exit 1
+                    fi
+                    if [ ${#recipe_matches[@]} -gt 1 ]; then
+                        echo "::warning::Multiple recipe files found, using ${recipe_matches[0]}"
+                    fi
+                    echo "recipe-file=${recipe_matches[0]}" >> "$GITHUB_OUTPUT"
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.38
                 with:
+                    upload-artifact: false  # upload happens at the next step with more options
                     build-args: >-
                         --output-dir ${{ runner.temp }}/output
                         --channel-priority strict
                         ${{ steps.config-channels.outputs.BUILD_ARGS }}
-                    recipe-path: ${{ github.workspace}}/${{ inputs.source-path }}/recipe.yaml
+                    recipe-path: ${{ inputs.recipe-path || format('{0}/{1}', github.workspace, steps.find-recipe.outputs.recipe-file) }}
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                     RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
