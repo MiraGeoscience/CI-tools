@@ -146,9 +146,7 @@ jobs:
                 id: find-recipe
                 if: ${{ !inputs.recipe-path }}
                 env:
-                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                     RECIPE_PATH: ${{ inputs.recipe-path }}
-                # if recipe-path is provided, use it; otherwise look for recipe in source-path
                 run: |
                     # look for recipe first in conda.recipe/, then in recipe/, then at the root
                     shopt -s nullglob
