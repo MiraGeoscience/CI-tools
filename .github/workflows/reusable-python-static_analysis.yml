@@ -174,18 +174,12 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           repositories: ${{ inputs.private-github-repos }}
 
-      - name: Configure git for private GitHub repos
-        if: ${{ inputs.private-github-repos != '' }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
-          git config --global "http.https://github.com/${GITHUB_REPOSITORY_OWNER}/.extraheader" "Authorization: Basic $AUTH"
-
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
+        env:
+          GITHUB_TOKEN: >-
+            ${{ inputs.private-github-repos != '' && steps.app-token.outputs.token || ''}}
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.python-version }}
