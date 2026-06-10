@@ -44,6 +44,11 @@ on:
             description: Version tag of the package to build (defaults to github.ref_name if not provided)
             required: false
             type: string
+        publish-dev-tag:
+            description: Whether to publish a "dev" version of the package. By default a "dev" version tag is built but not published.
+            required: false
+            type: boolean
+            default: false
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: JFrog Artifactory URL
@@ -103,7 +108,11 @@ jobs:
     publish_package:
         name: Publish package
         needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
-        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
+        if: |
+            always() &&
+            contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') &&
+            github.repository_owner == 'MiraGeoscience' &&
+            (needs.is_publishable.outputs.is-publishable == 'true' || inputs.publish-dev-tag)
         runs-on: ubuntu-latest
         timeout-minutes: 5
         strategy:
