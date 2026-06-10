@@ -132,15 +132,6 @@ jobs:
                     done
 
                     echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
-            -   name: Check RATTLER_AUTH_FILE content
-                if: env.RATTLER_AUTH_FILE != ''
-                run: |
-                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}"
-                    printenv
-                    printenv RATTLER_AUTH_FILE
-                    cat < $RATTLER_AUTH_FILE
-                    cat < ${{ runner.temp }}/credentials.json
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.38
                 with:
