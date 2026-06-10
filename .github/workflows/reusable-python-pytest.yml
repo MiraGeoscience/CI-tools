@@ -76,6 +76,13 @@ on:
         required: false
         type: number
         default: 20
+      private-github-repos:
+        description: >
+          Comma-separated list of repositories to request a GitHub App token for
+          (e.g. 'scigeoh5,petro-lingo'). When provided, GH_APP_ID and GH_APP_PRIVATE_KEY
+          secrets must also be passed.
+        required: false
+        type: string
 
     secrets:
       CODECOV_TOKEN:
@@ -86,6 +93,12 @@ on:
         required: false
       JFROG_ARTIFACTORY_TOKEN:
         description: JFrog Artifactory Token, needed if packages are on Artifactory
+        required: false
+      GH_APP_ID:
+        description: GitHub App ID for accessing private repositories
+        required: false
+      GH_APP_PRIVATE_KEY:
+        description: GitHub App private key for accessing private repositories
         required: false
 
 jobs:
@@ -143,6 +156,32 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
+
+      - name: Configure git for pixi environments
+        if: ${{ inputs.package-manager == 'pixi' }}
+        shell: bash
+        run: |
+          git config --global core.longpaths true
+          echo "GIT_LFS_SKIP_SMUDGE=1" >> "$GITHUB_ENV"
+
+      - name: Generate GitHub App token for private repos
+        if: ${{ inputs.private-github-repos != '' }}
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          repositories: ${{ inputs.private-github-repos }}
+
+      - name: Register the personal access token
+        if: ${{ inputs.private-github-repos != '' }}
+        shell: bash
+        run: echo "${{ steps.app-token.outputs.token }}" | gh auth login --with-token
+
+      - name: Configure the Git credential helper
+        if: ${{ inputs.private-github-repos != '' }}
+        shell: bash
+        run: gh auth setup-git
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3
         name: Setup pixi env
