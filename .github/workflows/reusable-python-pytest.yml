@@ -137,14 +137,14 @@ jobs:
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@v3.4.0
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@v3
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
           cache-number: ${{ inputs.cache-number }}
           runner-os: ${{ runner.os }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
