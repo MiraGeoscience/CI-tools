@@ -17,8 +17,9 @@ on:
             type: string
         source-repo-names:
             description: 'List of repository names to pull from (e.g. ["geology-conda-dev", "geophysics-conda-dev"])'
-            required: true
+            required: false
             type: string
+            default: '[]'
         publish-repo-names:
             description: 'List of repository names to publish to (e.g. ["public-conda-dev", "geophysics-conda-dev"])'
             required: true
@@ -118,8 +119,8 @@ jobs:
                     repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
+                        echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     fi
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
 
                     # Loop through the repository names and add them to the command
                     for repo_name in ${repository_list}; do
@@ -133,6 +134,7 @@ jobs:
 
                     echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
             -   name: Check RATTLER_AUTH_FILE content
+                if: env.RATTLER_AUTH_FILE != ''
                 run: |
                     echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
                     echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}"
