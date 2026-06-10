@@ -72,7 +72,6 @@ jobs:
             source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -88,7 +87,6 @@ jobs:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -112,16 +110,16 @@ jobs:
             fail-fast: false
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        env:
+            VERSION_TAG: ${{ inputs.version-tag || github.ref_name }}
         steps:
             -   name: Select build outputs form the correct job
                 id: select-build-outputs
                 run: |
                     if [[ "${{ needs.build_poetry_package.result }}" == "success" ]]; then
                         echo "build-dir-path=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_poetry_package.outputs.version }}" >> $GITHUB_ENV
                     elif [[ "${{ needs.build_setuptools_package.result }}" == "success" ]]; then
                         echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
                     else
                         echo "No successful build found"
                         exit 1
@@ -136,7 +134,7 @@ jobs:
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.VERSION_TAG }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to PyPI
