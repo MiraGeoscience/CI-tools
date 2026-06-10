@@ -113,16 +113,15 @@ jobs:
                   INPUTS_SOURCE_REPO_NAMES: ${{ inputs.source-repo-names }}
                   INPUTS_CONDA_CHANNELS: ${{ inputs.conda-channels }}
                 run: |
-                    BUILD_ARGS=""
-                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-
                     repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
+                        RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                         echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     fi
 
                     # Loop through the repository names and add them to the command
+                    BUILD_ARGS=""
                     for repo_name in ${repository_list}; do
                         BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
