@@ -179,8 +179,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
-          git config --global "http.https://github.com/${GITHUB_REPOSITORY_OWNER}/.extraheader" "Authorization: Basic $AUTH"
+          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth setup-git
 
       - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.4.0
         name: Setup pixi env
