@@ -17,8 +17,9 @@ on:
             type: string
         source-repo-names:
             description: 'List of repository names to pull from (e.g. ["geology-conda-dev", "geophysics-conda-dev"])'
-            required: true
+            required: false
             type: string
+            default: '[]'
         publish-repo-names:
             description: 'List of repository names to publish to (e.g. ["public-conda-dev", "geophysics-conda-dev"])'
             required: true
@@ -39,7 +40,14 @@ on:
             type: number
             default: 20
         source-path:
-            description: Path to the source code (e.g. "src"), where the recipe.yaml is located
+            description: |
+                Path to the package folder (typically with pyproject.toml or setup.py).
+                Defaults to the root of the repository.
+            required: false
+            type: string
+            default: '.'
+        recipe-path:
+            description: Path to the recipe file. Defaults to looking for a recipe.yaml in the source-path.
             required: false
             type: string
             default: ''
@@ -67,17 +75,17 @@ defaults:
     run:
         shell: 'bash -l {0}'
 
-env:
-    # cover for both conda and mamba
-    CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
-    MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev
-
 jobs:
     build_rattler_package:
         name: Build package with rattler
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: ubuntu-latest
         timeout-minutes: ${{ inputs.timeout-minutes }}
+        env:
+            CONDA_CHANNEL_ALIAS: https://repo.prefix.dev
+            MAMBA_CHANNEL_ALIAS: https://repo.prefix.dev # cover for both conda and mamba
+            SOURCE_PATH: ${{ inputs.source-path || '.' }}
+            RECIPE_PATH: ${{ inputs.recipe-path || format('{0}/{1}', inputs.source-path || '.', 'recipe.yaml') }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v6
@@ -90,17 +98,13 @@ jobs:
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Generate package version
-                env:
-                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
-                run: pip install --dry-run --no-deps ${SOURCE_PATH}
+                run: pip install --dry-run --no-deps "${SOURCE_PATH}"
             -   name: Check if there is a rattler recipe
-                env:
-                    SOURCE_PATH: ${{ inputs.source-path || '.' }}
                 run: |
-                    if [ -f ${SOURCE_PATH}/recipe.yaml ]; then
-                        echo "Rattler recipe found"
+                    if [ -f "${RECIPE_PATH}" ]; then
+                        echo "::notice::Rattler recipe found"
                     else
-                        echo "Rattler recipe not found"
+                        echo "::error::Rattler recipe not found"
                         exit 1
                     fi
             -   name: Configure channels and Auth
@@ -109,16 +113,15 @@ jobs:
                   INPUTS_SOURCE_REPO_NAMES: ${{ inputs.source-repo-names }}
                   INPUTS_CONDA_CHANNELS: ${{ inputs.conda-channels }}
                 run: |
-                    BUILD_ARGS=""
-                    RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-
                     repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
+                        RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
+                        echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                     fi
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
 
                     # Loop through the repository names and add them to the command
+                    BUILD_ARGS=""
                     for repo_name in ${repository_list}; do
                         BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
                     done
@@ -129,22 +132,15 @@ jobs:
                     done
 
                     echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
-            -   name: Check RATTLER_AUTH_FILE content
-                run: |
-                    echo "RATTLER_AUTH_FILE=${{ env.RATTLER_AUTH_FILE }}"
-                    echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}"
-                    printenv
-                    printenv RATTLER_AUTH_FILE
-                    cat < $RATTLER_AUTH_FILE
-                    cat < ${{ runner.temp }}/credentials.json
             -   name: Build package
                 uses: prefix-dev/rattler-build-action@v0.2.38
                 with:
+                    upload-artifact: false  # upload happens at the next step with more options
                     build-args: >-
                         --output-dir ${{ runner.temp }}/output
                         --channel-priority strict
                         ${{ steps.config-channels.outputs.BUILD_ARGS }}
-                    recipe-path: ${{ github.workspace}}/${{ inputs.source-path }}/recipe.yaml
+                    recipe-path: ${{ env.RECIPE_PATH }}
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                     RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
