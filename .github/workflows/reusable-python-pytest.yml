@@ -1,4 +1,4 @@
-﻿name: Pytest on any OS
+name: Pytest on any OS
 
 on:
   workflow_call:
@@ -171,7 +171,7 @@ jobs:
 
       - name: Generate GitHub App token for private repos
         if: ${{ inputs.private-github-repos != '' }}
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.GH_APP_ID }}
