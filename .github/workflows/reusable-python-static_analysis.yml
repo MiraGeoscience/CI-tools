@@ -192,7 +192,7 @@ jobs:
         shell: bash
         run: gh auth setup-git
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.8.0-alpha.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
