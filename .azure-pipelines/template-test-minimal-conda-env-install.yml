@@ -14,11 +14,19 @@ parameters:
   - name: envToVirtualRepos
     type: object
     default:
-      all: geoplus
-      geology: geology
-      geophysics: geophysics
-      interop: public
-      simpeg: public
+      all:
+        - geoplus
+        - gempy
+      geology:
+        - geology
+        - gempy
+      geophysics:
+        - geophysics
+        - gempy
+      interop:
+        - public
+      simpeg:
+        - public
   - name: envToRemoteRepos
     type: object
     default:
