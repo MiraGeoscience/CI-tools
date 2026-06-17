@@ -2,7 +2,7 @@
 parameters:
   - name: pythonVersion
     type: string
-    default: '3.10'
+    default: '3.12'
   # Determines the type of package repository to use for testing installation (prod or dev).
   - name: environment
     type: string
