@@ -64,8 +64,8 @@ stages:
 
                 # DiscoverFiles
                 fileSuffix="py${{ replace(parameters.pythonVersion, '.', '') }}-win-64.conda.lock.yml"
-                files=$(find $buildEnvFolder -name "*-$fileSuffix")
-                if [[ -z "$files" ]]; then
+                envFiles=$(find $buildEnvFolder -name "*-$fileSuffix")
+                if [[ -z "$envFiles" ]]; then
                     echo "No '*-$fileSuffix' environment files found in $buildEnvFolder"
                     exit 1
                 fi
@@ -80,14 +80,12 @@ stages:
                 while read -r entry; do
                   key=$(echo "$entry" | jq -r '.key')
                   value=$(echo "$entry" | jq -r '.value')
-                  # Find the corresponding file
-                  matchingFile=$(echo "$files" | grep -m 1 "$key-.*\.conda\.lock\.yml")
-
-                  if [ -z "$matchingFile" ]; then
+                  envFilename=$key-$fileSuffix
+                  envFile=$buildEnvFolder/$envFilename
+                  if [ ! -f "$envFile" ]; then
                     echo "No matching file found for $key, skipping..."
                     continue
                   fi
-                  filename=$(basename "$matchingFile")
 
                   # Check if value is an array or a string
                   if [[ "$value" == "["*"]" ]]; then
@@ -102,7 +100,7 @@ stages:
                   # Create object
                   object_string=$( jq -n \
                                     --arg envType "$key" \
-                                    --arg filename "$filename" \
+                                    --arg filename "$envFilename" \
                                     --arg repositories "$repos" \
                                     --arg remotes "$remoteRepos" \
                                     '{ ($envType): {name: $envType, filename: $filename, repositories: $repositories, remotes: $remotes }}' )
@@ -111,7 +109,7 @@ stages:
                   matrix=$(echo "$matrix" | jq ". + $object_string")
 
                   # Copy matching files to the artifact folder
-                  cp "$matchingFile" "$artifactFolder/"
+                  cp "$envFile" "$artifactFolder/"
                 done < <(echo "$envToVirtualReposJson" | jq -c 'to_entries[]')
 
                 json_matrix=$(echo $matrix | jq -c .)
