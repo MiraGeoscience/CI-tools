@@ -53,7 +53,7 @@ jobs:
           depth=$(expr ${{ github.event.pull_request.commits }} + 1)
           echo "base-depth=$depth"
           echo "base-depth=$depth" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: ${{ inputs.lfs }}
           # for non PR events, check out to depth 1 (the default)
@@ -69,7 +69,7 @@ jobs:
         run: |
           git config --local --unset-all http.https://github.com/.extraheader || [ $? -eq 5 ]
           git config --local --unset-all include.path || [ $? -eq 5 ]
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install uv
@@ -77,7 +77,7 @@ jobs:
       - name: Install pre-commit with uv
         run: uv tool install pre-commit
       - name: Cache for pre-commit hooks
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}

@@ -1,4 +1,4 @@
-﻿name: Pytest on any OS
+name: Pytest on any OS
 
 on:
   workflow_call:
@@ -121,14 +121,14 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python version
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         if: ${{ inputs.package-manager == 'poetry' || inputs.package-manager == 'hatch' }}
         with:
           python-version: ${{ matrix.python-version }}
@@ -171,7 +171,7 @@ jobs:
 
       - name: Generate GitHub App token for private repos
         if: ${{ inputs.private-github-repos != '' }}
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.GH_APP_ID }}
