@@ -112,9 +112,13 @@ stages:
                   cp "$envFile" "$artifactFolder/"
                 done < <(echo "$envToVirtualReposJson" | jq -c 'to_entries[]')
 
-                json_matrix=$(echo $matrix | jq -c .)
+                if [ -z "$(ls -A $artifactFolder)" ]; then
+                    echo "No environment files were copied to $artifactFolder. Exiting."
+                    exit 1
+                fi
 
                 # Save and output the final matrix
+                json_matrix=$(echo $matrix | jq -c .)
                 echo "##vso[task.setvariable variable=matrix;isOutput=true]$json_matrix"
           - publish: 'artifact_envFiles/'
             artifact: envFiles
