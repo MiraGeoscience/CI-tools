@@ -56,7 +56,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                buildEnvFolder="build"
+                buildEnvFolder="build/envs"
                 artifactFolder="artifact_envFiles"
 
                 # Create test directories and files
