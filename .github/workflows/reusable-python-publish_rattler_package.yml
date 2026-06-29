@@ -88,13 +88,13 @@ jobs:
             RECIPE_PATH: ${{ inputs.recipe-path || format('{0}/{1}', inputs.source-path || '.', 'recipe.yaml') }}
         steps:
             -   name: Checkout
-                uses: actions/checkout@v6
+                uses: actions/checkout@v7
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
                     persist-credentials: false
             -   name: Set up Python version
-                uses: actions/setup-python@v6
+                uses: actions/setup-python@v6.2.0
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Generate package version
