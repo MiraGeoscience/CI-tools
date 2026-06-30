@@ -48,6 +48,11 @@ on:
           (e.g. ["public-pypi-dev"], or ["public-conda-dev"])
         required: false
         type: string
+      pixi-version:
+        description: Version of Pixi to use
+        required: false
+        type: string
+        default: v0.67.2  # default to last version before lock file version v7
       pixi-environments:
         description: >
           JSON list of Pixi environment names to install (e.g. '["test-engine", "test-evals"]').
@@ -189,6 +194,7 @@ jobs:
         with:
           cache-number: ${{ inputs.cache-number }}
           python-version: ${{ inputs.pixi-environments && '' || matrix.python-version }}
+          pixi-version: ${{ inputs.pixi-version }}
           environment-name: ${{ inputs.pixi-environments && matrix.python-version || '' }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
@@ -232,7 +238,7 @@ jobs:
           fi
 
       - name: Codecov
-        if:  ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) }}
+        if: ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
         uses: codecov/codecov-action@v6
         with:
           name: GitHub
