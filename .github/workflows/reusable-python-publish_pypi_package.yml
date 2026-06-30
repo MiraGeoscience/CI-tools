@@ -141,9 +141,11 @@ jobs:
             -   name: Publish package to Artifactory
                 uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@v3.7.0-alpha.1
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
+                env:
+                    VERSION_NUMBER: ${{ startsWith(env.VERSION_TAG, 'v') && substring(env.VERSION_TAG, 1) || env.VERSION_TAG }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.VERSION_TAG }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.VERSION_NUMBER }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to PyPI
