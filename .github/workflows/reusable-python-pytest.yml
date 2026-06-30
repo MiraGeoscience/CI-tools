@@ -133,7 +133,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v3.7.0-alpha.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v3.8.0-alpha.1
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         env:
@@ -145,7 +145,7 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@v3.7.0-alpha.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@v3.8.0-alpha.1
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
