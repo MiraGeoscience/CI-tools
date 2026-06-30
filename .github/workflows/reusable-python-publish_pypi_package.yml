@@ -44,6 +44,11 @@ on:
             description: Version tag of the package to build (defaults to github.ref_name if not provided)
             required: false
             type: string
+        publish-dev-tag:
+            description: Whether to publish a "dev" version of the package. By default a "dev" version tag is built but not published.
+            required: false
+            type: boolean
+            default: false
     secrets:
         JFROG_ARTIFACTORY_URL:
             description: JFrog Artifactory URL
@@ -66,13 +71,12 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@v3
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@v3.8.0-alpha.1
         with:
             package-name: ${{ inputs.package-name }}
             source-path: ${{ inputs.source-path || '.' }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -83,12 +87,11 @@ jobs:
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@v3
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@v3.8.0-alpha.1
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
             lfs: ${{ inputs.lfs }}
-            version-tag: ${{ inputs.version-tag || github.ref_name }}
             virtual-repo-names: ${{ inputs.virtual-repo-names }}
             os: ${{ inputs.os }}
             timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -98,30 +101,34 @@ jobs:
 
     is_publishable:
         name: Check version publishability
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@v3
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@v3.8.0-alpha.1
         with:
           version-tag: ${{ inputs.version-tag || github.ref_name }}
 
     publish_package:
         name: Publish package
         needs: [ build_poetry_package, build_setuptools_package, is_publishable ]
-        if: ${{ always() && contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') && github.repository_owner == 'MiraGeoscience' && needs.is_publishable.outputs.is-publishable == 'true' }}
+        if: |
+            always() &&
+            contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure') &&
+            github.repository_owner == 'MiraGeoscience' &&
+            (needs.is_publishable.outputs.is-publishable == 'true' || inputs.publish-dev-tag)
         runs-on: ubuntu-latest
         timeout-minutes: 5
         strategy:
             fail-fast: false
             matrix:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
+        env:
+            VERSION_TAG: ${{ inputs.version-tag || github.ref_name }}
         steps:
             -   name: Select build outputs form the correct job
                 id: select-build-outputs
                 run: |
                     if [[ "${{ needs.build_poetry_package.result }}" == "success" ]]; then
                         echo "build-dir-path=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_poetry_package.outputs.version }}" >> $GITHUB_ENV
                     elif [[ "${{ needs.build_setuptools_package.result }}" == "success" ]]; then
                         echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
                     else
                         echo "No successful build found"
                         exit 1
@@ -132,11 +139,13 @@ jobs:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@v3
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@v3.8.0-alpha.1
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
+                env:
+                    VERSION_NUMBER: ${{ startsWith(env.VERSION_TAG, 'v') && substring(env.VERSION_TAG, 1) || env.VERSION_TAG }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
-                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
+                    artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.VERSION_NUMBER }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Publish package to PyPI
@@ -158,7 +167,7 @@ jobs:
         timeout-minutes: 5
         steps:
             -   name: Get draft release
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v3
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@v3.8.0-alpha.1
                 id: get-draft-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
