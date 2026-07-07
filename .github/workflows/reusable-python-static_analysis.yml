@@ -175,7 +175,7 @@ jobs:
 
       - name: Generate GitHub App token for private repos
         if: ${{ inputs.private-github-repos != '' }}
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
         id: app-token
         with:
           app-id: ${{ secrets.GH_APP_ID }}
