@@ -40,22 +40,47 @@ jobs:
         else
           echo "jira_fields={\"components\": ${INPUTS_COMPONENTS} }" >> $GITHUB_OUTPUT
         fi
-    - name: JIRA Login
-      uses: atlassian/gajira-login@v3.0.1
+    - name: Jira Create issue
+      id: create_jira_issue
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
         JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
         JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-    - name: Jira Create issue
-      id: create_jira_issue
-      uses: atlassian/gajira-create@v3.0.1
-      with:
-        project: ${{ inputs.project-key }}
-        issuetype: Story
-        summary: ${{ github.event.issue.title }}
-        description: "_from [GitHub issue #${{ github.event.issue.number }}|${{ github.event.issue.html_url }}]_"
-        # Additional fields in JSON format
-        fields: "${{ steps.set_jira_fields.outputs.jira_fields }}"
+        PROJECT_KEY: ${{ inputs.project-key }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_URL: ${{ github.event.issue.html_url }}
+        JIRA_FIELDS: ${{ steps.set_jira_fields.outputs.jira_fields }}
+      run: |
+        payload=$(jq -n \
+          --arg project "$PROJECT_KEY" \
+          --arg summary "$ISSUE_TITLE" \
+          --arg description "_from [GitHub issue #${ISSUE_NUMBER}|${ISSUE_URL}]_" \
+          --argjson extra_fields "$JIRA_FIELDS" \
+          '{fields: ({project: {key: $project}, issuetype: {name: "Story"}, summary: $summary, description: $description} + $extra_fields)}')
+
+        response=$(curl -sS -w '\n%{http_code}' -X POST \
+          -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "$payload" \
+          "${JIRA_BASE_URL}/rest/api/2/issue")
+
+        http_status=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+
+        if [[ "$http_status" -lt 200 || "$http_status" -ge 300 ]]; then
+          echo "::error::Jira API returned HTTP $http_status: $body"
+          exit 1
+        fi
+
+        issue_key=$(echo "$body" | jq -r '.key // empty')
+        if [[ -z "$issue_key" ]]; then
+          echo "::error::Jira API response did not contain an issue key: $body"
+          exit 1
+        fi
+
+        echo "Created JIRA issue: $issue_key"
+        echo "issue=$issue_key" >> "$GITHUB_OUTPUT"
     - name: Post JIRA link
       uses: peter-evans/create-or-update-comment@v5
       with:
