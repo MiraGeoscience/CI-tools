@@ -116,14 +116,30 @@ jobs:
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+          PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           git fetch --deepen=500 origin ${GITHUB_BASE_REF}
-          {
-            echo 'FILES_PARAM<<_EOF_'
-            git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- \
-              | grep -E "^(${source_dir}|tests)/.*\.py$"
-            echo '_EOF_'
-          } >> $GITHUB_ENV
+          case "$PACKAGE_MANAGER" in
+            pixi) LOCK_FILE="pixi.lock" ;;
+            poetry) LOCK_FILE="poetry.lock" ;;
+            conda)
+              os_conda=$( [[ "$RUNNER_OS" == "Linux" ]] && echo "linux" || echo "win")
+              LOCK_FILE="environments/py-${PYTHON_VERSION}-${os_conda}-64-dev.conda.lock.yml"
+              ;;
+            *) LOCK_FILE="" ;;
+          esac
+          changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
+          if [ -n "$LOCK_FILE" ] && echo "$changed_files" | grep -qxF "$LOCK_FILE"; then
+            echo "Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
+          else
+            {
+              echo 'FILES_PARAM<<_EOF_'
+              echo "$changed_files" | grep -E "^(${source_dir}|tests)/.*\.py$" || true
+              echo '_EOF_'
+            } >> $GITHUB_ENV
+          fi
 
       - name: Remove git credentials
         shell: bash
