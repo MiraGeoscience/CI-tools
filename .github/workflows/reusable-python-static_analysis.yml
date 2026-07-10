@@ -128,10 +128,15 @@ jobs:
               os_conda=$( [[ "$RUNNER_OS" == "Linux" ]] && echo "linux" || echo "win")
               LOCK_FILE="environments/py-${PYTHON_VERSION}-${os_conda}-64-dev.conda.lock.yml"
               ;;
-            *) LOCK_FILE="" ;;
+            hatch) LOCK_FILE="" ;;
+            *)
+              echo "::error::Unknown package manager '$PACKAGE_MANAGER': cannot determine lock file for Pylint force-run detection"
+              exit 1
+              ;;
           esac
           changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
-          if [ -n "$LOCK_FILE" ] && echo "$changed_files" | grep -qxF "$LOCK_FILE"; then
+          changed_files_all=$(git diff --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
+          if [ -n "$LOCK_FILE" ] && echo "$changed_files_all" | grep -qxF "$LOCK_FILE"; then
             echo "Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
           else
             {
