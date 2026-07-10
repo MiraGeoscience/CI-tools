@@ -128,16 +128,16 @@ jobs:
               os_conda=$( [[ "$RUNNER_OS" == "Linux" ]] && echo "linux" || echo "win")
               LOCK_FILE="environments/py-${PYTHON_VERSION}-${os_conda}-64-dev.conda.lock.yml"
               ;;
-            hatch) LOCK_FILE="" ;;
+            hatch) LOCK_FILE="pyproject.toml" ;;
             *)
               echo "::error::Unknown package manager '$PACKAGE_MANAGER': cannot determine lock file for Pylint force-run detection"
               exit 1
               ;;
           esac
           changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
-          changed_files_all=$(git diff --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
-          if [ -n "$LOCK_FILE" ] && echo "$changed_files_all" | grep -qxF "$LOCK_FILE"; then
-            echo "Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
+          if [ -n "$LOCK_FILE" ] && echo "$changed_files" | grep -qxF "$LOCK_FILE"; then
+            echo "::notice::Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
+            echo "FORCE_ALL_FILES=true" >> $GITHUB_ENV
           else
             {
               echo 'FILES_PARAM<<_EOF_'
@@ -248,6 +248,11 @@ jobs:
             exit 1
           fi
 
+      - name: Pylint skipped
+        if: ${{ (github.event_name == 'pull_request') && !env.FILES_PARAM && !env.FORCE_ALL_FILES }}
+        run: |
+          echo "::notice::Pylint skipped: no applicable file changes detected."
+
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         env:
@@ -287,7 +292,7 @@ jobs:
           fi
 
       - name: Run Pylint on all files
-        if: ${{ github.event_name != 'pull_request' || !env.FILES_PARAM }}
+        if: ${{ github.event_name != 'pull_request' || env.FORCE_ALL_FILES }}
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
