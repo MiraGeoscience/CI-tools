@@ -38,7 +38,11 @@ jobs:
         if [[ -z "${INPUTS_COMPONENTS}" ]]; then
           echo 'jira_fields={}' >> $GITHUB_OUTPUT
         else
-          echo "jira_fields={\"components\": ${INPUTS_COMPONENTS} }" >> $GITHUB_OUTPUT
+          if ! jira_fields=$(jq -nc --argjson components "${INPUTS_COMPONENTS}" '{components: $components}'); then
+            echo "::error::inputs.components is not valid JSON: ${INPUTS_COMPONENTS}"
+            exit 1
+          fi
+          echo "jira_fields=${jira_fields}" >> $GITHUB_OUTPUT
         fi
     - name: Jira Create issue
       id: create_jira_issue
@@ -63,7 +67,7 @@ jobs:
           -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "$payload" \
-          "${JIRA_BASE_URL}/rest/api/2/issue")
+          "${JIRA_BASE_URL%/}/rest/api/2/issue")
 
         http_status=$(echo "$response" | tail -n1)
         body=$(echo "$response" | sed '$d')
