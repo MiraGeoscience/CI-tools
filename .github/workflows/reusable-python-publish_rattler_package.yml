@@ -88,7 +88,7 @@ jobs:
             RECIPE_PATH: ${{ inputs.recipe-path || format('{0}/{1}', inputs.source-path || '.', 'recipe.yaml') }}
         steps:
             -   name: Checkout
-                uses: actions/checkout@v6
+                uses: actions/checkout@v7
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
