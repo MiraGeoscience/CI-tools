@@ -1,0 +1,45 @@
+# This workflow approves and enables auto-merge for Dependabot PRs
+# belonging to a trusted, pre-approved dependency group.
+
+name: Dependabot auto-merge
+
+on:
+  workflow_call:
+    inputs:
+      dependabot-group:
+        required: false
+        type: string
+        default: mirageo-ci-tools
+        description: The Dependabot group name (from dependabot.yml) allowed to auto-merge
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: >
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/github-actions/') &&
+      contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
+      startsWith(github.event.pull_request.title, 'Bump ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Check update type
+      id: metadata
+      uses: dependabot/fetch-metadata@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Approve and enable auto-merge
+      if: >
+        steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+        steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+      run: |
+        gh pr review --approve "$PR_URL"
+        gh pr merge --auto --merge "$PR_URL"
