@@ -20,7 +20,7 @@ jobs:
   auto-merge:
     if: >
       github.event.pull_request.user.login == 'dependabot[bot]' &&
-      startsWith(github.event.pull_request.head.ref, 'dependabot/github-actions/') &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/') &&
       contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
       startsWith(github.event.pull_request.title, 'Bump ')
     runs-on: ubuntu-latest
