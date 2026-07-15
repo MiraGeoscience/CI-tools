@@ -85,8 +85,8 @@ jobs:
       id: bot_exemption
       run: >
         echo "is_exempt=${{
-        (github.event.sender.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') && startsWith(github.event.pull_request.title, 'Bump ')) ||
-        (github.event.sender.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config')
+        (github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools')) ||
+        (github.event.pull_request.user.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config')
         }}" >> $GITHUB_OUTPUT
 
     - name: Fail if no Jira key and not expected bot PR
