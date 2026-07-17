@@ -48,7 +48,18 @@ on:
       pixi-task-args:
         description: >
           JSON list of extra arguments to pass to the pixi task after '--'
-          (e.g. '["-v"]'). Optional.
+          (e.g. '["-v"]'). Applied to both the modified-files and all-files
+          runs. Optional.
+        required: false
+        type: string
+      pixi-lint-targets:
+        description: >
+          JSON list of default lint targets (modules/paths, relative to the
+          pixi task's cwd) to pass to the pixi task when running Pylint on
+          all files (i.e. not scoped to a PR's changed files), e.g.
+          '["translation_tools", "translation_tests"]'. Only applies to the
+          pixi package manager, and only to the all-files run. Optional; when
+          omitted, the task's own 'cmd' must already specify a target.
         required: false
         type: string
       lfs:
@@ -248,6 +259,16 @@ jobs:
             exit 1
           fi
 
+      - name: Validate pixi lint targets
+        if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-lint-targets }}
+        env:
+          PIXI_LINT_TARGETS: ${{ inputs.pixi-lint-targets }}
+        run: |
+          if ! echo "$PIXI_LINT_TARGETS" | jq -e 'type == "array" and all(.[]; type == "string")' > /dev/null; then
+            echo "::error::Invalid pixi-lint-targets. Must be a JSON array of strings."
+            exit 1
+          fi
+
       - name: Pylint skipped
         if: ${{ (github.event_name == 'pull_request') && !env.FILES_PARAM && !env.FORCE_ALL_FILES }}
         run: |
@@ -296,6 +317,7 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
+          PIXI_LINT_TARGETS: ${{ inputs.pixi-lint-targets }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint --verbose $source_dir tests
@@ -303,8 +325,17 @@ jobs:
             poetry run pylint --verbose $source_dir tests
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
+              args=()
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run "$PIXI_TASK" --
+                readarray -t task_args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
+                args+=("${task_args[@]}")
+              fi
+              if [ -n "$PIXI_LINT_TARGETS" ]; then
+                readarray -t lint_targets < <(echo "$PIXI_LINT_TARGETS" | jq -r '.[]')
+                args+=("${lint_targets[@]}")
+              fi
+              if [ ${#args[@]} -gt 0 ]; then
+                pixi run "$PIXI_TASK" -- "${args[@]}"
               else
                 pixi run "$PIXI_TASK"
               fi
