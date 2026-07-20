@@ -51,7 +51,7 @@ on:
           (e.g. '["-v"]'). Optional.
         required: false
         type: string
-      pixi-source-dir:
+      source-dir:
         description: >
           Path (relative to the pixi task's cwd) of the source directory to
           lint when running the pixi task on all files (i.e. not scoped to a
@@ -60,11 +60,11 @@ on:
           omitted, the task's own 'cmd' must already specify a target.
         required: false
         type: string
-      pixi-test-dir:
+      test-dir:
         description: >
           Path (relative to the pixi task's cwd) of the test directory to
-          include alongside pixi-source-dir in the all-files run, e.g.
-          'translation_tests'. Only applies alongside pixi-source-dir.
+          include alongside source-dir in the all-files run, e.g.
+          'translation_tests'. Only applies alongside source-dir.
         required: false
         type: string
       lfs:
@@ -109,7 +109,9 @@ on:
         required: false
 
 env:
-  source_dir: ${{ inputs.app-name }}
+  task_cwd: ${{ inputs.app-name }}
+  source_dir: ${{ inputs.source-dir }}
+  test_dir: ${{ inputs.test-dir }}
 
 jobs:
   pylint:
@@ -157,7 +159,7 @@ jobs:
           else
             {
               echo 'FILES_PARAM<<_EOF_'
-              echo "$changed_files" | grep -E "^(${source_dir}|tests)/.*\.py$" || true
+              echo "$changed_files" | grep -E "^(${task_cwd}|${test_dir:-tests})/.*\.py$" || true
               echo '_EOF_'
             } >> $GITHUB_ENV
           fi
@@ -312,13 +314,11 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
-          PIXI_SOURCE_DIR: ${{ inputs.pixi-source-dir }}
-          PIXI_TEST_DIR: ${{ inputs.pixi-test-dir }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint --verbose $source_dir tests
+            pylint --verbose $task_cwd ${test_dir:-tests}
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint --verbose $source_dir tests
+            poetry run pylint --verbose $task_cwd ${test_dir:-tests}
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
               args=()
@@ -326,16 +326,16 @@ jobs:
                 readarray -t task_args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
                 args+=("${task_args[@]}")
               fi
-              [ -n "$PIXI_SOURCE_DIR" ] && args+=("$PIXI_SOURCE_DIR")
-              [ -n "$PIXI_TEST_DIR" ] && args+=("$PIXI_TEST_DIR")
+              [ -n "$source_dir" ] && args+=("$source_dir")
+              [ -n "$test_dir" ] && args+=("$test_dir")
               if [ ${#args[@]} -gt 0 ]; then
                 pixi run "$PIXI_TASK" -- "${args[@]}"
               else
                 pixi run "$PIXI_TASK"
               fi
             else
-              pixi run pylint --verbose $source_dir tests
+              pixi run pylint --verbose $task_cwd ${test_dir:-tests}
             fi
           else
-            hatch run pylint --verbose $source_dir tests
+            hatch run pylint --verbose $task_cwd ${test_dir:-tests}
           fi
