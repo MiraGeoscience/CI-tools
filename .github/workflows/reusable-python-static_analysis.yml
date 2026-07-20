@@ -51,6 +51,22 @@ on:
           (e.g. '["-v"]'). Optional.
         required: false
         type: string
+      pixi-source-dir:
+        description: >
+          Path (relative to the pixi task's cwd) of the source directory to
+          lint when running the pixi task on all files (i.e. not scoped to a
+          PR's changed files), e.g. 'eval_engine'. Only applies to the pixi
+          package manager, and only to the all-files run. Optional; when
+          omitted, the task's own 'cmd' must already specify a target.
+        required: false
+        type: string
+      pixi-test-dir:
+        description: >
+          Path (relative to the pixi task's cwd) of the test directory to
+          include alongside pixi-source-dir in the all-files run, e.g.
+          'translation_tests'. Only applies alongside pixi-source-dir.
+        required: false
+        type: string
       lfs:
         description: Boolean to indicate if GitHub LFS is needed
         required: false
@@ -116,14 +132,35 @@ jobs:
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+          PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           git fetch --deepen=500 origin ${GITHUB_BASE_REF}
-          {
-            echo 'FILES_PARAM<<_EOF_'
-            git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- \
-              | grep -E "^(${source_dir}|tests)/.*\.py$"
-            echo '_EOF_'
-          } >> $GITHUB_ENV
+          case "$PACKAGE_MANAGER" in
+            pixi) LOCK_FILE="pixi.lock" ;;
+            poetry) LOCK_FILE="poetry.lock" ;;
+            conda)
+              os_conda=$( [[ "$RUNNER_OS" == "Linux" ]] && echo "linux" || echo "win")
+              LOCK_FILE="environments/py-${PYTHON_VERSION}-${os_conda}-64-dev.conda.lock.yml"
+              ;;
+            hatch) LOCK_FILE="pyproject.toml" ;;
+            *)
+              echo "::error::Unknown package manager '$PACKAGE_MANAGER': cannot determine lock file for Pylint force-run detection"
+              exit 1
+              ;;
+          esac
+          changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
+          if [ -n "$LOCK_FILE" ] && echo "$changed_files" | grep -qxF "$LOCK_FILE"; then
+            echo "::notice::Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
+            echo "FORCE_ALL_FILES=true" >> $GITHUB_ENV
+          else
+            {
+              echo 'FILES_PARAM<<_EOF_'
+              echo "$changed_files" | grep -E "^(${source_dir}|tests)/.*\.py$" || true
+              echo '_EOF_'
+            } >> $GITHUB_ENV
+          fi
 
       - name: Remove git credentials
         shell: bash
@@ -227,6 +264,11 @@ jobs:
             exit 1
           fi
 
+      - name: Pylint skipped
+        if: ${{ (github.event_name == 'pull_request') && !env.FILES_PARAM && !env.FORCE_ALL_FILES }}
+        run: |
+          echo "::notice::Pylint skipped: no applicable file changes detected."
+
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         env:
@@ -266,10 +308,12 @@ jobs:
           fi
 
       - name: Run Pylint on all files
-        if: ${{ github.event_name != 'pull_request' || !env.FILES_PARAM }}
+        if: ${{ github.event_name != 'pull_request' || env.FORCE_ALL_FILES }}
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
+          PIXI_SOURCE_DIR: ${{ inputs.pixi-source-dir }}
+          PIXI_TEST_DIR: ${{ inputs.pixi-test-dir }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pylint --verbose $source_dir tests
@@ -277,8 +321,15 @@ jobs:
             poetry run pylint --verbose $source_dir tests
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
+              args=()
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run "$PIXI_TASK" --
+                readarray -t task_args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
+                args+=("${task_args[@]}")
+              fi
+              [ -n "$PIXI_SOURCE_DIR" ] && args+=("$PIXI_SOURCE_DIR")
+              [ -n "$PIXI_TEST_DIR" ] && args+=("$PIXI_TEST_DIR")
+              if [ ${#args[@]} -gt 0 ]; then
+                pixi run "$PIXI_TASK" -- "${args[@]}"
               else
                 pixi run "$PIXI_TASK"
               fi
