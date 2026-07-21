@@ -316,9 +316,9 @@ jobs:
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint --verbose $task_cwd ${test_dir:-tests}
+            pylint --verbose "$task_cwd" "${test_dir:-tests}"
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint --verbose $task_cwd ${test_dir:-tests}
+            poetry run pylint --verbose "$task_cwd" "${test_dir:-tests}"
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
               args=()
@@ -326,16 +326,18 @@ jobs:
                 readarray -t task_args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
                 args+=("${task_args[@]}")
               fi
-              [ -n "$source_dir" ] && args+=("$source_dir")
-              [ -n "$test_dir" ] && args+=("$test_dir")
+              if [ -n "$source_dir" ]; then
+                args+=("$source_dir")
+                [ -n "$test_dir" ] && args+=("$test_dir")
+              fi
               if [ ${#args[@]} -gt 0 ]; then
                 pixi run "$PIXI_TASK" -- "${args[@]}"
               else
                 pixi run "$PIXI_TASK"
               fi
             else
-              pixi run pylint --verbose $task_cwd ${test_dir:-tests}
+              pixi run pylint --verbose "$task_cwd" "${test_dir:-tests}"
             fi
           else
-            hatch run pylint --verbose $task_cwd ${test_dir:-tests}
+            hatch run pylint --verbose "$task_cwd" "${test_dir:-tests}"
           fi
