@@ -9,7 +9,8 @@ on:
         type: string
         default: poetry
       app-name:
-        description: Name of the app to run static analysis on
+        description: >
+          Path (relative to repo root) of the app's source tree, e.g. 'eval-engine'. Scopes PR file filtering, and is the Pylint target itself unless pixi-task is set (then source-dir/test-dir take over).
         required: true
         type: string
       python-version:
@@ -53,20 +54,15 @@ on:
         type: string
       source-dir:
         description: >
-          Path (relative to the pixi task's cwd) of the source directory to
-          lint when running the pixi task on all files (i.e. not scoped to a
-          PR's changed files), e.g. 'eval_engine'. Only applies to the pixi
-          package manager, and only to the all-files run. Optional; when
-          omitted, the task's own 'cmd' must already specify a target.
+          Pixi all-files lint target, relative to the pixi task's cwd, e.g. 'eval_engine'. Only used when pixi-task is set; otherwise the task's 'cmd' must specify its own target.
         required: false
         type: string
       test-dir:
         description: >
-          Path (relative to the pixi task's cwd) of the test directory to
-          include alongside source-dir in the all-files run, e.g.
-          'translation_tests'. Only applies alongside source-dir.
+          Test dir for the all-files run, e.g. 'tests'. Relative to the pixi task's cwd if pixi-task is set, else repo root. Defaults to 'tests'; pass '' if there are no tests. With pixi-task, only applies alongside source-dir.
         required: false
         type: string
+        default: 'tests'
       lfs:
         description: Boolean to indicate if GitHub LFS is needed
         required: false
@@ -109,7 +105,7 @@ on:
         required: false
 
 env:
-  task_cwd: ${{ inputs.app-name }}
+  source_tree: ${{ inputs.app-name }}
   source_dir: ${{ inputs.source-dir }}
   test_dir: ${{ inputs.test-dir }}
 
@@ -159,7 +155,7 @@ jobs:
           else
             {
               echo 'FILES_PARAM<<_EOF_'
-              echo "$changed_files" | grep -E "^(${task_cwd}|${test_dir:-tests})/.*\.py$" || true
+              echo "$changed_files" | grep -E "^(${source_tree}|${test_dir})/.*\.py$" || true
               echo '_EOF_'
             } >> $GITHUB_ENV
           fi
@@ -315,10 +311,12 @@ jobs:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
+          targets=("$source_tree")
+          [ -n "$test_dir" ] && targets+=("$test_dir")
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint --verbose "$task_cwd" "${test_dir:-tests}"
+            pylint --verbose "${targets[@]}"
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint --verbose "$task_cwd" "${test_dir:-tests}"
+            poetry run pylint --verbose "${targets[@]}"
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
               args=()
@@ -336,8 +334,8 @@ jobs:
                 pixi run "$PIXI_TASK"
               fi
             else
-              pixi run pylint --verbose "$task_cwd" "${test_dir:-tests}"
+              pixi run pylint --verbose "${targets[@]}"
             fi
           else
-            hatch run pylint --verbose "$task_cwd" "${test_dir:-tests}"
+            hatch run pylint --verbose "${targets[@]}"
           fi
