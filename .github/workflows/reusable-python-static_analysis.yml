@@ -10,7 +10,7 @@ on:
         default: poetry
       app-name:
         description: >
-          Path (relative to repo root) of the app's source tree, e.g. 'eval-engine'. Scopes PR file filtering, and is the Pylint target itself unless pixi-task is set (then source-dir/test-dir take over).
+          Path (relative to repo root) of the app's source tree, e.g. 'eval-engine'. Scopes PR file filtering, and is the Pylint target itself unless pixi-task is set (then source-dir takes over).
         required: true
         type: string
       python-version:
@@ -133,6 +133,7 @@ jobs:
         env:
           PACKAGE_MANAGER: ${{ inputs.package-manager }}
           PYTHON_VERSION: ${{ inputs.python-version }}
+          PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
           git fetch --deepen=500 origin ${GITHUB_BASE_REF}
           case "$PACKAGE_MANAGER" in
@@ -153,9 +154,14 @@ jobs:
             echo "::notice::Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
             echo "FORCE_ALL_FILES=true" >> $GITHUB_ENV
           else
+            if [ -n "$PIXI_TASK" ]; then
+              pattern="^(${source_tree})/.*\.py$"
+            else
+              pattern="^(${source_tree}|${test_dir})/.*\.py$"
+            fi
             {
               echo 'FILES_PARAM<<_EOF_'
-              echo "$changed_files" | grep -E "^(${source_tree}|${test_dir})/.*\.py$" || true
+              echo "$changed_files" | grep -E "$pattern" || true
               echo '_EOF_'
             } >> $GITHUB_ENV
           fi
