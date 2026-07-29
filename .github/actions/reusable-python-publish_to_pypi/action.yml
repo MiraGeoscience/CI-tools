@@ -5,7 +5,7 @@ description: >
     Must be invoked as a step in a job defined directly in the caller's own
     top-level workflow file (not from within a reusable *workflow*), so the
     OIDC token's workflow_ref matches the repository's configured PyPI
-    trusted publisher. 
+    trusted publisher.
 inputs:
     source:
         description: 'Where to fetch the built packages from: "artifact" or "release"'
