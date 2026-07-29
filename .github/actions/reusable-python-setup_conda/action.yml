@@ -30,7 +30,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v5.1.0
+    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       with:
         persist-credentials: false
     - name: Setup env vars
@@ -41,7 +41,7 @@ runs:
         echo "micromamba_version=2.1.0-0" >> "$GITHUB_ENV"
         echo "MAMBA_CHANNEL_ALIAS=https://repo.prefix.dev" >> "$GITHUB_ENV"
     - name: Setup micromamba
-      uses: mamba-org/setup-micromamba@v2.0.7
+      uses: mamba-org/setup-micromamba@add3a49764cedee8ee24e82dfde87f5bc2914462 # v2.0.7
       with:
         micromamba-version: ${{ env.micromamba_version }}
         init-shell: bash
@@ -86,7 +86,7 @@ runs:
 
         echo "channels=$conda_channels" >> $GITHUB_OUTPUT
     - name: Create conda env
-      uses: mamba-org/setup-micromamba@v2.0.7
+      uses: mamba-org/setup-micromamba@add3a49764cedee8ee24e82dfde87f5bc2914462 # v2.0.7
       with:
         micromamba-version: ${{ env.micromamba_version }}
         environment-file: ${{ env.CONDA_LOCK_ENV_FILE }}

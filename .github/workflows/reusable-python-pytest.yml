@@ -121,19 +121,19 @@ jobs:
         shell: 'bash -l {0}'
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - uses: actions/checkout@v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           lfs: ${{ inputs.lfs }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python version
-        uses: actions/setup-python@v6.3.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         if: ${{ inputs.package-manager == 'poetry' || inputs.package-manager == 'hatch' }}
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@v3.9.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_conda@89672b26b20a657bed31f84496961abc07166a95 # v3.9.1
         name: Setup conda env
         if: ${{ inputs.package-manager == 'conda' }}
         env:
@@ -145,7 +145,7 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@v3.9.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_poetry@89672b26b20a657bed31f84496961abc07166a95 # v3.9.1
         name: Setup poetry env
         if: ${{ inputs.package-manager == 'poetry' }}
         with:
@@ -155,7 +155,7 @@ jobs:
           virtual-repo-names: ${{ inputs.virtual-repo-names }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@v3.9.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_hatch@89672b26b20a657bed31f84496961abc07166a95 # v3.9.1
         name: Setup hatch env
         if: ${{ inputs.package-manager == 'hatch' }}
         with:
@@ -188,7 +188,7 @@ jobs:
         shell: bash
         run: gh auth setup-git
 
-      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@v3.9.1
+      - uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-setup_pixi@89672b26b20a657bed31f84496961abc07166a95 # v3.9.1
         name: Setup pixi env
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
@@ -239,7 +239,7 @@ jobs:
 
       - name: Codecov
         if: ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
-        uses: codecov/codecov-action@v6.0.2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
         with:
           name: GitHub
           fail_ci_if_error: true
