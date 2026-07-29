@@ -1,0 +1,70 @@
+name: Publish to PyPI (trusted publishing)
+description: >
+    Download built distribution files (from a workflow artifact or a GitHub
+    release) and publish them to PyPI/TestPyPI using OIDC trusted publishing.
+    Must be invoked as a step in a job defined directly in the caller's own
+    top-level workflow file (not from within a reusable *workflow*), so the
+    OIDC token's workflow_ref matches the repository's configured PyPI
+    trusted publisher.
+inputs:
+    source:
+        description: 'Where to fetch the built packages from: "artifact" or "release"'
+        required: true
+        type: string
+    artifact-name:
+        description: 'Name of the workflow artifact to download. Required when source is "artifact"'
+        required: false
+        type: string
+        default: ''
+    release-tag:
+        description: 'Tag of the GitHub release to download assets from. Required when source is "release"'
+        required: false
+        type: string
+        default: ''
+    github-token:
+        description: 'Token used to download release assets via "gh release download". Required when source is "release"'
+        required: false
+        type: string
+        default: ''
+    repository-url:
+        description: PyPI-compatible upload endpoint
+        required: true
+        type: string
+    verbose:
+        description: Enable verbose output on the publish step
+        required: false
+        type: string
+        default: 'true'
+    attestations:
+        description: Generate and upload PEP 740 attestations
+        required: false
+        type: string
+        default: 'true'
+
+runs:
+    using: composite
+    steps:
+        -   name: Download build artifact
+            if: ${{ inputs.source == 'artifact' }}
+            uses: actions/download-artifact@v8
+            with:
+                name: ${{ inputs.artifact-name }}
+                path: dist-download
+        -   name: Download release assets
+            if: ${{ inputs.source == 'release' }}
+            shell: bash
+            env:
+                GITHUB_TOKEN: ${{ inputs.github-token }}
+                GH_REPO: ${{ github.repository }}
+                INPUTS_RELEASE_TAG: ${{ inputs.release-tag }}
+            run: |
+                mkdir -p dist-download
+                cd dist-download
+                gh release download "${INPUTS_RELEASE_TAG}" -p '*.tar.gz' -p '*.whl'
+        -   name: Publish package
+            uses: pypa/gh-action-pypi-publish@v1.14.1
+            with:
+                verbose: ${{ inputs.verbose }}
+                packages-dir: dist-download/
+                repository-url: ${{ inputs.repository-url }}
+                attestations: ${{ inputs.attestations }}
