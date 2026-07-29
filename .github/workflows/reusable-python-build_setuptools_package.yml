@@ -61,7 +61,7 @@ jobs:
             version: ${{ steps.get-version.outputs.version }}
         steps:
             -   name: Checkout
-                uses: actions/checkout@v6
+                uses: actions/checkout@v6.1.0
                 with:
                     lfs: ${{ inputs.lfs }}
                     fetch-depth: 0
@@ -88,7 +88,7 @@ jobs:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
             -   name: Set up Python version
-                uses: actions/setup-python@v6
+                uses: actions/setup-python@v6.3.0
                 with:
                     python-version: ${{ inputs.python-version }}
             -   name: Verify package installation
@@ -116,7 +116,7 @@ jobs:
                     fi
                     echo "dir-path=${DIR_PATH}" >> $GITHUB_OUTPUT
             -   name: Archive build artifact
-                uses: actions/upload-artifact@v7
+                uses: actions/upload-artifact@v7.0.1
                 with:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ steps.define-build-path.outputs.dir-path }}

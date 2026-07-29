@@ -36,11 +36,11 @@ jobs:
           requires-python = ">=3.12"
           EOF
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.12'
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v7.6.0
         with:
           enable-cache: true
           working-directory: ${{ runner.temp }}/version-check
