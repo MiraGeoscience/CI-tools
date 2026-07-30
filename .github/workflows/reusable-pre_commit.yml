@@ -91,7 +91,7 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: |
           uv tool run pre-commit run --hook-stage pre-push --all-files
-      # to show files that were changed/fixed by pre-commit
       - name: Run git diff
+        if: always()
         shell: bash
         run: git diff
