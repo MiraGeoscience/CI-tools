@@ -27,6 +27,23 @@ permissions:
   pull-requests: write
 
 jobs:
+  check_wip_title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR Title: $TITLE"
+
+          if echo "$TITLE" | grep -Eiq '(WIP|🚧)'; then
+            echo "❌ PR is marked as Work In Progress"
+            exit 1
+          fi
+
+          echo "✅ PR is ready for review"
   get_issue_key:
     runs-on: ubuntu-latest
     timeout-minutes: 5
