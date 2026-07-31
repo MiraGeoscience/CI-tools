@@ -4,8 +4,8 @@ default_stages: [pre-commit,pre-push]
 fail_fast: false
 
 ci:
-    autoupdate_branch: develop
-    autoupdate_schedule: monthly
+    autoupdate_branch: main
+    autoupdate_schedule: quarterly
 
 repos:
 -   repo: https://github.com/codespell-project/codespell
