@@ -9,7 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "main"
     cooldown:
       default-days: 4
     groups:
