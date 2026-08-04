@@ -21,7 +21,7 @@ updates:
           - MiraGeoscience/CI-tools/.github/actions/*
           - MiraGeoscience/CI-tools/.github/workflows/*
   - package-ecosystem: "pre-commit"
-    directory: "/"                    
+    directory: "/"
     schedule:
       interval: "weekly"
     cooldown:
