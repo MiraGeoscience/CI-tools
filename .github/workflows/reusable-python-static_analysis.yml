@@ -9,7 +9,8 @@ on:
         type: string
         default: poetry
       app-name:
-        description: Name of the app to run static analysis on
+        description: >
+          Path (relative to repo root) of the app's source tree, e.g. 'eval-engine'. Scopes PR file filtering, and is the Pylint target itself unless pixi-task is set (then source-dir takes over).
         required: true
         type: string
       python-version:
@@ -51,6 +52,17 @@ on:
           (e.g. '["-v"]'). Optional.
         required: false
         type: string
+      source-dir:
+        description: >
+          Pixi all-files lint target, relative to the pixi task's cwd, e.g. 'eval_engine'. Only used when pixi-task is set; otherwise the task's 'cmd' must specify its own target.
+        required: false
+        type: string
+      test-dir:
+        description: >
+          Test dir for the all-files run, e.g. 'tests'. Relative to the pixi task's cwd if pixi-task is set, else repo root. Defaults to 'tests'; pass '' if there are no tests. With pixi-task, only applies alongside source-dir.
+        required: false
+        type: string
+        default: 'tests'
       lfs:
         description: Boolean to indicate if GitHub LFS is needed
         required: false
@@ -93,7 +105,9 @@ on:
         required: false
 
 env:
-  source_dir: ${{ inputs.app-name }}
+  source_tree: ${{ inputs.app-name }}
+  source_dir: ${{ inputs.source-dir }}
+  test_dir: ${{ inputs.test-dir }}
 
 jobs:
   pylint:
@@ -116,14 +130,41 @@ jobs:
 
       - name: Capture modified files
         if: github.event_name == 'pull_request'
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+          PYTHON_VERSION: ${{ inputs.python-version }}
+          PIXI_TASK: ${{ inputs.pixi-task }}
         run: |
           git fetch --deepen=500 origin ${GITHUB_BASE_REF}
-          {
-            echo 'FILES_PARAM<<_EOF_'
-            git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... -- \
-              | grep -E "^(${source_dir}|tests)/.*\.py$"
-            echo '_EOF_'
-          } >> $GITHUB_ENV
+          case "$PACKAGE_MANAGER" in
+            pixi) LOCK_FILE="pixi.lock" ;;
+            poetry) LOCK_FILE="poetry.lock" ;;
+            conda)
+              os_conda=$( [[ "$RUNNER_OS" == "Linux" ]] && echo "linux" || echo "win")
+              LOCK_FILE="environments/py-${PYTHON_VERSION}-${os_conda}-64-dev.conda.lock.yml"
+              ;;
+            hatch) LOCK_FILE="pyproject.toml" ;;
+            *)
+              echo "::error::Unknown package manager '$PACKAGE_MANAGER': cannot determine lock file for Pylint force-run detection"
+              exit 1
+              ;;
+          esac
+          changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${GITHUB_BASE_REF}... --)
+          if [ -n "$LOCK_FILE" ] && echo "$changed_files" | grep -qxF "$LOCK_FILE"; then
+            echo "::notice::Lock file '$LOCK_FILE' changed: forcing Pylint to run on all files"
+            echo "FORCE_ALL_FILES=true" >> $GITHUB_ENV
+          else
+            if [ -n "$PIXI_TASK" ]; then
+              pattern="^(${source_tree})/.*\.py$"
+            else
+              pattern="^(${source_tree}|${test_dir})/.*\.py$"
+            fi
+            {
+              echo 'FILES_PARAM<<_EOF_'
+              echo "$changed_files" | grep -E "$pattern" || true
+              echo '_EOF_'
+            } >> $GITHUB_ENV
+          fi
 
       - name: Remove git credentials
         shell: bash
@@ -227,6 +268,11 @@ jobs:
             exit 1
           fi
 
+      - name: Pylint skipped
+        if: ${{ (github.event_name == 'pull_request') && !env.FILES_PARAM && !env.FORCE_ALL_FILES }}
+        run: |
+          echo "::notice::Pylint skipped: no applicable file changes detected."
+
       - name: Run Pylint on modified files
         if: ${{ (github.event_name == 'pull_request') && env.FILES_PARAM }}
         env:
@@ -266,25 +312,36 @@ jobs:
           fi
 
       - name: Run Pylint on all files
-        if: ${{ github.event_name != 'pull_request' || !env.FILES_PARAM }}
+        if: ${{ github.event_name != 'pull_request' || env.FORCE_ALL_FILES }}
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
         run: |
+          targets=("$source_tree")
+          [ -n "$test_dir" ] && targets+=("$test_dir")
           if ${{ inputs.package-manager == 'conda' }}; then
-            pylint --verbose $source_dir tests
+            pylint --verbose "${targets[@]}"
           elif ${{ inputs.package-manager == 'poetry' }}; then
-            poetry run pylint --verbose $source_dir tests
+            poetry run pylint --verbose "${targets[@]}"
           elif ${{ inputs.package-manager == 'pixi' }}; then
             if [ -n "$PIXI_TASK" ]; then
+              args=()
               if [ -n "$PIXI_TASK_ARGS" ]; then
-                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run "$PIXI_TASK" --
+                readarray -t task_args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
+                args+=("${task_args[@]}")
+              fi
+              if [ -n "$source_dir" ]; then
+                args+=("$source_dir")
+                [ -n "$test_dir" ] && args+=("$test_dir")
+              fi
+              if [ ${#args[@]} -gt 0 ]; then
+                pixi run "$PIXI_TASK" -- "${args[@]}"
               else
                 pixi run "$PIXI_TASK"
               fi
             else
-              pixi run pylint --verbose $source_dir tests
+              pixi run pylint --verbose "${targets[@]}"
             fi
           else
-            hatch run pylint --verbose $source_dir tests
+            hatch run pylint --verbose "${targets[@]}"
           fi
