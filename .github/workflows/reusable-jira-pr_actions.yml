@@ -45,6 +45,7 @@ jobs:
 
           echo "✅ PR is ready for review"
   get_issue_key:
+    needs: check_wip_title
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -100,11 +101,15 @@ jobs:
 
     - name: Determine bot PR exemption
       id: bot_exemption
-      run: >
-        echo "is_exempt=${{
-        (github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools')) ||
-        (github.event.pull_request.user.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config')
-        }}" >> $GITHUB_OUTPUT
+      env:
+        IS_DEPENDABOT: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') }}
+        IS_PRECOMMIT: ${{ github.event.pull_request.user.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config' }}
+      run: |
+        if [[ "$IS_DEPENDABOT" == "true" || "$IS_PRECOMMIT" == "true" ]]; then
+          echo "is_exempt=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "is_exempt=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Fail if no Jira key and not expected bot PR
       if: ${{ !steps.issue_key.outputs.issue_key && steps.bot_exemption.outputs.is_exempt != 'true' }}
