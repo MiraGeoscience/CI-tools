@@ -102,8 +102,8 @@ jobs:
     - name: Determine bot PR exemption
       id: bot_exemption
       env:
-        IS_DEPENDABOT: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') }}
-        IS_PRECOMMIT: ${{ github.event.pull_request.user.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config' }}
+        IS_DEPENDABOT: ${{ github.event.sender.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') }}
+        IS_PRECOMMIT: ${{ github.event.sender.login == 'pre-commit-ci[bot]' && github.head_ref == 'pre-commit-ci-update-config' }}
       run: |
         if [[ "$IS_DEPENDABOT" == "true" || "$IS_PRECOMMIT" == "true" ]]; then
           echo "is_exempt=true" >> "$GITHUB_OUTPUT"
