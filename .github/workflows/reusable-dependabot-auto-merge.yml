@@ -21,6 +21,7 @@ permissions:
   contents: write
   pull-requests: write
   statuses: write
+  checks: read
 
 jobs:
   auto-merge:
@@ -38,6 +39,26 @@ jobs:
       uses: dependabot/fetch-metadata@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Validate checks-to-skip are not GitHub Actions checks
+      if: inputs.checks-to-skip != ''
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        IFS=',' read -ra checks_to_skip <<< "${{ inputs.checks-to-skip }}"
+        for check in "${checks_to_skip[@]}"; do
+          check=$(echo "$check" | xargs)
+          if [ -n "$check" ]; then
+            match=$(gh api \
+              "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs" \
+              --jq ".check_runs[] | select(.app.slug == \"github-actions\" and .name == \"$check\") | .name" \
+              | head -n 1)
+            if [ -n "$match" ]; then
+              echo "::error::Cannot skip a GitHub Actions check: $check"
+              exit 1
+            fi
+          fi
+        done
 
     - name: Mark skipped external checks as passed
       if: >
