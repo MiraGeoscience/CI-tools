@@ -45,7 +45,6 @@ jobs:
 
           echo "✅ PR is ready for review"
   get_issue_key:
-    needs: check_wip_title
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
