@@ -44,14 +44,17 @@ jobs:
       if: inputs.checks-to-skip != ''
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       run: |
-        IFS=',' read -ra checks_to_skip <<< "${{ inputs.checks-to-skip }}"
+        IFS=',' read -ra checks_to_skip <<< "$CHECKS_TO_SKIP"
         for check in "${checks_to_skip[@]}"; do
           check=$(echo "$check" | xargs)
           if [ -n "$check" ]; then
             match=$(gh api \
-              "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs" \
-              --jq ".check_runs[] | select(.app.slug == \"github-actions\" and .name == \"$check\") | .name" \
+              "repos/$GITHUB_REPOSITORY/commits/$PR_HEAD_SHA/check-runs" \
+              --jq '.check_runs[] | select(.app.slug == "github-actions" and .name == $check) | .name' \
+              --arg check "$check" \
               | head -n 1)
             if [ -n "$match" ]; then
               echo "::error::Cannot skip a GitHub Actions check: $check"
@@ -67,19 +70,22 @@ jobs:
          steps.metadata.outputs.update-type == 'version-update:semver-minor')
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
       run: |
-        IFS=',' read -ra checks_to_skip <<< "${{ inputs.checks-to-skip }}"
+        IFS=',' read -ra checks_to_skip <<< "$CHECKS_TO_SKIP"
         for check in "${checks_to_skip[@]}"; do
           check=$(echo "$check" | xargs)
           if [ -n "$check" ]; then
             echo "Marking '$check' as passed"
             gh api \
               --method POST \
-              "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
+              "repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD_SHA" \
               -f state=success \
               -f context="$check" \
               -f description="Marked passed by Dependabot auto-merge" \
-              -f target_url="${{ github.event.pull_request.html_url }}"
+              -f target_url="$PR_URL"
           fi
         done
 
