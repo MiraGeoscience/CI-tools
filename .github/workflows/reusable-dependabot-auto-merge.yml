@@ -11,10 +11,16 @@ on:
         type: string
         default: mirageo-ci-tools
         description: The Dependabot group name (from dependabot.yml) allowed to auto-merge
+      checks-to-skip:
+        required: false
+        type: string
+        default: ''
+        description: Comma-separated list of external check contexts to mark as passed before enabling auto-merge
 
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 
 jobs:
   auto-merge:
@@ -32,6 +38,29 @@ jobs:
       uses: dependabot/fetch-metadata@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Mark skipped external checks as passed
+      if: >
+        inputs.checks-to-skip != '' &&
+        (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+         steps.metadata.outputs.update-type == 'version-update:semver-minor')
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        IFS=',' read -ra checks_to_skip <<< "${{ inputs.checks-to-skip }}"
+        for check in "${checks_to_skip[@]}"; do
+          check=$(echo "$check" | xargs)
+          if [ -n "$check" ]; then
+            echo "Marking '$check' as passed"
+            gh api \
+              --method POST \
+              "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
+              -f state=success \
+              -f context="$check" \
+              -f description="Marked passed by Dependabot auto-merge" \
+              -f target_url="${{ github.event.pull_request.html_url }}"
+          fi
+        done
 
     - name: Approve and enable auto-merge
       if: >
