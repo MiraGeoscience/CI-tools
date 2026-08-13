@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "PR Title: $TITLE"
 
-          if echo "$TITLE" | grep -Eiq '(WIP|🚧)'; then
+          if echo "$TITLE" | grep -Eiq '\b(WIP|🚧)\b'; then
             echo "❌ PR is marked as Work In Progress"
             exit 1
           fi
