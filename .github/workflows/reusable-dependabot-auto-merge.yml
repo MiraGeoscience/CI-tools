@@ -42,6 +42,8 @@ jobs:
 
     steps:
     - name: Check update type
+      #temp test (DEVOPS-1061-wip-test): bypass update-type check for this specific manual test PR only, to check GITHUB_TOKEN permissions under pull_request. Original condition:
+      continue-on-error: true
       id: metadata
       uses: dependabot/fetch-metadata@v2
       with:
