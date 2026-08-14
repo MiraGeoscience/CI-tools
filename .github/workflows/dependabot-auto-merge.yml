@@ -1,7 +1,7 @@
 name: Dependabot auto-merge
 
 on:
-  pull_request_target: # zizmor: ignore[dangerous-triggers] no checkout, no execution of PR-authored code; only trusted event context is read
+  pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -14,4 +14,3 @@ jobs:
       checks: read
     with:
       dependabot-group: mirageo-ci-tools
-      checks-to-skip: ''
