@@ -25,25 +25,16 @@ permissions:
 
 jobs:
   auto-merge:
-    # TEMP TEST (DEVOPS-1061-wip-test): eligibility guard narrowed (not fully bypassed)
-    # to this specific manual test PR only, to check GITHUB_TOKEN permissions under
-    # pull_request. Original condition:
-    # if: >
-    #   github.event.pull_request.user.login == 'dependabot[bot]' &&
-    #   startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/') &&
-    #   contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
-    #   startsWith(github.event.pull_request.title, 'Bump ')
     if: >
-      github.event.pull_request.user.login == 'RomFloreani' &&
-      github.event.repository.name == 'JIRA' &&
-      github.event.pull_request.head.ref == 'DEVOPS-1061-wip-test'
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/') &&
+      contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
+      startsWith(github.event.pull_request.title, 'Bump ')
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
     - name: Check update type
-      #temp test (DEVOPS-1061-wip-test): bypass update-type check for this specific manual test PR only, to check GITHUB_TOKEN permissions under pull_request. Original condition:
-      continue-on-error: true
       id: metadata
       uses: dependabot/fetch-metadata@v2
       with:
@@ -99,13 +90,9 @@ jobs:
         done
 
     - name: Approve and enable auto-merge
-      # TEMP TEST (DEVOPS-1061-wip-test): fetch-metadata won't return a real
-      # update-type on a non-Dependabot PR, so bypass that gate for this test.
-      # Original condition:
-      # if: >
-      #   steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-      #   steps.metadata.outputs.update-type == 'version-update:semver-minor'
-      if: true
+      if: >
+        steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+        steps.metadata.outputs.update-type == 'version-update:semver-minor'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_URL: ${{ github.event.pull_request.html_url }}
