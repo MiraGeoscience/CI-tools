@@ -1,11 +1,10 @@
-name: Publish to PyPI (trusted publishing)
+name: Download Python distribution files
 description: >
     Download built distribution files (from a workflow artifact or a GitHub
-    release) and publish them to PyPI/TestPyPI using OIDC trusted publishing.
-    Must be invoked as a step in a job defined directly in the caller's own
-    top-level workflow file (not from within a reusable *workflow*), so the
-    OIDC token's workflow_ref matches the repository's configured PyPI
-    trusted publisher.
+    release) to a local "dist-download" directory, ready to be published
+    (e.g. with pypa/gh-action-pypi-publish). This is a plain composite
+    action (no self-resolving docker step), so it is safe to call from
+    another composite action or from a caller's top-level workflow.
 inputs:
     source:
         description: 'Where to fetch the built packages from: "artifact" or "release"'
@@ -26,20 +25,6 @@ inputs:
         required: false
         type: string
         default: ''
-    repository-url:
-        description: PyPI-compatible upload endpoint
-        required: true
-        type: string
-    verbose:
-        description: Enable verbose output on the publish step
-        required: false
-        type: string
-        default: 'true'
-    attestations:
-        description: Generate and upload PEP 740 attestations
-        required: false
-        type: string
-        default: 'true'
 
 runs:
     using: composite
@@ -61,10 +46,3 @@ runs:
                 mkdir -p dist-download
                 cd dist-download
                 gh release download "${INPUTS_RELEASE_TAG}" -p '*.tar.gz' -p '*.whl'
-        -   name: Publish package
-            uses: pypa/gh-action-pypi-publish@v1.14.1
-            with:
-                verbose: ${{ inputs.verbose }}
-                packages-dir: dist-download/
-                repository-url: ${{ inputs.repository-url }}
-                attestations: ${{ inputs.attestations }}
