@@ -1,4 +1,4 @@
-﻿name: Pytest on any OS
+name: Pytest on any OS
 
 on:
   workflow_call:
@@ -239,7 +239,7 @@ jobs:
 
       - name: Codecov
         if: ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           name: GitHub
           fail_ci_if_error: true
