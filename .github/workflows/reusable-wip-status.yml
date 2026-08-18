@@ -1,0 +1,40 @@
+# This workflow sets a commit status indicating whether the PR title
+# is marked as Work In Progress
+
+name: WIP status job
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  check_wip_title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Set WIP Status
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "PR Title: $TITLE"
+
+          if echo "$TITLE" | grep -Eiq '\b(WIP|🚧)\b'; then
+            echo "PR is marked as Work In Progress"
+            state=pending
+            description="PR is marked as Work In Progress"
+          else
+            echo "✅ PR is ready for review"
+            state=success
+            description="PR is ready for review"
+          fi
+          gh api --method POST \
+              "repos/$GITHUB_REPOSITORY/statuses/$SHA" \
+              -f state="$state" \
+              -f context="pr-title-wip" \
+              -f description="$description"

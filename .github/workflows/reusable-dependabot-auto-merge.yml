@@ -1,0 +1,101 @@
+# This workflow approves and enables auto-merge for Dependabot PRs
+# belonging to a trusted, pre-approved dependency group.
+
+name: Dependabot auto-merge
+
+on:
+  workflow_call:
+    inputs:
+      dependabot-group:
+        required: false
+        type: string
+        default: mirageo-ci-tools
+        description: The Dependabot group name (from dependabot.yml) allowed to auto-merge
+      checks-to-skip:
+        required: false
+        type: string
+        default: ''
+        description: Comma-separated list of external check contexts to mark as passed before enabling auto-merge
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+  checks: read
+
+jobs:
+  auto-merge:
+    if: >
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/') &&
+      contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
+      startsWith(github.event.pull_request.title, 'Bump ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Check update type
+      id: metadata
+      uses: dependabot/fetch-metadata@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Validate checks-to-skip are not GitHub Actions checks
+      if: inputs.checks-to-skip != ''
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        IFS=',' read -ra checks_to_skip <<< "$CHECKS_TO_SKIP"
+        for check in "${checks_to_skip[@]}"; do
+          check=$(echo "$check" | xargs)
+          if [ -n "$check" ]; then
+            match=$(gh api \
+              "repos/$GITHUB_REPOSITORY/commits/$PR_HEAD_SHA/check-runs" \
+              --jq '.check_runs[] | select(.app.slug == "github-actions" and .name == $check) | .name' \
+              --arg check "$check" \
+              | head -n 1)
+            if [ -n "$match" ]; then
+              echo "::error::Cannot skip a GitHub Actions check: $check"
+              exit 1
+            fi
+          fi
+        done
+
+    - name: Mark skipped external checks as passed
+      if: >
+        inputs.checks-to-skip != '' &&
+        (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+         steps.metadata.outputs.update-type == 'version-update:semver-minor')
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+      run: |
+        IFS=',' read -ra checks_to_skip <<< "$CHECKS_TO_SKIP"
+        for check in "${checks_to_skip[@]}"; do
+          check=$(echo "$check" | xargs)
+          if [ -n "$check" ]; then
+            echo "Marking '$check' as passed"
+            gh api \
+              --method POST \
+              "repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD_SHA" \
+              -f state=success \
+              -f context="$check" \
+              -f description="Marked passed by Dependabot auto-merge" \
+              -f target_url="$PR_URL"
+          fi
+        done
+
+    - name: Approve and enable auto-merge
+      if: >
+        steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+        steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+      run: |
+        gh pr review --approve "$PR_URL"
+        gh pr merge --auto --merge "$PR_URL"

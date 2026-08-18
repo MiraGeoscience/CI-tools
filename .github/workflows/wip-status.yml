@@ -1,0 +1,12 @@
+name: WIP status
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+jobs:
+  call-workflow-wip-status:
+    uses: ./.github/workflows/reusable-wip-status.yml
+    permissions:
+      contents: read
+      statuses: write
