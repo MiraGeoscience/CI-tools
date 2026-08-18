@@ -6,7 +6,7 @@ on:
 
 jobs:
   call-workflow-dependabot-auto-merge:
-    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-dependabot-auto-merge.yml@DEVOPS-1061
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-dependabot-auto-merge.yml@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
     permissions:
       contents: write
       pull-requests: write
