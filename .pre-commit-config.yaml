@@ -4,7 +4,7 @@ default_stages: [pre-commit,pre-push]
 fail_fast: false
 
 ci:
-    autoupdate_branch: main
+    autoupdate_branch: _
     autoupdate_schedule: quarterly
 
 repos:

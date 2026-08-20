@@ -6,9 +6,10 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/"    
     schedule:
       interval: "weekly"
+    target-branch: "main"
     cooldown:
       default-days: 4
     groups:
@@ -23,10 +24,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "main"
     cooldown:
       default-days: 4
-    #ignore:
-    #  - dependency-name: "https://github.com/pre-commit/#mirrors-mypy"
     groups:
       pre-commit-hooks:
         patterns:
