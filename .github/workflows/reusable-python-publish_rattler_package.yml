@@ -118,7 +118,11 @@ jobs:
                         RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
                         echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
                         echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
+                        # Disable sharded repodata because mixed sharding support across
+                        # channels seems to confuse strict channel priority
+                        echo "RATTLER_SHARDED=false" >> "$GITHUB_ENV"
                     fi
+                    echo "RATTLER_BUILD_CONFIG_FILE=$RATTLER_BUILD_CONFIG_FILE" >> "$GITHUB_OUTPUT"
 
                     # Loop through the repository names and add them to the command
                     BUILD_ARGS=""
