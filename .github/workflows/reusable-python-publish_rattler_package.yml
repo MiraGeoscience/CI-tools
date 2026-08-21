@@ -137,8 +137,9 @@ jobs:
 
                     echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
             -   name: Build package
-                uses: prefix-dev/rattler-build-action@ca874f064b8716c9da7cb420cf9affa13a5899d8 # v0.2.38
+                uses: prefix-dev/rattler-build-action@1ca5f45832f419a46d1326ccc5861d7e14d67c44 # v0.2.39
                 with:
+                    rattler-build-version: 'v0.74.0'
                     upload-artifact: false  # upload happens at the next step with more options
                     build-args: >-
                         --output-dir ${{ runner.temp }}/output
