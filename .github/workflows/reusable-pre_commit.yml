@@ -85,7 +85,12 @@ jobs:
         if: ${{ (github.event_name == 'pull_request') }}
         env:
           BASE_REF: ${{ github.base_ref }}
+          IS_DEPENDABOT_PRECOMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && contains(github.head_ref, 'pre-commit-hooks') }}
+        shell: bash
         run: |
+          if [[ "$IS_DEPENDABOT_PRECOMMIT" == "true" ]]; then
+            unset SKIP
+          fi
           uv tool run pre-commit run --hook-stage pre-push --from-ref refs/remotes/origin/${BASE_REF} --to-ref .
       - name: Run pre-commit on all files
         if: ${{ github.event_name == 'push' }}

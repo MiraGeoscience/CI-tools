@@ -6,6 +6,8 @@ permissions:
 
 on:
   pull_request:
+    # Run on all PRs to these base branches (including Dependabot pre-commit-hooks PRs)
+    # so that required checks are available before auto-merge.
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - develop
