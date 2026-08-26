@@ -69,7 +69,10 @@ jobs:
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ inputs.release-tag }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Report PyPI publish is handled by the caller
+            -   name: Fail on PyPI/TestPyPI virtual-repo-name
                 if: ${{ matrix.virtual-repo-name == 'pypi' || matrix.virtual-repo-name == 'test-pypi' }}
+                env:
+                    VIRTUAL_REPO_NAME: ${{ matrix.virtual-repo-name }}
                 run: |
-                    echo "::notice::Not publishing '${{ matrix.virtual-repo-name }}' here: PyPI trusted publishing must run as a direct step in the caller's top-level workflow, not through this reusable workflow. See the 'virtual-repo-names' input description."
+                    echo "::error::Not publishing '${VIRTUAL_REPO_NAME}' here: PyPI trusted publishing must run as a direct step in the caller's top-level workflow, not through this reusable workflow. See the 'virtual-repo-names' input description."
+                    exit 1
