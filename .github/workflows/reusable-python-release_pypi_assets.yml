@@ -9,8 +9,8 @@ on:
             type: string
         virtual-repo-names:
             description: >
-                List of repository names to publish to
-                (e.g. ["public-pypi-prod", "geophysics-pypi-prod"])
+                List of repository names to publish to (e.g. ["public-pypi-prod", "geophysics-pypi-prod"]).
+                "pypi"/"test-pypi" are a deliberate no-op here; PyPI publishing runs in the caller (DEVOPS-1154).
             required: true
             type: string
         release-tag:
@@ -69,3 +69,7 @@ jobs:
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ inputs.release-tag }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Report PyPI publish is handled by the caller
+                if: ${{ matrix.virtual-repo-name == 'pypi' || matrix.virtual-repo-name == 'test-pypi' }}
+                run: |
+                    echo "::notice::Not publishing '${{ matrix.virtual-repo-name }}' here: PyPI trusted publishing must run as a direct step in the caller's top-level workflow, not through this reusable workflow. See the 'virtual-repo-names' input description."
