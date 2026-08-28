@@ -22,6 +22,10 @@ env:
   JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
+concurrency:
+  group: jira-pr-actions-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   pull-requests: write
@@ -102,7 +106,7 @@ jobs:
 
   add_jira_summary:
     if: ${{ needs.get_issue_key.result == 'success' &&
-            !startsWith(github.event.pull_request.body, format('**{0}', needs.get_issue_key.outputs.issue_key)) &&
+            !contains(github.event.pull_request.body, needs.get_issue_key.outputs.issue_key) &&
             (github.event.action == 'opened' ||
              github.event.action == 'edited' ||
              (github.event.action == 'synchronize' &&
