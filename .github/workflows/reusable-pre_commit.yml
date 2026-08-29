@@ -82,13 +82,13 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit on modified files
-        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.user.login == 'dependabot[bot]' && contains(github.head_ref, 'pre-commit-hooks')) }}
+        if: ${{ github.event_name == 'pull_request' && !(github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/pre_commit') && contains(github.head_ref, '/pre-commit-hooks')) }}
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
           uv tool run pre-commit run --hook-stage pre-push --from-ref refs/remotes/origin/${BASE_REF} --to-ref .
       - name: Run pre-commit on all files (Dependabot pre-commit-hooks bump)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && contains(github.head_ref, 'pre-commit-hooks') }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/pre_commit') && contains(github.head_ref, '/pre-commit-hooks') }}
         env:
           SKIP: ''
         run: |

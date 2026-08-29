@@ -44,7 +44,7 @@ jobs:
           IFS=',' read -ra groups <<< "$GROUPS"
           for group in "${groups[@]}"; do
             group=$(echo "$group" | xargs)
-            if [ -n "$group" ] && echo "$HEAD_REF" | grep -q "/${group}"; then
+            if [ -n "$group" ] && [[ "$HEAD_REF" == *"/${group}-"* ]]; then
               allowed=true
               break
             fi
