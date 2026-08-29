@@ -1,0 +1,27 @@
+name: Download Python distribution files (GitHub release)
+description: >
+    Download built distribution files from a GitHub release into a local
+    "dist-download" directory, ready to be published.
+inputs:
+    release-tag:
+        description: Tag of the GitHub release to download assets from
+        required: true
+        type: string
+    github-token:
+        description: Token used to download release assets via "gh release download"
+        required: true
+        type: string
+
+runs:
+    using: composite
+    steps:
+        -   name: Download release assets
+            shell: bash
+            env:
+                GITHUB_TOKEN: ${{ inputs.github-token }}
+                GH_REPO: ${{ github.repository }}
+                INPUTS_RELEASE_TAG: ${{ inputs.release-tag }}
+            run: |
+                mkdir -p dist-download
+                cd dist-download
+                gh release download "${INPUTS_RELEASE_TAG}" -p '*.tar.gz' -p '*.whl'
