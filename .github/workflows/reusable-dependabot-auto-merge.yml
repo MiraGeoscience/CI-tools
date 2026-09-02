@@ -40,11 +40,14 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           GROUPS: ${{ inputs.dependabot-groups }}
         run: |
+          # Dependabot names grouped-update branches "dependabot/<ecosystem>/<target>/<group>-<hash>",
+          # e.g. "dependabot/pre_commit/main/pre-commit-hooks-251825f045".
+          branch_suffix="${HEAD_REF##*/}"
           allowed=false
           IFS=',' read -ra groups <<< "$GROUPS"
           for group in "${groups[@]}"; do
             group=$(echo "$group" | xargs)
-            if [ -n "$group" ] && [[ "$HEAD_REF" == *"/${group}-"* ]]; then
+            if [ -n "$group" ] && [[ "$branch_suffix" =~ ^${group}-[0-9a-f]+$ ]]; then
               allowed=true
               break
             fi
