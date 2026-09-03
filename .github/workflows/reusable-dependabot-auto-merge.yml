@@ -6,11 +6,11 @@ name: Dependabot auto-merge
 on:
   workflow_call:
     inputs:
-      dependabot-group:
+      dependabot-groups:
         required: false
         type: string
-        default: mirageo-ci-tools
-        description: The Dependabot group name (from dependabot.yml) allowed to auto-merge
+        default: mirageo-ci-tools,pre-commit-hooks
+        description: Comma-separated list of Dependabot group names (from dependabot.yml) allowed to auto-merge
       checks-to-skip:
         required: false
         type: string
@@ -24,12 +24,39 @@ permissions:
   checks: read
 
 jobs:
-  auto-merge:
+  validate-group:
     if: >
       github.event.pull_request.user.login == 'dependabot[bot]' &&
-      startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/') &&
-      contains(github.event.pull_request.head.ref, format('/{0}', inputs.dependabot-group)) &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/') &&
       startsWith(github.event.pull_request.title, 'Bump ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      is_allowed_group: ${{ steps.check.outputs.is_allowed_group }}
+    steps:
+      - name: Check Dependabot group
+        id: check
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GROUPS: ${{ inputs.dependabot-groups }}
+        run: |
+          # Dependabot names grouped-update branches "dependabot/<ecosystem>/<target>/<group>-<hash>",
+          # e.g. "dependabot/pre_commit/main/pre-commit-hooks-251825f045".
+          branch_suffix="${HEAD_REF##*/}"
+          allowed=false
+          IFS=',' read -ra groups <<< "$GROUPS"
+          for group in "${groups[@]}"; do
+            group=$(echo "$group" | xargs)
+            if [ -n "$group" ] && [[ "$branch_suffix" =~ ^${group}-[0-9a-f]+$ ]]; then
+              allowed=true
+              break
+            fi
+          done
+          echo "is_allowed_group=$allowed" >> "$GITHUB_OUTPUT"
+
+  auto-merge:
+    needs: validate-group
+    if: needs.validate-group.outputs.is_allowed_group == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

@@ -84,10 +84,15 @@ jobs:
     - name: Determine bot PR exemption
       id: bot_exemption
       env:
-        IS_DEPENDABOT: ${{ contains(fromJSON('["dependabot[bot]", "atlassian[bot]"]'), github.event.sender.login) && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') }}
+        # atlassian[bot] is accepted alongside each bot because github.event.sender is the
+        # actor that fired this specific webhook delivery, not the PR author: when Jira's
+        # GitHub integration re-fires a pull_request event on one of these bot PRs, the
+        # sender becomes atlassian[bot] and the exemption would otherwise be lost.
+        IS_DEPENDABOT_ON_GH_ACTION: ${{ contains(fromJSON('["dependabot[bot]", "atlassian[bot]"]'), github.event.sender.login) && startsWith(github.head_ref, 'dependabot/github_actions/') && contains(github.head_ref, '/mirageo-ci-tools') }}
+        IS_DEPENDABOT_ON_PRECOMMIT: ${{ contains(fromJSON('["dependabot[bot]", "atlassian[bot]"]'), github.event.sender.login) && startsWith(github.head_ref, 'dependabot/pre_commit') && contains(github.head_ref, '/pre-commit-hooks') }}
         IS_PRECOMMIT: ${{ contains(fromJSON('["pre-commit-ci[bot]", "atlassian[bot]"]'), github.event.sender.login) && github.head_ref == 'pre-commit-ci-update-config' }}
       run: |
-        if [[ "$IS_DEPENDABOT" == "true" || "$IS_PRECOMMIT" == "true" ]]; then
+        if [[ "$IS_DEPENDABOT_ON_GH_ACTION" == "true" || "$IS_DEPENDABOT_ON_PRECOMMIT" == "true" || "$IS_PRECOMMIT" == "true" ]]; then
           echo "is_exempt=true" >> "$GITHUB_OUTPUT"
         else
           echo "is_exempt=false" >> "$GITHUB_OUTPUT"

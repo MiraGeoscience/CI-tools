@@ -81,14 +81,24 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Check if pre-commit config changed
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          changed_files=$(git diff --diff-filter=AM --name-only refs/remotes/origin/${BASE_REF}... --)
+          if echo "$changed_files" | grep -qxE '\.pre-commit-config\.ya?ml'; then
+            echo "::notice::.pre-commit-config.yaml changed: forcing pre-commit to run on all files"
+            echo "FORCE_ALL_FILES=true" >> $GITHUB_ENV
+          fi
       - name: Run pre-commit on modified files
-        if: ${{ (github.event_name == 'pull_request') }}
+        if: ${{ github.event_name == 'pull_request' && !env.FORCE_ALL_FILES }}
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
           uv tool run pre-commit run --hook-stage pre-push --from-ref refs/remotes/origin/${BASE_REF} --to-ref .
       - name: Run pre-commit on all files
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' || env.FORCE_ALL_FILES }}
         run: |
           uv tool run pre-commit run --hook-stage pre-push --all-files
       - name: Run git diff
