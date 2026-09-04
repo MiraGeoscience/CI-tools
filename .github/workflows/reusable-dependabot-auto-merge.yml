@@ -58,7 +58,7 @@ jobs:
     needs: validate-group
     if: needs.validate-group.outputs.is_allowed_group == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
     - name: Check update type
@@ -67,13 +67,21 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Validate checks-to-skip are not GitHub Actions checks
+    - name: Validate checks-to-skip
+      id: validate
       if: inputs.checks-to-skip != ''
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
         PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        BASE_REF: ${{ github.event.pull_request.base.ref }}
       run: |
+        rules_url="repos/$GITHUB_REPOSITORY/rules/branches/${BASE_REF//\//%2F}"
+        if ! required=$(gh api "$rules_url" --jq '[.[]|select(.type=="required_status_checks")|.parameters.required_status_checks[].context]|unique|.[]'); then
+          echo "::warning::Could not read required checks on $BASE_REF; not checking for typos."
+          required=""
+        fi
+        valid=()
         IFS=',' read -ra checks_to_skip <<< "$CHECKS_TO_SKIP"
         for check in "${checks_to_skip[@]}"; do
           check=$(echo "$check" | xargs)
@@ -84,20 +92,26 @@ jobs:
               --arg check "$check" \
               | head -n 1)
             if [ -n "$match" ]; then
-              echo "::error::Cannot skip a GitHub Actions check: $check"
-              exit 1
+              echo "::warning::Ignoring '$check': a GitHub Actions check cannot be skipped."
+            elif [ -n "$required" ] && ! grep -Fxq "$check" <<< "$required"; then
+              echo "::warning::Ignoring '$check': not a required check on $BASE_REF (typo?)."
+            else
+              valid+=("$check")
             fi
           fi
         done
+        checks=$(IFS=,; echo "${valid[*]}")
+        echo "Usable checks-to-skip: $checks"
+        echo "checks=$checks" >> "$GITHUB_OUTPUT"
 
     - name: Mark skipped external checks as passed
       if: >
-        inputs.checks-to-skip != '' &&
+        steps.validate.outputs.checks != '' &&
         (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
          steps.metadata.outputs.update-type == 'version-update:semver-minor')
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
+        CHECKS_TO_SKIP: ${{ steps.validate.outputs.checks }}
         PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         PR_URL: ${{ github.event.pull_request.html_url }}
       run: |
@@ -123,6 +137,23 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_URL: ${{ github.event.pull_request.html_url }}
+        CHECKS_TO_SKIP: ${{ steps.validate.outputs.checks }}
       run: |
         gh pr review --approve "$PR_URL"
-        gh pr merge --auto --merge "$PR_URL"
+        if [[ ",${CHECKS_TO_SKIP// /}," == *",Jenkins,"* ]]; then
+          echo "Jenkins is faked for this PR - polling required checks, then merging directly."
+          merged=false
+          for i in $(seq 1 16); do
+            sleep 15
+            if gh pr merge --merge "$PR_URL"; then
+              merged=true
+              break
+            fi
+          done
+          if [ "$merged" = false ]; then
+            echo "Not mergeable after ~4 minutes - falling back to native auto-merge."
+            gh pr merge --auto --merge "$PR_URL"
+          fi
+        else
+          gh pr merge --auto --merge "$PR_URL"
+        fi
