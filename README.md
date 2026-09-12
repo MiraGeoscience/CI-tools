@@ -36,4 +36,5 @@ an `issue_comment` trigger, then call this reusable workflow when an authorized 
 - `secrets.org-shared-app-key`: GitHub App private key
 
 For comment-triggered use, gate authorized users in the caller workflow (for example by checking
-`github.event.comment.author_association`) and apply organization Actions policies to restrict who can run it.
+`github.event.comment.author_association`), reply to unauthorized users when they invoke `/bot-approve`,
+and apply organization Actions policies to restrict who can run it.

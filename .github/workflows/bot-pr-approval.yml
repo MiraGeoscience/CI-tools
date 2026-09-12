@@ -35,6 +35,25 @@ jobs:
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             -f body=':+1: Command acknowledged. Proceeding with bot approval.'
 
+  reject-unauthorized-trigger:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/bot-approve') &&
+      !contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reply to unauthorized user
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          USER_LOGIN: ${{ github.event.comment.user.login }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve."
+
   call-workflow-bot-pr-approval:
     needs: acknowledge-trigger
     if: |
