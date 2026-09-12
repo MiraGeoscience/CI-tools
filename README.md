@@ -28,13 +28,14 @@ jobs:
 This repository provides a reusable workflow for bot-driven PR approval and optional auto-merge:
 `MiraGeoscience/CI-tools/.github/workflows/reusable-bot-pr-approval.yml@<ref>`.
 
-To trigger it from any public or private repository, create a local workflow in that repository with
-an `issue_comment` trigger, then call this reusable workflow when an authorized user comments `/bot-approve`:
+To trigger it from any public or private repository, create a local workflow with only an
+`issue_comment` trigger that calls this reusable workflow and passes:
 
-- `with.pr-number`: PR number to approve
 - `secrets.org-shared-app-id`: GitHub App ID
 - `secrets.org-shared-app-key`: GitHub App private key
 
-For comment-triggered use, gate authorized users in the caller workflow (for example by checking
-`github.event.comment.author_association`), reply to unauthorized users when they invoke `/bot-approve`,
-and apply organization Actions policies to restrict who can run it.
+The reusable workflow handles all command logic for `/bot-approve`: it validates authorization,
+replies to unauthorized users, acknowledges authorized users with a thumbs-up, checks prior human
+approval, and enables auto-merge using a merge commit.
+
+Apply organization Actions policies to restrict who can run it.

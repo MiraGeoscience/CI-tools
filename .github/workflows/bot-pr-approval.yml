@@ -10,61 +10,8 @@ permissions:
   issues: write
 
 jobs:
-  acknowledge-trigger:
-    if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/bot-approve') &&
-      contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Acknowledge command comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMENT_ID: ${{ github.event.comment.id }}
-          PR_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID/reactions" \
-            -f content='+1'
-
-          gh api \
-            --method POST \
-            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            -f body=':+1: Command acknowledged. Proceeding with bot approval.'
-
-  reject-unauthorized-trigger:
-    if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/bot-approve') &&
-      !contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Reply to unauthorized user
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.issue.number }}
-          USER_LOGIN: ${{ github.event.comment.user.login }}
-        run: |
-          gh api \
-            --method POST \
-            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve."
-
   call-workflow-bot-pr-approval:
-    needs: acknowledge-trigger
-    if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/bot-approve') &&
-      contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
     uses: ./.github/workflows/reusable-bot-pr-approval.yml
-    with:
-      pr-number: ${{ github.event.issue.number }}
-      enable-auto-merge: true
-      merge-method: squash
     secrets:
       org-shared-app-id: ${{ secrets.ORG_SHARED_APP_ID }}
       org-shared-app-key: ${{ secrets.ORG_SHARED_APP_KEY }}
