@@ -22,3 +22,18 @@ jobs:
     uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows>
     # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml
 ```
+
+## Bot PR approval workflow
+
+This repository provides a reusable workflow for bot-driven PR approval and optional auto-merge:
+`MiraGeoscience/CI-tools/.github/workflows/reusable-bot-pr-approval.yml@<ref>`.
+
+To trigger it from any public or private repository, create a local workflow in that repository with
+`workflow_dispatch` and/or `issue_comment` triggers, then call this reusable workflow with:
+
+- `with.pr-number`: PR number to approve
+- `secrets.org-shared-app-id`: GitHub App ID
+- `secrets.org-shared-app-key`: GitHub App private key
+
+For comment-triggered use, gate authorized users in the caller workflow (for example by checking
+`github.event.comment.author_association`) and apply organization Actions policies to restrict who can run it.

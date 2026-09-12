@@ -1,0 +1,89 @@
+name: Bot PR approval
+
+on:
+  workflow_call:
+    inputs:
+      pr-number:
+        description: Pull request number to review
+        required: true
+        type: string
+      enable-auto-merge:
+        description: Enable auto-merge after bot approval
+        required: false
+        default: true
+        type: boolean
+      merge-method:
+        description: Merge method to use when auto-merge is enabled
+        required: false
+        default: squash
+        type: string
+    secrets:
+      org-shared-app-id:
+        required: true
+      org-shared-app-key:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  approve-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ inputs.pr-number }}
+      ENABLE_AUTO_MERGE: ${{ inputs.enable-auto-merge }}
+      MERGE_METHOD: ${{ inputs.merge-method }}
+
+    steps:
+      - name: Generate bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.org-shared-app-id }}
+          private-key: ${{ secrets.org-shared-app-key }}
+
+      - name: Check for prior human approval
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "Checking reviews for PR #$PR_NUMBER..."
+
+          has_approval=$(gh pr view "$PR_NUMBER" --json reviews --jq '[.reviews[] | select(.state == "APPROVED") | select((.author.login | endswith("[bot]")) | not)] | length')
+
+          if [ "$has_approval" -eq 0 ]; then
+            echo "Error: This PR does not have any prior human approvals."
+            exit 1
+          fi
+
+          echo "Found prior human approval. Proceeding."
+
+      - name: Submit bot approval
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr review "$PR_NUMBER" --approve --body "Approved via org-gated automation."
+
+      - name: Enable auto-merge
+        if: inputs.enable-auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          case "$MERGE_METHOD" in
+            merge)
+              merge_flag="--merge"
+              ;;
+            rebase)
+              merge_flag="--rebase"
+              ;;
+            squash)
+              merge_flag="--squash"
+              ;;
+            *)
+              echo "Error: Unsupported merge method '$MERGE_METHOD'. Use merge, rebase, or squash."
+              exit 1
+              ;;
+          esac
+
+          gh pr merge "$PR_NUMBER" --auto "$merge_flag" --delete-branch
