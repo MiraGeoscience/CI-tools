@@ -40,7 +40,7 @@ approval, and enables auto-merge using a merge commit.
 
 Authorization is granted only when at least one of these is true:
 - commenter has repository role `admin` or `maintain`
-- PR originates from the same repository (head repo == base repo)
+- PR originates from the same organization (head owner == base owner), including org-owned forks
 
 GitHub App permissions required for the bot identity:
 - Pull requests: Read and write
