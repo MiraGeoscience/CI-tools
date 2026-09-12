@@ -29,7 +29,7 @@ This repository provides a reusable workflow for bot-driven PR approval and opti
 `MiraGeoscience/CI-tools/.github/workflows/reusable-bot-pr-approval.yml@<ref>`.
 
 To trigger it from any public or private repository, create a local workflow in that repository with
-`workflow_dispatch` and/or `issue_comment` triggers, then call this reusable workflow with:
+an `issue_comment` trigger, then call this reusable workflow when an authorized user comments `/bot-approve`:
 
 - `with.pr-number`: PR number to approve
 - `secrets.org-shared-app-id`: GitHub App ID

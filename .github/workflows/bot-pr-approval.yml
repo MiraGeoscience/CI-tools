@@ -1,45 +1,51 @@
 name: Bot PR approval
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Pull request number to review
-        required: true
-        type: string
-      enable_auto_merge:
-        description: Enable auto-merge after bot approval
-        required: false
-        default: true
-        type: boolean
-      merge_method:
-        description: Merge method to use when auto-merge is enabled
-        required: false
-        default: squash
-        type: choice
-        options:
-          - squash
-          - merge
-          - rebase
   issue_comment:
     types: [created]
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
-  call-workflow-bot-pr-approval:
+  acknowledge-trigger:
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.issue.pull_request &&
+      github.event.issue.pull_request &&
       contains(github.event.comment.body, '/bot-approve') &&
-      contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association))
+      contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Acknowledge command comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID/reactions" \
+            -f content='+1'
+
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            -f body=':+1: Command acknowledged. Proceeding with bot approval.'
+
+  call-workflow-bot-pr-approval:
+    needs: acknowledge-trigger
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/bot-approve') &&
+      contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
     uses: ./.github/workflows/reusable-bot-pr-approval.yml
     with:
-      pr-number: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.issue.number }}
-      enable-auto-merge: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.enable_auto_merge) || true }}
-      merge-method: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.merge_method || 'squash' }}
+      pr-number: ${{ github.event.issue.number }}
+      enable-auto-merge: true
+      merge-method: squash
     secrets:
       org-shared-app-id: ${{ secrets.ORG_SHARED_APP_ID }}
       org-shared-app-key: ${{ secrets.ORG_SHARED_APP_KEY }}
