@@ -1,0 +1,121 @@
+name: Bot PR approval
+
+on:
+  workflow_call:
+    secrets:
+      org-shared-app-id:
+        required: true
+      org-shared-app-key:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  approve-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ github.event.issue.number }}
+      COMMENT_ID: ${{ github.event.comment.id }}
+      USER_LOGIN: ${{ github.event.comment.user.login }}
+
+    steps:
+      - name: Evaluate trigger and authorization
+        id: auth
+        if: |
+          github.event.issue.pull_request &&
+          contains(github.event.comment.body, '/bot-approve')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          role_name=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$USER_LOGIN/permission" --jq '.role_name // "none"' 2>/dev/null || echo "none")
+          head_owner=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.owner.login')
+          base_owner=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.base.repo.owner.login')
+
+          is_role_allowed=false
+          if [ "$role_name" = "admin" ] || [ "$role_name" = "maintain" ]; then
+            is_role_allowed=true
+          fi
+
+          is_same_org_pr=false
+          if [ "$head_owner" = "$base_owner" ]; then
+            is_same_org_pr=true
+          fi
+
+          authorized=false
+          if [ "$is_role_allowed" = "true" ] || [ "$is_same_org_pr" = "true" ]; then
+            authorized=true
+          fi
+
+          echo "role_name=$role_name" >> "$GITHUB_OUTPUT"
+          echo "is_same_org_pr=$is_same_org_pr" >> "$GITHUB_OUTPUT"
+          echo "authorized=$authorized" >> "$GITHUB_OUTPUT"
+
+      - name: Reply to unauthorized user
+        if: steps.auth.outputs.authorized == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROLE_NAME: ${{ steps.auth.outputs.role_name }}
+          IS_SAME_ORG_PR: ${{ steps.auth.outputs.is_same_org_pr }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve (requires repo role maintain/admin, or a PR from a fork within the same organization). Current role: $ROLE_NAME; same-org PR: $IS_SAME_ORG_PR."
+
+      - name: Acknowledge authorized command
+        if: steps.auth.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID/reactions" \
+            -f content='+1'
+
+          gh api \
+            --method POST \
+            "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            -f body=':+1: Command acknowledged. Proceeding with bot approval.'
+
+      - name: Generate bot token
+        if: steps.auth.outputs.authorized == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.org-shared-app-id }}
+          private-key: ${{ secrets.org-shared-app-key }}
+
+      - name: Check for prior human approval
+        if: steps.auth.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "Checking reviews for PR #$PR_NUMBER..."
+
+          has_approval=$(gh pr view "$PR_NUMBER" --json reviews --jq '[.reviews[] | select(.state == "APPROVED") | select((.author.login | endswith("[bot]")) | not)] | length')
+
+          if [ "$has_approval" -eq 0 ]; then
+            echo "Error: This PR does not have any prior human approvals."
+            exit 1
+          fi
+
+          echo "Found prior human approval. Proceeding."
+
+      - name: Submit bot approval
+        if: steps.auth.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr review "$PR_NUMBER" --approve --body "Approved via org-gated automation."
+
+      - name: Enable auto-merge with merge commit
+        if: steps.auth.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr merge "$PR_NUMBER" --auto --merge --delete-branch

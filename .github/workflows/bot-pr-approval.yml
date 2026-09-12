@@ -1,0 +1,20 @@
+name: Bot PR approval
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  call-workflow-bot-pr-approval:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/bot-approve')
+    uses: ./.github/workflows/reusable-bot-pr-approval.yml
+    secrets:
+      org-shared-app-id: ${{ secrets.ORG_SHARED_APP_ID }}
+      org-shared-app-key: ${{ secrets.ORG_SHARED_APP_KEY }}
