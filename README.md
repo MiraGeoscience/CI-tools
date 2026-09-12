@@ -38,4 +38,13 @@ The reusable workflow handles all command logic for `/bot-approve`: it validates
 replies to unauthorized users, acknowledges authorized users with a thumbs-up, checks prior human
 approval, and enables auto-merge using a merge commit.
 
+Authorization is granted only when at least one of these is true:
+- commenter has repository role `admin` or `maintain`
+- PR originates from the same repository (head repo == base repo)
+
+GitHub App permissions required for the bot identity:
+- Pull requests: Read and write
+- Contents: Read and write
+- Issues: Read and write
+
 Apply organization Actions policies to restrict who can run it.

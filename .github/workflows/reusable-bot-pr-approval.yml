@@ -23,24 +23,51 @@ jobs:
       USER_LOGIN: ${{ github.event.comment.user.login }}
 
     steps:
-      - name: Reply to unauthorized user
+      - name: Evaluate trigger and authorization
+        id: auth
         if: |
           github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          !contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+          contains(github.event.comment.body, '/bot-approve')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          role_name=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$USER_LOGIN/permission" --jq '.role_name // "none"')
+          head_repo=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.full_name')
+          base_repo=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.base.repo.full_name')
+
+          is_role_allowed=false
+          if [ "$role_name" = "admin" ] || [ "$role_name" = "maintain" ]; then
+            is_role_allowed=true
+          fi
+
+          is_originating_repo=false
+          if [ "$head_repo" = "$base_repo" ]; then
+            is_originating_repo=true
+          fi
+
+          authorized=false
+          if [ "$is_role_allowed" = "true" ] || [ "$is_originating_repo" = "true" ]; then
+            authorized=true
+          fi
+
+          echo "role_name=$role_name" >> "$GITHUB_OUTPUT"
+          echo "is_originating_repo=$is_originating_repo" >> "$GITHUB_OUTPUT"
+          echo "authorized=$authorized" >> "$GITHUB_OUTPUT"
+
+      - name: Reply to unauthorized user
+        if: steps.auth.outputs.authorized == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROLE_NAME: ${{ steps.auth.outputs.role_name }}
+          IS_ORIGINATING_REPO: ${{ steps.auth.outputs.is_originating_repo }}
         run: |
           gh api \
             --method POST \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve."
+            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve (requires repo role maintain/admin, or a PR originating from the same repository). Current role: $ROLE_NAME; same-repo PR: $IS_ORIGINATING_REPO."
 
       - name: Acknowledge authorized command
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+        if: steps.auth.outputs.authorized == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -56,10 +83,7 @@ jobs:
             -f body=':+1: Command acknowledged. Proceeding with bot approval.'
 
       - name: Generate bot token
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+        if: steps.auth.outputs.authorized == 'true'
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
@@ -67,10 +91,7 @@ jobs:
           private-key: ${{ secrets.org-shared-app-key }}
 
       - name: Check for prior human approval
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+        if: steps.auth.outputs.authorized == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -86,20 +107,14 @@ jobs:
           echo "Found prior human approval. Proceeding."
 
       - name: Submit bot approval
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+        if: steps.auth.outputs.authorized == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh pr review "$PR_NUMBER" --approve --body "Approved via org-gated automation."
 
       - name: Enable auto-merge with merge commit
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve') &&
-          contains(fromJson('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+        if: steps.auth.outputs.authorized == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
