@@ -38,12 +38,12 @@ call this reusable workflow and pass:
 
 The reusable workflow handles all command logic for `/bot-approve`: it validates authorization,
 replies to unauthorized users, acknowledges authorized users with a thumbs-up, checks prior human
-approval, and can optionally enable auto-merge (`merge`, `squash`, or `rebase`).
+approval, and can optionally enable auto-merge (merge commits only).
 
 Authorization is granted only when:
-- comment-triggered requests come from a trusted association (`COLLABORATOR`, `MEMBER`, `OWNER`) and
-  either the requester has repository role `admin`/`maintain` or the PR originates from the same
-  organization (head owner == base owner), including org-owned forks
+- comment-triggered requests are valid PR comments containing `/bot-approve`, and either the
+  requester has repository role `admin`/`maintain` or is an organization `MEMBER`/`OWNER` on a
+  same-organization PR (head owner == base owner), including org-owned forks
 - manually dispatched requests are initiated by a requester with repository role `admin`/`maintain`
 
 GitHub App permissions required for the bot identity:
@@ -53,3 +53,11 @@ GitHub App permissions required for the bot identity:
 
 Enforce caller-side authorization in the calling workflow (`if` + trusted associations and/or
 manual dispatch restrictions) because organization Actions policies are not scoped per workflow.
+
+Security model note:
+- authorization is enforced in the reusable workflow itself, so weakening caller-side conditions in
+  another repository does not bypass role/association checks in this workflow
+- `issue_comment` runs from the target repository default branch workflow definition (not PR code)
+- if an attacker can push workflow changes to the protected/default branch in the caller repository,
+  they can change any CI policy; protect that branch and workflow files with branch protections,
+  CODEOWNERS review, and restricted write/admin membership

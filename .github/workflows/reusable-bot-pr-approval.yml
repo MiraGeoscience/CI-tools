@@ -10,10 +10,6 @@ on:
         required: false
         type: boolean
         default: false
-      auto-merge-method:
-        required: false
-        type: string
-        default: merge
     secrets:
       org-shared-app-id:
         required: true
@@ -33,6 +29,8 @@ jobs:
       PR_NUMBER: ${{ inputs.pr-number }}
       COMMENT_ID: ${{ github.event.comment.id }}
       AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+      COMMENT_BODY: ${{ github.event.comment.body }}
+      IS_PR_COMMENT: ${{ github.event.issue.pull_request && 'true' || 'false' }}
 
     steps:
       - name: Evaluate trigger and authorization
@@ -59,18 +57,30 @@ jobs:
             is_trusted_commenter=true
           fi
 
+          is_org_member_commenter=false
+          if [ "$AUTHOR_ASSOCIATION" = "MEMBER" ] || [ "$AUTHOR_ASSOCIATION" = "OWNER" ]; then
+            is_org_member_commenter=true
+          fi
+
+          invalid_comment_trigger=false
           authorized=false
-          if [ -z "$COMMENT_ID" ]; then
+          if [ -n "$COMMENT_ID" ]; then
+            if [ "$IS_PR_COMMENT" != "true" ] || ! printf '%s' "$COMMENT_BODY" | grep -q '/bot-approve'; then
+              invalid_comment_trigger=true
+            elif [ "$is_role_allowed" = "true" ] || { [ "$is_org_member_commenter" = "true" ] && [ "$is_same_org_pr" = "true" ]; }; then
+              authorized=true
+            fi
+          else
             if [ "$is_role_allowed" = "true" ]; then
               authorized=true
             fi
-          elif [ "$is_trusted_commenter" = "true" ] && { [ "$is_role_allowed" = "true" ] || [ "$is_same_org_pr" = "true" ]; }; then
-            authorized=true
           fi
 
           echo "role_name=$role_name" >> "$GITHUB_OUTPUT"
           echo "is_same_org_pr=$is_same_org_pr" >> "$GITHUB_OUTPUT"
           echo "is_trusted_commenter=$is_trusted_commenter" >> "$GITHUB_OUTPUT"
+          echo "is_org_member_commenter=$is_org_member_commenter" >> "$GITHUB_OUTPUT"
+          echo "invalid_comment_trigger=$invalid_comment_trigger" >> "$GITHUB_OUTPUT"
           echo "authorized=$authorized" >> "$GITHUB_OUTPUT"
 
       - name: Reply to unauthorized user
@@ -80,11 +90,13 @@ jobs:
           ROLE_NAME: ${{ steps.auth.outputs.role_name }}
           IS_SAME_ORG_PR: ${{ steps.auth.outputs.is_same_org_pr }}
           IS_TRUSTED_COMMENTER: ${{ steps.auth.outputs.is_trusted_commenter }}
+          IS_ORG_MEMBER_COMMENTER: ${{ steps.auth.outputs.is_org_member_commenter }}
+          INVALID_COMMENT_TRIGGER: ${{ steps.auth.outputs.invalid_comment_trigger }}
         run: |
           gh api \
             --method POST \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            -f body=":no_entry_sign: @$GITHUB_ACTOR is not authorized to trigger bot approval (requires trusted comment author association plus repo role maintain/admin or same-org PR, or maintain/admin role for manual dispatch). Current role: $ROLE_NAME; trusted commenter: $IS_TRUSTED_COMMENTER; same-org PR: $IS_SAME_ORG_PR."
+            -f body=":no_entry_sign: @$GITHUB_ACTOR is not authorized to trigger bot approval (requires `/bot-approve` on a PR comment and either repo role maintain/admin, or org MEMBER/OWNER + same-org PR; manual dispatch requires maintain/admin). Current role: $ROLE_NAME; trusted commenter: $IS_TRUSTED_COMMENTER; org member/owner: $IS_ORG_MEMBER_COMMENTER; same-org PR: $IS_SAME_ORG_PR; invalid comment trigger: $INVALID_COMMENT_TRIGGER."
 
       - name: Acknowledge authorized command
         if: steps.auth.outputs.authorized == 'true' && github.event.comment.id
@@ -138,20 +150,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          case "${{ inputs.auto-merge-method }}" in
-            squash)
-              merge_flag="--squash"
-              ;;
-            rebase)
-              merge_flag="--rebase"
-              ;;
-            merge)
-              merge_flag="--merge"
-              ;;
-            *)
-              echo "Invalid auto-merge-method: ${{ inputs.auto-merge-method }}. Expected one of: merge, squash, rebase."
-              exit 1
-              ;;
-          esac
-
-          gh pr merge "$PR_NUMBER" --auto "$merge_flag" --delete-branch
+          gh pr merge "$PR_NUMBER" --auto --merge --delete-branch
