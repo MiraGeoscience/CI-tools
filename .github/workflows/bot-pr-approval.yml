@@ -1,6 +1,12 @@
 name: Bot PR approval
 
 on:
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: Pull request number to approve
+        required: true
+        type: number
   issue_comment:
     types: [created]
 
@@ -12,9 +18,19 @@ permissions:
 jobs:
   call-workflow-bot-pr-approval:
     if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/bot-approve')
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/bot-approve') &&
+        (
+          github.event.comment.author_association == 'COLLABORATOR' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'OWNER'
+        )
+      )
     uses: ./.github/workflows/reusable-bot-pr-approval.yml
+    with:
+      pr-number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr-number || github.event.issue.number }}
     secrets:
       org-shared-app-id: ${{ secrets.ORG_SHARED_APP_ID }}
       org-shared-app-key: ${{ secrets.ORG_SHARED_APP_KEY }}

@@ -2,6 +2,18 @@ name: Bot PR approval
 
 on:
   workflow_call:
+    inputs:
+      pr-number:
+        required: true
+        type: number
+      enable-auto-merge:
+        required: false
+        type: boolean
+        default: false
+      auto-merge-method:
+        required: false
+        type: string
+        default: merge
     secrets:
       org-shared-app-id:
         required: true
@@ -18,20 +30,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      PR_NUMBER: ${{ github.event.issue.number }}
+      PR_NUMBER: ${{ inputs.pr-number }}
       COMMENT_ID: ${{ github.event.comment.id }}
-      USER_LOGIN: ${{ github.event.comment.user.login }}
+      AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
 
     steps:
       - name: Evaluate trigger and authorization
         id: auth
-        if: |
-          github.event.issue.pull_request &&
-          contains(github.event.comment.body, '/bot-approve')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          role_name=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$USER_LOGIN/permission" --jq '.role_name // "none"' 2>/dev/null || echo "none")
+          role_name=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$GITHUB_ACTOR/permission" --jq '.role_name // "none"' 2>/dev/null || echo "none")
           head_owner=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.owner.login')
           base_owner=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.base.repo.owner.login')
 
@@ -45,13 +54,23 @@ jobs:
             is_same_org_pr=true
           fi
 
+          is_trusted_commenter=false
+          if [ "$AUTHOR_ASSOCIATION" = "COLLABORATOR" ] || [ "$AUTHOR_ASSOCIATION" = "MEMBER" ] || [ "$AUTHOR_ASSOCIATION" = "OWNER" ]; then
+            is_trusted_commenter=true
+          fi
+
           authorized=false
-          if [ "$is_role_allowed" = "true" ] || [ "$is_same_org_pr" = "true" ]; then
+          if [ -z "$COMMENT_ID" ]; then
+            if [ "$is_role_allowed" = "true" ]; then
+              authorized=true
+            fi
+          elif [ "$is_trusted_commenter" = "true" ] && { [ "$is_role_allowed" = "true" ] || [ "$is_same_org_pr" = "true" ]; }; then
             authorized=true
           fi
 
           echo "role_name=$role_name" >> "$GITHUB_OUTPUT"
           echo "is_same_org_pr=$is_same_org_pr" >> "$GITHUB_OUTPUT"
+          echo "is_trusted_commenter=$is_trusted_commenter" >> "$GITHUB_OUTPUT"
           echo "authorized=$authorized" >> "$GITHUB_OUTPUT"
 
       - name: Reply to unauthorized user
@@ -60,14 +79,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ROLE_NAME: ${{ steps.auth.outputs.role_name }}
           IS_SAME_ORG_PR: ${{ steps.auth.outputs.is_same_org_pr }}
+          IS_TRUSTED_COMMENTER: ${{ steps.auth.outputs.is_trusted_commenter }}
         run: |
           gh api \
             --method POST \
             "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            -f body=":no_entry_sign: @$USER_LOGIN is not authorized to trigger /bot-approve (requires repo role maintain/admin, or a PR from a fork within the same organization). Current role: $ROLE_NAME; same-org PR: $IS_SAME_ORG_PR."
+            -f body=":no_entry_sign: @$GITHUB_ACTOR is not authorized to trigger bot approval (requires trusted comment author association plus repo role maintain/admin or same-org PR, or maintain/admin role for manual dispatch). Current role: $ROLE_NAME; trusted commenter: $IS_TRUSTED_COMMENTER; same-org PR: $IS_SAME_ORG_PR."
 
       - name: Acknowledge authorized command
-        if: steps.auth.outputs.authorized == 'true'
+        if: steps.auth.outputs.authorized == 'true' && github.event.comment.id
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -113,9 +133,25 @@ jobs:
         run: |
           gh pr review "$PR_NUMBER" --approve --body "Approved via org-gated automation."
 
-      - name: Enable auto-merge with merge commit
-        if: steps.auth.outputs.authorized == 'true'
+      - name: Enable auto-merge
+        if: steps.auth.outputs.authorized == 'true' && inputs.enable-auto-merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          gh pr merge "$PR_NUMBER" --auto --merge --delete-branch
+          case "${{ inputs.auto-merge-method }}" in
+            squash)
+              merge_flag="--squash"
+              ;;
+            rebase)
+              merge_flag="--rebase"
+              ;;
+            merge)
+              merge_flag="--merge"
+              ;;
+            *)
+              echo "Invalid auto-merge-method: ${{ inputs.auto-merge-method }}. Expected one of: merge, squash, rebase."
+              exit 1
+              ;;
+          esac
+
+          gh pr merge "$PR_NUMBER" --auto "$merge_flag" --delete-branch
