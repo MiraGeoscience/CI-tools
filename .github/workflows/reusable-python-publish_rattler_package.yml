@@ -112,11 +112,14 @@ jobs:
                 env:
                   INPUTS_SOURCE_REPO_NAMES: ${{ inputs.source-repo-names }}
                   INPUTS_CONDA_CHANNELS: ${{ inputs.conda-channels }}
+                  JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                  JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                 run: |
                     repository_list=$(echo "${INPUTS_SOURCE_REPO_NAMES}" | jq -r '.[]' | xargs)
                     if [ -n "$repository_list" ]; then
-                        RATTLER_AUTH_FILE=${{ runner.temp }}/credentials.json
-                        echo '{"${{ secrets.JFROG_ARTIFACTORY_URL }}": {"BasicHTTP": {"username": "github", "password":"${{ secrets.JFROG_ARTIFACTORY_TOKEN }}"} } }' > "$RATTLER_AUTH_FILE"
+                        RATTLER_AUTH_FILE="${RUNNER_TEMP}/credentials.json"
+                        jq -n --arg host "$JFROG_ARTIFACTORY_URL" --arg password "$JFROG_ARTIFACTORY_TOKEN" \
+                          '{($host): {BasicHTTP: {username: "github", password: $password}}}' > "$RATTLER_AUTH_FILE"
                         echo "RATTLER_AUTH_FILE=${RATTLER_AUTH_FILE}" >> "$GITHUB_ENV"
                         # Disable sharded repodata because mixed sharding support across
                         # channels seems to confuse strict channel priority
@@ -127,7 +130,7 @@ jobs:
                     # Loop through the repository names and add them to the command
                     BUILD_ARGS=""
                     for repo_name in ${repository_list}; do
-                        BUILD_ARGS+=" --channel https://${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/conda/${repo_name}"
+                        BUILD_ARGS+=" --channel https://${JFROG_ARTIFACTORY_URL}/artifactory/api/conda/${repo_name}"
                     done
 
                     channel_list=$(echo "${INPUTS_CONDA_CHANNELS}" | jq -r '.[]' | xargs)
@@ -207,4 +210,5 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
-                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-tag }} download-artifact/**/*
+                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.release-tag }}
+                run: gh release upload --clobber "${RELEASE_TAG}" download-artifact/**/*

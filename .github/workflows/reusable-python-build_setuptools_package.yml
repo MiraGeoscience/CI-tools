@@ -47,6 +47,8 @@ on:
             description: JFrog Artifactory Token
             required: true
 
+permissions: {}
+
 defaults:
     run:
         shell: 'bash -l {0}'
@@ -56,6 +58,8 @@ jobs:
         name: Build setuptools package
         runs-on: ${{ inputs.os }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
+        permissions:
+            contents: read  # checkout
         outputs:
             build-dir-path: ${{ steps.define-build-path.outputs.dir-path }}
             version: ${{ steps.get-version.outputs.version }}
@@ -94,10 +98,12 @@ jobs:
             -   name: Verify package installation
                 env:
                   INPUTS_VIRTUAL_REPO_NAMES: ${{ inputs.virtual-repo-names }}
+                  JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
+                  JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
                 run: |
                     repository_list=$(echo "${INPUTS_VIRTUAL_REPO_NAMES}" | jq -r '.[]')
                     for repo_name in ${repository_list}; do
-                        PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${{ secrets.JFROG_ARTIFACTORY_TOKEN }}@${{ secrets.JFROG_ARTIFACTORY_URL }}/artifactory/api/pypi/${repo_name}/simple"
+                        PIP_EXTRA_INDEX_URL="$PIP_EXTRA_INDEX_URL https://github:${JFROG_ARTIFACTORY_TOKEN}@${JFROG_ARTIFACTORY_URL}/artifactory/api/pypi/${repo_name}/simple"
                     done
                     export PIP_EXTRA_INDEX_URL
                     pip install .
