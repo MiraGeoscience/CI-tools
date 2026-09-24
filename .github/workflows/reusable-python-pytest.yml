@@ -177,11 +177,15 @@ jobs:
           client-id: ${{ secrets.GH_CLIENT_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           repositories: ${{ inputs.private-github-repos }}
+          # The token stays available to the tested code: read access only.
+          permission-contents: read
 
       - name: Register the personal access token
         if: ${{ inputs.private-github-repos != '' }}
         shell: bash
-        run: echo "${{ steps.app-token.outputs.token }}" | gh auth login --with-token
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: printf '%s' "$APP_TOKEN" | gh auth login --with-token
 
       - name: Configure the Git credential helper
         if: ${{ inputs.private-github-repos != '' }}

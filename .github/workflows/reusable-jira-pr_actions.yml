@@ -18,18 +18,14 @@ on:
 
 env:
   JIRA_PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
-  JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-  JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
-permissions:
-  contents: read
-  pull-requests: write
+permissions: {}
 
 jobs:
   get_issue_key:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     outputs:
       issue_key_from_branch: ${{ steps.issue_key_from_branch.outputs.issue_key }}
       issue_key_from_title: ${{ steps.issue_key_from_title.outputs.issue_key }}
@@ -62,10 +58,10 @@ jobs:
 
     - name: Set issue key
       id: issue_key
+      env:
+        from_branch: ${{ steps.issue_key_from_branch.outputs.issue_key }}
+        from_title: ${{ steps.issue_key_from_title.outputs.issue_key }}
       run: >
-        from_branch="${{ steps.issue_key_from_branch.outputs.issue_key }}"
-        from_title="${{ steps.issue_key_from_title.outputs.issue_key }}"
-
         echo "from_branch: $from_branch"
         echo "from_title: $from_title"
 
@@ -119,9 +115,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: get_issue_key
+    permissions:
+      pull-requests: write  # update the PR title and body
     concurrency:
       group: jira-add-summary-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+    env:
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
 
     steps:
 
@@ -132,7 +135,7 @@ jobs:
         curl -fsS -X GET
         -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}"
         -H "Content-Type: application/json"
-        "$JIRA_BASE_URL/rest/api/2/issue/${{ needs.get_issue_key.outputs.issue_key }}"
+        "$JIRA_BASE_URL/rest/api/2/issue/${ISSUE_KEY}"
         | echo "summary=$(jq -r '.fields.summary // empty' | xargs)" >> $GITHUB_OUTPUT
 
     - name: Extract PR title
@@ -147,9 +150,10 @@ jobs:
       if: ${{ steps.issue_summary.outputs.summary }}
       env:
         ISSUE_SUMMARY: ${{ steps.issue_summary.outputs.summary }}
-        ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
         TITLE_TEXT: ${{ steps.get_pr_title.outputs.text }}
         PR_BODY: ${{ github.event.pull_request.body }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
       run: >
         jq
         --arg ISSUE_ID "$(cat <<< $ISSUE_KEY)"
@@ -158,9 +162,9 @@ jobs:
         --arg PR_BODY "$(cat <<< $PR_BODY)"
         -c '{"title": ($ISSUE_ID + ": " + $TITLE_TEXT), "body": ("**" + $ISSUE_ID + " - " + $ISSUE_SUMMARY + "**\n" + $PR_BODY)}' <<< {}
         | curl -fsS -X POST -d @-
-        -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}"
+        -H "Authorization: token ${GH_TOKEN}"
         -H "Content-Type: application/json"
-        "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/${{ github.event.pull_request.number }}"
+        "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/${PR_NUMBER}"
         > /dev/null
 
   check_jira_issue:
@@ -170,6 +174,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: get_issue_key
+    permissions: {}
+    env:
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
     steps:
 
@@ -180,8 +189,9 @@ jobs:
 
     - name: Check issue status
       if: ${{ needs.get_issue_key.outputs.issue_key && needs.get_issue_key.outputs.is_exempt_bot_pr != 'true' }}
+      env:
+        issue_key: ${{ needs.get_issue_key.outputs.issue_key }}
       run: |
-        issue_key=${{ needs.get_issue_key.outputs.issue_key }}
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
 
         jqlencoded=$(jq -R -r @uri <<<"$jql")
@@ -224,12 +234,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: github.event.action == 'synchronize'
+    permissions:
+      contents: read  # compare commits
+      pull-requests: write  # comment on the PR
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BEFORE_SHA: ${{ github.event.before }}
+      AFTER_SHA: ${{ github.event.after }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - name: Detect force push
         id: detect
         run: |
           STATUS=$(gh api \
-            "repos/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.event.after }}" \
+            "repos/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${AFTER_SHA}" \
             --jq '.status' 2>/dev/null || echo "not_found")
           echo "compare status: $STATUS"
           if [[ "$STATUS" == "diverged" || "$STATUS" == "behind" || "$STATUS" == "not_found" ]]; then
@@ -237,14 +255,10 @@ jobs:
           else
             echo "is_force_push=false" >> "$GITHUB_OUTPUT"
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Post force push warning comment
         if: steps.detect.outputs.is_force_push == 'true'
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
+          gh pr comment "${PR_NUMBER}" \
+            --repo "${GITHUB_REPOSITORY}" \
             --body "⚠️ **Force push detected** - Previous Copilot review comments may no longer be relevant to the current code. Please resolve any outdated threads and re-request a Copilot review when ready."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -24,11 +24,14 @@ on:
         required: false
         type: string
 
+permissions: {}
 
 jobs:
   new_jira_issue:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      issues: write  # comment the Jira link on the GitHub issue
     steps:
     - name: Set Jira fields
       id: set_jira_fields

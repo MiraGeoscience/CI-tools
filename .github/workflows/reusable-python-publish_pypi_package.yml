@@ -115,13 +115,20 @@ jobs:
         steps:
             -   name: Select build outputs form the correct job
                 id: select-build-outputs
+                env:
+                    POETRY_RESULT: ${{ needs.build_poetry_package.result }}
+                    POETRY_BUILD_DIR: ${{ needs.build_poetry_package.outputs.build-dir-path }}
+                    POETRY_VERSION: ${{ needs.build_poetry_package.outputs.version }}
+                    SETUPTOOLS_RESULT: ${{ needs.build_setuptools_package.result }}
+                    SETUPTOOLS_BUILD_DIR: ${{ needs.build_setuptools_package.outputs.build-dir-path }}
+                    SETUPTOOLS_VERSION: ${{ needs.build_setuptools_package.outputs.version }}
                 run: |
-                    if [[ "${{ needs.build_poetry_package.result }}" == "success" ]]; then
-                        echo "build-dir-path=${{ needs.build_poetry_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_poetry_package.outputs.version }}" >> $GITHUB_ENV
-                    elif [[ "${{ needs.build_setuptools_package.result }}" == "success" ]]; then
-                        echo "build-dir-path=${{ needs.build_setuptools_package.outputs.build-dir-path }}" >> $GITHUB_ENV
-                        echo "version=${{ needs.build_setuptools_package.outputs.version }}" >> $GITHUB_ENV
+                    if [[ "${POETRY_RESULT}" == "success" ]]; then
+                        echo "build-dir-path=${POETRY_BUILD_DIR}" >> $GITHUB_ENV
+                        echo "version=${POETRY_VERSION}" >> $GITHUB_ENV
+                    elif [[ "${SETUPTOOLS_RESULT}" == "success" ]]; then
+                        echo "build-dir-path=${SETUPTOOLS_BUILD_DIR}" >> $GITHUB_ENV
+                        echo "version=${SETUPTOOLS_VERSION}" >> $GITHUB_ENV
                     else
                         echo "No successful build found"
                         exit 1
@@ -171,4 +178,5 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GH_REPO: ${{ github.repository }}
-                run: gh release upload --clobber ${{ steps.get-draft-release.outputs.release-tag }} download-artifact/*
+                    RELEASE_TAG: ${{ steps.get-draft-release.outputs.release-tag }}
+                run: gh release upload --clobber "${RELEASE_TAG}" download-artifact/*

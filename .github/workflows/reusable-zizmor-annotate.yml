@@ -1,5 +1,7 @@
 name: Zizmor analysis
 
+# Deprecated: use reusable-zizmor-security.yml with `annotations: true`.
+
 on:
   workflow_call:
     inputs:
@@ -19,15 +21,17 @@ on:
         default: regular
         type: string
 
+permissions: {}
+
 jobs:
   zizmor:
     name: Security Scan
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     permissions:
-      checks: write
-      contents: read
-      actions: read
+      checks: write  # publish annotations
+      contents: read  # checkout
+      actions: read  # resolve action references
 
     steps:
       - name: Checkout repository

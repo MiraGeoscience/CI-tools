@@ -1,5 +1,14 @@
 name: Zizmor analysis
 
+# Single entry point for zizmor scans (replaces reusable-zizmor-annotate.yml and
+# reusable-zizmor-advanced-security.yml). Call it once per event, for example:
+#   annotations: ${{ github.event_name == 'pull_request' }}
+#   advanced-security: ${{ github.event_name != 'pull_request' }}   # public repositories only
+#
+# Permissions are inherited from the caller job, which must grant:
+#   contents: read, actions: read
+#   security-events: write   only when advanced-security is true
+
 on:
   workflow_call:
     inputs:
@@ -18,15 +27,25 @@ on:
         required: false
         default: regular
         type: string
+      annotations:
+        description: Emit findings as workflow annotations (ignored when advanced-security is true)
+        required: false
+        default: false
+        type: boolean
+      advanced-security:
+        description: >
+          Upload findings as SARIF to code scanning (requires GitHub Advanced Security or a public
+          repository, and `security-events: write` on the caller job)
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  zizmor:
+  zizmor:  # zizmor: ignore[excessive-permissions] bounded by the caller job permissions
     name: Security Scan
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -40,8 +59,8 @@ jobs:
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
         with:
-          advanced-security: false
-          annotations: false
+          advanced-security: ${{ inputs.advanced-security }}
+          annotations: ${{ inputs.annotations && !inputs.advanced-security }}
           persona: ${{ inputs.persona }}
           min-severity: ${{ inputs.min_severity }}
           min-confidence: ${{ inputs.min_confidence }}

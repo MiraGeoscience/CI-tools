@@ -4,9 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, edited]
 
+permissions: {}
+
 jobs:
   call-workflow-wip-status:
     uses: ./.github/workflows/reusable-wip-status.yml
     permissions:
-      contents: read
-      statuses: write
+      statuses: write  # set the pr-title-wip commit status

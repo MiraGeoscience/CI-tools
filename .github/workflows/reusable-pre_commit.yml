@@ -33,6 +33,8 @@ on:
         type: string
         default: pylint
 
+permissions: {}
+
 jobs:
   pre-commit:
     name: pre-commit
@@ -42,6 +44,8 @@ jobs:
       matrix:
         os: ${{ fromJson(inputs.os) }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read  # checkout and fetch the base branch
     env:
       SKIP: ${{ inputs.skip }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -49,26 +53,31 @@ jobs:
       - name: Get base depth
         id: base-depth
         if: ${{ (github.event_name == 'pull_request') }}
+        shell: bash
+        env:
+          PR_COMMITS: ${{ github.event.pull_request.commits }}
         run: |
-          depth=$(expr ${{ github.event.pull_request.commits }} + 1)
+          depth=$((PR_COMMITS + 1))
           echo "base-depth=$depth"
-          echo "base-depth=$depth" >> $GITHUB_OUTPUT
+          echo "base-depth=$depth" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           lfs: ${{ inputs.lfs }}
           # for non PR events, check out to depth 1 (the default)
           fetch-depth: ${{ steps.base-depth.outputs.base-depth || 1}}
-          persist-credentials: true
+          persist-credentials: false
       - name: Fetch target branch
         if: ${{ (github.event_name == 'pull_request') }}
+        shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: git fetch origin ${BASE_REF}:${BASE_REF}
-      - name: Remove git credentials
-        shell: bash
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config --local --unset-all http.https://github.com/.extraheader || [ $? -eq 5 ]
-          git config --local --unset-all include.path || [ $? -eq 5 ]
+          # One-off credentials: nothing is stored where pre-commit hooks could read it.
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$auth"
+          git -c "http.$GITHUB_SERVER_URL/.extraheader=AUTHORIZATION: basic $auth" \
+            fetch origin "${BASE_REF}:${BASE_REF}"
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ inputs.python-version }}

@@ -6,14 +6,14 @@ name: WIP status job
 on:
   workflow_call:
 
-permissions:
-  contents: read
-  statuses: write
+permissions: {}
 
 jobs:
   check_wip_title:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      statuses: write  # set the pr-title-wip commit status
 
     steps:
       - name: Set WIP Status
