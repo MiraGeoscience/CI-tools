@@ -29,6 +29,8 @@ on:
             description: PyPI Token
             required: false
 
+permissions: {}
+
 defaults:
     run:
         shell: 'bash -l {0}'
@@ -37,7 +39,7 @@ jobs:
     publish_pypi_assets:
         name: Publish PyPI assets
         permissions:
-            contents: write
+            contents: write  # read draft releases and download their assets
         if: ${{ github.repository_owner == 'MiraGeoscience' }}
         runs-on: 'ubuntu-latest'
         timeout-minutes: 5

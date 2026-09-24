@@ -1,15 +1,16 @@
 name: Create JIRA issue
 
-permissions:
-  issues: write
-
 on:
   issues:
     types: [opened]
 
+permissions: {}
+
 jobs:
   call-workflow-create-jira-issue:
     uses: ./.github/workflows/reusable-jira-issue_to_jira.yml
+    permissions:
+      issues: write  # comment the Jira link on the GitHub issue
     secrets:
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
