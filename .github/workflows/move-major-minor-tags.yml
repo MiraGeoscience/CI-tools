@@ -9,13 +9,26 @@ jobs:
   move-tags:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
+      # GITHUB_TOKEN cannot bypass the org "restrict-version-tag" ruleset;
+      # the GitHub App is listed as a bypass actor on it.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.MIRAGEO_TAG_MOVER_CLIENT_ID }}
+          private-key: ${{ secrets.MIRAGEO_TAG_MOVER_PRIVATE_KEY }}
+          permission-contents: write
+
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Move vX and vX.Y tags
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           TARGET="$(git rev-parse "${TAG}^{}")"
@@ -32,4 +45,5 @@ jobs:
           fi
           git tag -f "$MAJOR" "$TARGET"
           git tag -f "$MINOR" "$TARGET"
-          git push origin -f "$MAJOR" "$MINOR"
+          git push "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            -f "refs/tags/$MAJOR" "refs/tags/$MINOR"
