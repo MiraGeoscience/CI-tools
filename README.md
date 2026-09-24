@@ -19,8 +19,8 @@ CI-tools is a repository designed to streamline and standardize Continuous Integ
 ```yaml
 jobs:
   call-workflow-create-jira-issue:
-    uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows>
-    # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml
+  uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows>@<full_commit_sha>
+  # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml@<full_commit_sha>
 ```
 
 Pin `uses:` to a full commit SHA of CI-tools in calling repositories (Dependabot keeps it up to
