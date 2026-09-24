@@ -13,4 +13,4 @@ jobs:
       statuses: write
       checks: read
     with:
-      dependabot-groups: mirageo-ci-tools,pre-commit-hooks
+      dependabot-groups: pre-commit-hooks
