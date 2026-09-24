@@ -17,20 +17,18 @@ on:
         default: ''
         description: Comma-separated list of external check contexts to mark as passed before enabling auto-merge
 
-permissions:
-  contents: write
-  pull-requests: write
-  statuses: write
-  checks: read
+permissions: {}
 
 jobs:
   validate-group:
+    # fetch-metadata below also verifies that the commits were made by Dependabot.
     if: >
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       startsWith(github.event.pull_request.head.ref, 'dependabot/') &&
       startsWith(github.event.pull_request.title, 'Bump ')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     outputs:
       is_allowed_group: ${{ steps.check.outputs.is_allowed_group }}
     steps:
@@ -59,11 +57,16 @@ jobs:
     if: needs.validate-group.outputs.is_allowed_group == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write  # enable auto-merge
+      pull-requests: write  # approve the PR
+      statuses: write  # mark skipped external checks as passed
+      checks: read  # verify skipped checks are not GitHub Actions checks
 
     steps:
     - name: Check update type
       id: metadata
-      uses: dependabot/fetch-metadata@v2
+      uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 

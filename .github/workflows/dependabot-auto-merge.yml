@@ -4,13 +4,15 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions: {}
+
 jobs:
   call-workflow-dependabot-auto-merge:
     uses: ./.github/workflows/reusable-dependabot-auto-merge.yml
     permissions:
-      contents: write
-      pull-requests: write
-      statuses: write
-      checks: read
+      contents: write  # enable auto-merge
+      pull-requests: write  # approve the PR
+      statuses: write  # mark skipped external checks as passed
+      checks: read  # verify skipped checks are not GitHub Actions checks
     with:
       dependabot-groups: mirageo-ci-tools,pre-commit-hooks
