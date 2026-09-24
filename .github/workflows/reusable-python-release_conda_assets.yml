@@ -54,7 +54,7 @@ jobs:
                     cd download-assets
                     gh release download ${INPUTS_RELEASE_TAG} -p '*.conda'
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@7241532854727d993872b67fc761139b8438615b # v3.12.0
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@DEVOPS-1154 # TEMPORARY for testing
                 with:
                     build-dir-path: download-assets
                     artifactory-dir-path: ${{ matrix.virtual-repo-name}}/noarch

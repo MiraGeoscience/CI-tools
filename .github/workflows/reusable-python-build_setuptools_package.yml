@@ -84,6 +84,8 @@ jobs:
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
             -   uses: jfrog/setup-jfrog-cli@68c0efdc951dd2359bbbfa15c48bc67b3ae8e4d6 # v5.2.0
                 name: Setup JFrog CLI
+                with:
+                    disable-auto-build-publish: true
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
