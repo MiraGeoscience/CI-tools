@@ -24,20 +24,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-workflow-zizmor-annotate:
-    name: Zizmor analysis (advanced security)
-    if: ${{ github.event_name != 'pull_request' }}
+  call-workflow-zizmor:
+    # One job per event; the name keeps the check contexts required by the org rulesets.
+    name: ${{ github.event_name == 'pull_request' && 'Zizmor analysis (annotate)' || 'Zizmor analysis (advanced security)' }}
     permissions:
-      security-events: write
-      contents: read
-      actions: read
-    uses: ./.github/workflows/reusable-zizmor-advanced-security.yml
-
-  call-workflow-zizmor-advanced-security:
-    name: Zizmor analysis (annotate)
-    if: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      checks: write
-      contents: read
-      actions: read
-    uses: ./.github/workflows/reusable-zizmor-annotate.yml
+      contents: read  # checkout
+      actions: read  # resolve action references
+      security-events: write  # upload SARIF on push
+    uses: ./.github/workflows/reusable-zizmor-security.yml
+    with:
+      annotations: ${{ github.event_name == 'pull_request' }}
+      advanced-security: ${{ github.event_name != 'pull_request' }}
