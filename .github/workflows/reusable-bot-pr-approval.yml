@@ -1,0 +1,56 @@
+name: Bot PR approval relay
+
+# Forwards `/bot-approve` pull request comments to the private controller, which re-validates
+# everything (comment, requester role, review history) before approving. This workflow holds no
+# approval logic and no approval credentials.
+
+on:
+  workflow_call:
+    secrets:
+      relay-app-id:
+        description: ID of the Relay GitHub App (Actions write on the controller repository only)
+        required: true
+      relay-app-private-key:
+        description: Private key of the Relay GitHub App
+        required: true
+
+permissions: {}
+
+jobs:
+  relay:
+    if: >
+      github.event_name == 'issue_comment' &&
+      github.event.action == 'created' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.type == 'User' &&
+      startsWith(github.event.comment.body, '/bot-approve') &&
+      contains(fromJSON('["COLLABORATOR","MEMBER","OWNER"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CONTROLLER_OWNER: MiraGeoscience
+      CONTROLLER_REPOSITORY: DevOps
+      CONTROLLER_WORKFLOW: bot-pr-approval.yml
+    steps:
+      - name: Generate relay token
+        id: relay-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.relay-app-id }}
+          private-key: ${{ secrets.relay-app-private-key }}
+          owner: ${{ env.CONTROLLER_OWNER }}
+          repositories: ${{ env.CONTROLLER_REPOSITORY }}
+          permission-actions: write
+
+      - name: Forward to controller
+        env:
+          GH_TOKEN: ${{ steps.relay-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh workflow run "$CONTROLLER_WORKFLOW" \
+            --repo "$CONTROLLER_OWNER/$CONTROLLER_REPOSITORY" \
+            --ref main \
+            -f target-repository="$GITHUB_REPOSITORY" \
+            -f pr-number="$PR_NUMBER" \
+            -f comment-id="$COMMENT_ID"

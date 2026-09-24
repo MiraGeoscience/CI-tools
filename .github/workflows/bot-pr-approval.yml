@@ -1,0 +1,15 @@
+name: Bot PR approval
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  call-workflow-bot-pr-approval:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/bot-approve')
+    uses: ./.github/workflows/reusable-bot-pr-approval.yml
+    secrets:
+      relay-app-id: ${{ secrets.BOT_RELAY_APP_ID }}
+      relay-app-private-key: ${{ secrets.BOT_RELAY_APP_PRIVATE_KEY }}
