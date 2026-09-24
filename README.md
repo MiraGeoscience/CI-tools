@@ -22,3 +22,14 @@ jobs:
     uses: MiraGeoscience/CI-tools/<path_to_the_reusable_workflows>
     # e.g.: uses: MiraGeoscience/CI-tools/.github/workflows/reusable-jira-issue_to_jira.yml
 ```
+
+Pin `uses:` to a full commit SHA of CI-tools in calling repositories (Dependabot keeps it up to
+date).
+
+## Referencing CI-tools from within CI-tools
+
+Reusable workflows and actions of this repository reference each other with the self-repository
+syntax, for example `uses: $/.github/actions/setup-zizmor-config`. `$/` resolves to CI-tools at the
+exact commit that is running, so a caller pinned to a commit SHA runs every nested workflow and
+action from that same commit, and internal references never need a SHA or tag update.
+Do not use `MiraGeoscience/CI-tools/...@<ref>` for internal references.
