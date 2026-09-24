@@ -1,35 +1,77 @@
 name: Move major/minor tags on release
 
+# A tag push runs the workflow file of the tagged commit: these checks only hold if a tag ruleset
+# restricts who can create `v*` tags.
+
 on:
   push:
     tags:
       - 'v*.*.*'
 
+permissions: {}
+
 jobs:
   move-tags:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
-      contents: write
+      contents: write  # update the vX and vX.Y tag refs
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Move vX and vX.Y tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
+          set -euo pipefail
           TAG="${GITHUB_REF#refs/tags/}"
-          TARGET="$(git rev-parse "${TAG}^{}")"
-          MAJOR="${TAG%%.*}"
-          MINOR="${TAG%.*}"
-          echo "Full tag : $TAG"
-          echo "Target   : $TARGET"
-          echo "Major tag: $MAJOR"
-          echo "Minor tag: $MINOR"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping: '${TAG}' is not a vX.Y.Z release tag."
+            exit 0
+          fi
           # Only move major/minor tags for annotated tags (not lightweight)
           if [ "$(git cat-file -t "${TAG}")" != "tag" ]; then
             echo "Skipping: '${TAG}' is a lightweight tag, not an annotated tag."
             exit 0
           fi
-          git tag -f "$MAJOR" "$TARGET"
-          git tag -f "$MINOR" "$TARGET"
-          git push origin -f "$MAJOR" "$MINOR"
+          TARGET="$(git rev-parse "${TAG}^{commit}")"
+          if ! git merge-base --is-ancestor "$TARGET" "refs/remotes/origin/${DEFAULT_BRANCH}"; then
+            echo "::error::'${TAG}' points to a commit that is not on ${DEFAULT_BRANCH}."
+            exit 1
+          fi
+          MAJOR="${TAG%%.*}"
+          MINOR="${TAG%.*}"
+          echo "Full tag : $TAG"
+          echo "Target   : $TARGET"
+
+          # Newest annotated vX.Y.Z tag on the default branch with the given prefix.
+          latest() {
+            git for-each-ref --merged "refs/remotes/origin/${DEFAULT_BRANCH}" \
+                --format='%(objecttype) %(refname:short)' "refs/tags/$1.*" |
+              awk '$1 == "tag" { print $2 }' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1
+          }
+
+          move() {
+            local name="$1"
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$name" --silent 2>/dev/null; then
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$name" \
+                -f sha="$TARGET" -F force=true --silent
+            else
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f ref="refs/tags/$name" -f sha="$TARGET" --silent
+            fi
+            echo "Moved $name to $TARGET"
+          }
+
+          # Never move a tag backwards, e.g. when releasing a patch of an older minor version.
+          for name in "$MAJOR" "$MINOR"; do
+            if [ "$(latest "$name")" = "$TAG" ]; then
+              move "$name"
+            else
+              echo "Skipping $name: $(latest "$name") is newer than $TAG."
+            fi
+          done
