@@ -22,7 +22,9 @@ on:
             type: boolean
             default: true
         virtual-repo-names:
-            description: 'List of virtual repository names to publish to (e.g. ["public-pypi-dev", "geophysics-pypi-dev"])'
+            description: >
+                List of virtual repository names to publish to (e.g. ["public-pypi-dev", "geophysics-pypi-dev"]).
+                "pypi" and "test-pypi" are not supported: publish to PyPI from the calling workflow.
             required: true
             type: string
         os:
@@ -54,6 +56,10 @@ on:
         PYPI_TOKEN:
             description: PyPI Token
             required: false
+    outputs:
+        is-publishable:
+            description: Whether the version is publishable (same check that gates the publish job)
+            value: ${{ jobs.is_publishable.outputs.is-publishable }}
 
 permissions:
     contents: read
@@ -66,7 +72,7 @@ jobs:
     build_poetry_package:
         name: Build poetry package
         if: ${{ inputs.package-manager == 'poetry' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_poetry_package.yml@DEVOPS-1154 # TEMPORARY for testing
         with:
             package-name: ${{ inputs.package-name }}
             source-path: ${{ inputs.source-path || '.' }}
@@ -83,7 +89,7 @@ jobs:
     build_setuptools_package:
         name: Build setuptools package
         if: ${{ inputs.package-manager == 'setuptools' && github.repository_owner == 'MiraGeoscience' }}
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-build_setuptools_package.yml@DEVOPS-1154 # TEMPORARY for testing
         with:
             package-name: ${{ inputs.package-name }}
             python-version: ${{ inputs.python-version }}
@@ -98,7 +104,7 @@ jobs:
 
     is_publishable:
         name: Check version publishability
-        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+        uses: MiraGeoscience/CI-tools/.github/workflows/reusable-version-check.yml@7241532854727d993872b67fc761139b8438615b # v3.12.0
         with:
           version-tag: ${{ inputs.version-tag || github.ref_name }}
 
@@ -132,21 +138,20 @@ jobs:
                     name: ${{ inputs.package-name }}-pip-package-build
                     path: ${{ env.build-dir-path }}
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@DEVOPS-1154 # TEMPORARY for testing
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: ${{ env.build-dir-path }}
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ env.version }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Publish package to PyPI
-                if: ${{ matrix.virtual-repo-name == 'pypi'  || matrix.virtual-repo-name == 'test-pypi'}}
-                uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
-                with:
-                    verbose: true
-                    packages-dir: ${{ env.build-dir-path }}/
-                    repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
-                    password: ${{ secrets.PYPI_TOKEN }}
+            -   name: Fail on PyPI/TestPyPI virtual-repo-name
+                if: ${{ matrix.virtual-repo-name == 'pypi' || matrix.virtual-repo-name == 'test-pypi' }}
+                env:
+                    VIRTUAL_REPO_NAME: ${{ matrix.virtual-repo-name }}
+                run: |
+                    echo "::error::Not publishing '${VIRTUAL_REPO_NAME}' here: PyPI trusted publishing must run as a direct step in the caller's top-level workflow, not through this reusable workflow. See the 'virtual-repo-names' input description."
+                    exit 1
 
     add_release_asset:
         name: Add release asset
@@ -158,7 +163,7 @@ jobs:
         timeout-minutes: 5
         steps:
             -   name: Get draft release
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@7241532854727d993872b67fc761139b8438615b # v3.12.0
                 id: get-draft-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

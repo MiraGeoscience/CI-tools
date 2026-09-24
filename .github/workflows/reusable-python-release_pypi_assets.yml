@@ -9,8 +9,8 @@ on:
             type: string
         virtual-repo-names:
             description: >
-                List of repository names to publish to
-                (e.g. ["public-pypi-prod", "geophysics-pypi-prod"])
+                List of repository names to publish to (e.g. ["public-pypi-prod", "geophysics-pypi-prod"]).
+                "pypi" and "test-pypi" are not supported: publish to PyPI from the calling workflow.
             required: true
             type: string
         release-tag:
@@ -47,7 +47,7 @@ jobs:
                 virtual-repo-name: ${{ fromJson(inputs.virtual-repo-names) }}
         steps:
             -   name: Find release from tag
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-get_draft_release@7241532854727d993872b67fc761139b8438615b # v3.12.0
                 id: find-release
                 with:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,18 +62,17 @@ jobs:
                     cd download-assets
                     gh release download ${INPUTS_RELEASE_TAG} -p '*.tar.gz' -p '*.whl'
             -   name: Publish package to Artifactory
-                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@3ff92aeffa5b92d646abea073ed5ad06117e57f6 # v3.11.0
+                uses: MiraGeoscience/CI-tools/.github/actions/reusable-python-publish_to_artifactory@7241532854727d993872b67fc761139b8438615b # v3.12.0
                 if: ${{ matrix.virtual-repo-name != 'pypi' && matrix.virtual-repo-name != 'test-pypi' }}
                 with:
                     build-dir-path: download-assets
                     artifactory-dir-path: ${{ matrix.virtual-repo-name }}/${{ inputs.package-name }}/${{ inputs.release-tag }}
                     JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
-            -   name: Publish package to PyPI
-                if: ${{ matrix.virtual-repo-name == 'pypi'  || matrix.virtual-repo-name == 'test-pypi'}}
-                uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
-                with:
-                    verbose: true
-                    packages-dir: download-assets/
-                    repository-url: https://${{ matrix.virtual-repo-name == 'test-pypi' && 'test.pypi' || 'upload.pypi'}}.org/legacy/
-                    password: ${{ secrets.PYPI_TOKEN }}
+            -   name: Fail on PyPI/TestPyPI virtual-repo-name
+                if: ${{ matrix.virtual-repo-name == 'pypi' || matrix.virtual-repo-name == 'test-pypi' }}
+                env:
+                    VIRTUAL_REPO_NAME: ${{ matrix.virtual-repo-name }}
+                run: |
+                    echo "::error::Not publishing '${VIRTUAL_REPO_NAME}' here: PyPI trusted publishing must run as a direct step in the caller's top-level workflow, not through this reusable workflow. See the 'virtual-repo-names' input description."
+                    exit 1
