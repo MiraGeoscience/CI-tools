@@ -16,10 +16,6 @@ updates:
       github-actions:
         patterns:
           - actions/*
-      mirageo-ci-tools:
-        patterns:
-          - MiraGeoscience/CI-tools/.github/actions/*
-          - MiraGeoscience/CI-tools/.github/workflows/*
   - package-ecosystem: "pre-commit"
     directory: "/"
     schedule:
