@@ -22,7 +22,9 @@ runs:
   using: composite
   steps:
     - name: Setup JFrog CLI
-      uses: jfrog/setup-jfrog-cli@v4.4.1
+      uses: jfrog/setup-jfrog-cli@68c0efdc951dd2359bbbfa15c48bc67b3ae8e4d6 # v5.2.0
+      with:
+        disable-auto-build-publish: true
       env:
         JF_URL: https://${{ inputs.JFROG_ARTIFACTORY_URL }}
         JF_ACCESS_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
