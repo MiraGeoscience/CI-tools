@@ -1,0 +1,310 @@
+# Report the changes made to a pixi.lock file in a readable Markdown format.
+# The report is written to the job summary, and posted as a PR comment on pull requests
+# (a single comment, updated on each run).
+
+name: Pixi lock diff
+
+on:
+  workflow_call:
+    inputs:
+      lockfile-path:
+        description: Path of the pixi lock file, relative to the repository root
+        required: false
+        type: string
+        default: pixi.lock
+      manifest-path:
+        description: >
+          Path of the pixi manifest, relative to the repository root. Used to tell explicit
+          dependencies (listed in the manifest) from implicit ones.
+        required: false
+        type: string
+        default: pixi.toml
+      merge-dependencies:
+        description: >
+          How pixi-diff-to-markdown merges the changes of all environments and platforms:
+          'no' (one table per environment and platform), 'yes' (a single table),
+          or 'split-explicit' (one table for explicit dependencies, one for implicit ones).
+        required: false
+        type: string
+        default: split-explicit
+      environments:
+        description: >
+          Comma-separated list of pixi environments to report on (e.g. 'default,test-engine').
+          Reports on all environments when empty.
+        required: false
+        type: string
+        default: ''
+      comment-on-pr:
+        description: Post the report as a comment on the pull request
+        required: false
+        type: boolean
+        default: true
+      pixi-version:
+        description: Version of Pixi to use
+        required: false
+        type: string
+        default: v0.67.2  # default to last version before lock file version v7
+      timeout-minutes:
+        description: Timeout in minutes for the job
+        required: false
+        type: number
+        default: 10
+
+permissions: {}
+
+env:
+  PIXI_DIFF_VERSION: 0.1.8
+  PIXI_DIFF_TO_MARKDOWN_VERSION: 0.3.9
+  COMMENT_MARKER: <!-- pixi-lock-diff -->
+
+jobs:
+  pixi-lock-diff:
+    name: pixi.lock diff
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      LOCKFILE_PATH: ${{ inputs.lockfile-path }}
+      MANIFEST_PATH: ${{ inputs.manifest-path }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          # the files are read from git history: no need for a full working tree (nor LFS files)
+          sparse-checkout: |
+            ${{ inputs.lockfile-path }}
+            ${{ inputs.manifest-path }}
+          sparse-checkout-cone-mode: false
+
+      - name: Select commits to compare
+        id: commits
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "pull_request_target" ]]; then
+            # compare to the merge base, so that changes made on the base branch since the PR
+            # was branched off are not reported as changes of the PR
+            after="$PR_HEAD_SHA"
+            before=$(git merge-base "origin/$BASE_REF" "$after")
+          elif [[ "$EVENT_NAME" == "push" ]]; then
+            after="$GITHUB_SHA"
+            if [[ -n "$PUSH_BEFORE" && ! "$PUSH_BEFORE" =~ ^0+$ ]] && git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
+              before="$PUSH_BEFORE"
+            else
+              # new branch, or previous head no longer available (force push)
+              echo "::notice::Previous commit of the push is not available: comparing to the merge base with '$DEFAULT_BRANCH'"
+              before=$(git merge-base "origin/$DEFAULT_BRANCH" "$after")
+            fi
+          else
+            echo "::error::Unsupported event '$EVENT_NAME': expected pull_request or push"
+            exit 1
+          fi
+          echo "before: $before"
+          echo "after: $after"
+          echo "before=$before" >> "$GITHUB_OUTPUT"
+          echo "after=$after" >> "$GITHUB_OUTPUT"
+
+      - name: Extract lock files
+        id: files
+        env:
+          BEFORE: ${{ steps.commits.outputs.before }}
+          AFTER: ${{ steps.commits.outputs.after }}
+        run: |
+          WORK_DIR="$RUNNER_TEMP/pixi-lock-diff"
+          echo "WORK_DIR=$WORK_DIR" >> "$GITHUB_ENV"
+          mkdir -p "$WORK_DIR/before" "$WORK_DIR/after"
+          if ! git show "$AFTER:$LOCKFILE_PATH" > "$WORK_DIR/after/pixi.lock"; then
+            echo "::error::Lock file '$LOCKFILE_PATH' not found at $AFTER"
+            exit 1
+          fi
+          if git show "$BEFORE:$LOCKFILE_PATH" > "$WORK_DIR/before/pixi.lock" 2>/dev/null; then
+            echo "new-lockfile=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Lock file '$LOCKFILE_PATH' does not exist at $BEFORE: reporting all packages as added"
+            printf 'version: 6\nenvironments: {}\npackages: []\n' > "$WORK_DIR/before/pixi.lock"
+            echo "new-lockfile=true" >> "$GITHUB_OUTPUT"
+          fi
+          # keep the manifest file name: pixi reads pixi.toml and pyproject.toml differently
+          manifest="$WORK_DIR/after/$(basename "$MANIFEST_PATH")"
+          if git show "$AFTER:$MANIFEST_PATH" > "$manifest" 2>/dev/null; then
+            echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Manifest '$MANIFEST_PATH' not found at $AFTER: explicit dependencies will not be identified"
+            rm -f "$manifest"
+          fi
+
+      - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+        with:
+          pixi-version: ${{ inputs.pixi-version }}
+          run-install: false
+          cache: false
+
+      - name: Compute diff
+        env:
+          MANIFEST: ${{ steps.files.outputs.manifest }}
+          ENVIRONMENTS: ${{ inputs.environments }}
+        run: |
+          manifest_args=()
+          if [ -n "$MANIFEST" ]; then
+            manifest_args=(--manifest-path "$MANIFEST")
+          fi
+          pixi exec -s "pixi-diff==$PIXI_DIFF_VERSION" pixi-diff \
+            --before "$WORK_DIR/before/pixi.lock" --after "$WORK_DIR/after/pixi.lock" \
+            "${manifest_args[@]}" > "$WORK_DIR/diff.json"
+
+          if [ -n "$ENVIRONMENTS" ]; then
+            echo "Keeping environments: $ENVIRONMENTS"
+            jq --arg envs "$ENVIRONMENTS" \
+              '($envs | split(",") | map(gsub(" "; ""))) as $keep
+               | .environment |= with_entries(select(.key as $k | $keep | index($k)))' \
+              "$WORK_DIR/diff.json" > "$WORK_DIR/diff-filtered.json"
+            mv "$WORK_DIR/diff-filtered.json" "$WORK_DIR/diff.json"
+          fi
+
+      - name: Convert diff to Markdown
+        env:
+          MERGE_DEPENDENCIES: ${{ inputs.merge-dependencies }}
+        run: |
+          pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
+            --merge-dependencies "$MERGE_DEPENDENCIES" < "$WORK_DIR/diff.json" > "$WORK_DIR/dependencies.md"
+
+      - name: List git dependency changes
+        shell: python
+        run: |
+          """Tabulate the commits of git dependencies: pixi-diff-to-markdown reports them as 'unknown'."""
+          from __future__ import annotations
+
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          work_dir = Path(os.environ["WORK_DIR"])
+          diff = json.loads((work_dir / "diff.json").read_text(encoding="utf-8"))
+          git_url = re.compile(r"^git\+(?P<repo>[^?#]+?)(?:\.git)?(?:\?rev=(?P<rev>[^#]*))?#(?P<sha>[0-9a-f]{7,40})$")
+
+          def parse(package: dict | None) -> dict | None:
+              if not package:
+                  return None
+              match = git_url.match(package.get("pypi", ""))
+              if not match:
+                  return None
+              return {**match.groupdict(), "version": package.get("version", "")}
+
+          def describe(ref: dict | None) -> str:
+              if ref is None:
+                  return ""
+              rev = f"`{unquote(ref['rev'])}` @ " if ref["rev"] else ""
+              return f"{rev}[`{ref['sha'][:8]}`]({ref['repo']}/commit/{ref['sha']}) ({ref['version']})"
+
+          changes = {}
+          for platforms in diff.get("environment", {}).values():
+              for packages in platforms.values():
+                  for package in packages:
+                      before, after = parse(package.get("before")), parse(package.get("after"))
+                      if before or after:
+                          changes.setdefault(package["name"], (before, after))
+
+          rows = []
+          for name, (before, after) in sorted(changes.items()):
+              if before and after and before["repo"] == after["repo"] and "github.com" in after["repo"]:
+                  compare = f"[compare]({after['repo']}/compare/{before['sha']}...{after['sha']})"
+              else:
+                  compare = ""
+              rows.append(f"|{name}|{describe(before)}|{describe(after)}|{compare}|")
+
+          markdown = ""
+          if rows:
+              markdown = "\n".join(
+                  ["### Git dependencies", "", "|Dependency|Before|After|Changes|", "|-|-|-|-|", *rows, ""]
+              )
+          (work_dir / "git-dependencies.md").write_text(markdown, encoding="utf-8")
+          print(markdown or "No git dependency changes")
+
+      - name: Assemble report
+        env:
+          BEFORE: ${{ steps.commits.outputs.before }}
+          AFTER: ${{ steps.commits.outputs.after }}
+          NEW_LOCKFILE: ${{ steps.files.outputs.new-lockfile }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          ENVIRONMENTS: ${{ inputs.environments }}
+        run: |
+          report="$WORK_DIR/report.md"
+          {
+            echo "$COMMENT_MARKER"
+            echo "## 📦 Changes in \`$LOCKFILE_PATH\`"
+            echo
+            echo "Comparing [\`${BEFORE:0:8}\`]($REPO_URL/commit/$BEFORE) to [\`${AFTER:0:8}\`]($REPO_URL/commit/$AFTER)${ENVIRONMENTS:+, environments: \`$ENVIRONMENTS\`} ([workflow run]($RUN_URL))."
+            echo
+            if [ "$NEW_LOCKFILE" == "true" ]; then
+              echo "> [!NOTE]"
+              echo "> \`$LOCKFILE_PATH\` is new: all packages are reported as added."
+              echo
+            fi
+            cat "$WORK_DIR/git-dependencies.md"
+            echo
+            if [ "$(tr -d '[:space:]' < "$WORK_DIR/dependencies.md")" == "Nodiff" ]; then
+              echo "*No package changes.*"
+            else
+              # demote the headings so that they nest under the report title
+              sed -E 's/^# /### /' "$WORK_DIR/dependencies.md"
+            fi
+          } > "$report"
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on pull request
+        if: >
+          inputs.comment-on-pr &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body="$WORK_DIR/comment.md"
+          cp "$WORK_DIR/report.md" "$body"
+          # GitHub rejects comments longer than 65536 characters
+          if [ "$(wc -m < "$body")" -gt 60000 ]; then
+            echo "::notice::Report too large for a PR comment: posting the git dependencies only"
+            {
+              sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
+              echo
+              cat "$WORK_DIR/git-dependencies.md"
+              echo
+              echo "> [!NOTE]"
+              echo "> The package changes are too large for a comment: see the [job summary]($RUN_URL)."
+            } > "$body"
+          fi
+
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
+            | head -n 1)
+          if [ -n "$existing" ]; then
+            read -r comment_id node_id <<< "$existing"
+            minimized=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on IssueComment { isMinimized } } }' \
+              -f id="$node_id" --jq '.data.node.isMinimized')
+            if [ "$minimized" == "true" ]; then
+              # a hidden comment would not be noticed: replace it with a new one
+              echo "Existing comment $comment_id is hidden: replacing it"
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id"
+            else
+              echo "Updating comment $comment_id"
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" -F body=@"$body" > /dev/null
+              exit 0
+            fi
+          fi
+          echo "Creating comment"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@"$body" > /dev/null
