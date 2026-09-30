@@ -74,13 +74,11 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          # full history, with all blobs: the lock files of both commits are read with 'git show'.
+          # Do not use sparse-checkout: it makes a partial clone, and without persisted credentials
+          # the blobs of the compared commits cannot be fetched on demand.
           fetch-depth: 0
           persist-credentials: false
-          # the files are read from git history: no need for a full working tree (nor LFS files)
-          sparse-checkout: |
-            ${{ inputs.lockfile-path }}
-            ${{ inputs.manifest-path }}
-          sparse-checkout-cone-mode: false
 
       - name: Select commits to compare
         id: commits
@@ -127,7 +125,11 @@ jobs:
             echo "::error::Lock file '$LOCKFILE_PATH' not found at $AFTER"
             exit 1
           fi
-          if git show "$BEFORE:$LOCKFILE_PATH" > "$WORK_DIR/before/pixi.lock" 2>/dev/null; then
+          if [ -n "$(git ls-tree "$BEFORE" -- "$LOCKFILE_PATH")" ]; then
+            if ! git show "$BEFORE:$LOCKFILE_PATH" > "$WORK_DIR/before/pixi.lock"; then
+              echo "::error::Could not read lock file '$LOCKFILE_PATH' at $BEFORE"
+              exit 1
+            fi
             echo "new-lockfile=false" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::Lock file '$LOCKFILE_PATH' does not exist at $BEFORE: reporting all packages as added"
