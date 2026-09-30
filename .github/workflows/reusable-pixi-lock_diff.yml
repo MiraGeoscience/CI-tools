@@ -1,6 +1,4 @@
-# Report the changes made to a pixi.lock file in a readable Markdown format.
-# The report is written to the job summary, and posted as a PR comment on pull requests
-# (a single comment, updated on each run).
+# Report pixi.lock changes as Markdown in the job summary and in a PR comment (updated on each run).
 
 name: Pixi lock diff
 
@@ -8,44 +6,37 @@ on:
   workflow_call:
     inputs:
       lockfile-path:
-        description: Path of the pixi lock file, relative to the repository root
+        description: Lock file path
         required: false
         type: string
         default: pixi.lock
       manifest-path:
-        description: >
-          Path of the pixi manifest, relative to the repository root. Used to tell explicit
-          dependencies (listed in the manifest) from implicit ones.
+        description: Manifest path, to identify explicit dependencies
         required: false
         type: string
         default: pixi.toml
       merge-dependencies:
-        description: >
-          How pixi-diff-to-markdown merges the changes of all environments and platforms:
-          'no' (one table per environment and platform), 'yes' (a single table),
-          or 'split-explicit' (one table for explicit dependencies, one for implicit ones).
+        description: pixi-diff-to-markdown table merging ('no', 'yes' or 'split-explicit')
         required: false
         type: string
         default: split-explicit
       environments:
-        description: >
-          Comma-separated list of pixi environments to report on (e.g. 'default,test-engine').
-          Reports on all environments when empty.
+        description: Comma-separated environments to report on (all if empty)
         required: false
         type: string
         default: ''
       comment-on-pr:
-        description: Post the report as a comment on the pull request
+        description: Post the report as a PR comment
         required: false
         type: boolean
         default: true
       pixi-version:
-        description: Version of Pixi to use
+        description: Pixi version
         required: false
         type: string
-        default: v0.67.2  # default to last version before lock file version v7
+        default: v0.67.2  # last version before lock file v7
       timeout-minutes:
-        description: Timeout in minutes for the job
+        description: Job timeout in minutes
         required: false
         type: number
         default: 10
@@ -74,9 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          # full history, with all blobs: the lock files of both commits are read with 'git show'.
-          # Do not use sparse-checkout: it makes a partial clone, and without persisted credentials
-          # the blobs of the compared commits cannot be fetched on demand.
+          # no sparse-checkout: its partial clone cannot fetch old lock files without credentials
           fetch-depth: 0
           persist-credentials: false
 
@@ -90,8 +79,7 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           if [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "pull_request_target" ]]; then
-            # compare to the merge base, so that changes made on the base branch since the PR
-            # was branched off are not reported as changes of the PR
+            # merge base: ignore base branch changes made after the PR branched off
             after="$PR_HEAD_SHA"
             before=$(git merge-base "origin/$BASE_REF" "$after")
           elif [[ "$EVENT_NAME" == "push" ]]; then
@@ -136,7 +124,7 @@ jobs:
             printf 'version: 6\nenvironments: {}\npackages: []\n' > "$WORK_DIR/before/pixi.lock"
             echo "new-lockfile=true" >> "$GITHUB_OUTPUT"
           fi
-          # keep the manifest file name: pixi reads pixi.toml and pyproject.toml differently
+          # keep the file name: pixi.toml and pyproject.toml are parsed differently
           manifest="$WORK_DIR/after/$(basename "$MANIFEST_PATH")"
           if git show "$AFTER:$MANIFEST_PATH" > "$manifest" 2>/dev/null; then
             echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
@@ -183,7 +171,7 @@ jobs:
       - name: List git dependency changes
         shell: python
         run: |
-          """Tabulate the commits of git dependencies: pixi-diff-to-markdown reports them as 'unknown'."""
+          """Git dependency commits (pixi-diff-to-markdown shows them as 'unknown')."""
           from __future__ import annotations
 
           import json
@@ -260,7 +248,7 @@ jobs:
             if [ "$(tr -d '[:space:]' < "$WORK_DIR/dependencies.md")" == "Nodiff" ]; then
               echo "*No package changes.*"
             else
-              # demote the headings so that they nest under the report title
+              # nest headings under the report title
               sed -E 's/^# /### /' "$WORK_DIR/dependencies.md"
             fi
           } > "$report"
@@ -278,7 +266,7 @@ jobs:
         run: |
           body="$WORK_DIR/comment.md"
           cp "$WORK_DIR/report.md" "$body"
-          # GitHub rejects comments longer than 65536 characters
+          # GitHub comment limit: 65536 characters
           if [ "$(wc -m < "$body")" -gt 60000 ]; then
             echo "::notice::Report too large for a PR comment: posting the git dependencies only"
             {
@@ -299,7 +287,7 @@ jobs:
             minimized=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on IssueComment { isMinimized } } }' \
               -f id="$node_id" --jq '.data.node.isMinimized')
             if [ "$minimized" == "true" ]; then
-              # a hidden comment would not be noticed: replace it with a new one
+              # replace a hidden comment so the new report is visible
               echo "Existing comment $comment_id is hidden: replacing it"
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id"
             else
