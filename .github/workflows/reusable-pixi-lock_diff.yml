@@ -53,6 +53,10 @@ jobs:
     name: pixi.lock diff
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
+    # one run at a time per PR (or branch): avoids duplicate or outdated comments
+    concurrency:
+      group: pixi-lock-diff-${{ github.event.pull_request.number || github.ref }}-${{ inputs.lockfile-path }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write
@@ -78,7 +82,7 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          if [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "pull_request_target" ]]; then
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
             # merge base: ignore base branch changes made after the PR branched off
             after="$PR_HEAD_SHA"
             before=$(git merge-base "origin/$BASE_REF" "$after")
@@ -178,24 +182,28 @@ jobs:
           import os
           import re
           from pathlib import Path
-          from urllib.parse import unquote
+          from urllib.parse import parse_qs, urlsplit
 
           work_dir = Path(os.environ["WORK_DIR"])
           diff = json.loads((work_dir / "diff.json").read_text(encoding="utf-8"))
-          git_url = re.compile(r"^git\+(?P<repo>[^?#]+?)(?:\.git)?(?:\?rev=(?P<rev>[^#]*))?#(?P<sha>[0-9a-f]{7,40})$")
 
           def parse(package: dict | None) -> dict | None:
-              if not package:
+              """Parse 'git+<repo>[?rev=|branch=|tag=<ref>][&subdirectory=...]#<sha>'."""
+              url = (package or {}).get("pypi", "")
+              if not url.startswith("git+"):
                   return None
-              match = git_url.match(package.get("pypi", ""))
-              if not match:
+              parts = urlsplit(url.removeprefix("git+"))
+              if not re.fullmatch(r"[0-9a-f]{7,40}", parts.fragment):
                   return None
-              return {**match.groupdict(), "version": package.get("version", "")}
+              query = parse_qs(parts.query)
+              rev = next((query[key][0] for key in ("rev", "branch", "tag") if key in query), "")
+              repo = f"{parts.scheme}://{parts.netloc}{parts.path}".removesuffix(".git")
+              return {"repo": repo, "rev": rev, "sha": parts.fragment, "version": package.get("version", "")}
 
           def describe(ref: dict | None) -> str:
               if ref is None:
                   return ""
-              rev = f"`{unquote(ref['rev'])}` @ " if ref["rev"] else ""
+              rev = f"`{ref['rev']}` @ " if ref["rev"] else ""
               return f"{rev}[`{ref['sha'][:8]}`]({ref['repo']}/commit/{ref['sha']}) ({ref['version']})"
 
           changes = {}
@@ -204,10 +212,12 @@ jobs:
                   for package in packages:
                       before, after = parse(package.get("before")), parse(package.get("after"))
                       if before or after:
-                          changes.setdefault(package["name"], (before, after))
+                          # one row per distinct change: environments may resolve different commits
+                          key = (package["name"], (before or {}).get("sha", ""), (after or {}).get("sha", ""))
+                          changes.setdefault(key, (before, after))
 
           rows = []
-          for name, (before, after) in sorted(changes.items()):
+          for (name, _, _), (before, after) in sorted(changes.items()):
               if before and after and before["repo"] == after["repo"] and "github.com" in after["repo"]:
                   compare = f"[compare]({after['repo']}/compare/{before['sha']}...{after['sha']})"
               else:
