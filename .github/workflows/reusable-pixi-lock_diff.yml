@@ -1,0 +1,254 @@
+# Report pull request changes to pixi.lock in the job summary, with a short PR comment (updated on each run) linking to it.
+
+name: Pixi lock diff
+
+on:
+  workflow_call:
+    inputs:
+      lockfile-path:
+        description: Lock file path
+        required: false
+        type: string
+        default: pixi.lock
+      manifest-path:
+        description: Manifest path, to identify explicit dependencies
+        required: false
+        type: string
+        default: pixi.toml
+      comment-on-pr:
+        description: Post the report as a PR comment
+        required: false
+        type: boolean
+        default: true
+      pixi-version:
+        description: Pixi version
+        required: false
+        type: string
+        default: v0.67.2  # last version before lock file v7
+      timeout-minutes:
+        description: Job timeout in minutes
+        required: false
+        type: number
+        default: 10
+
+permissions: {}
+
+env:
+  PIXI_DIFF_VERSION: 0.1.8
+  PIXI_DIFF_TO_MARKDOWN_VERSION: 0.3.9
+  COMMENT_MARKER: <!-- pixi-lock-diff -->
+
+jobs:
+  pixi-lock-diff:
+    name: pixi.lock diff
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    # one run at a time per PR: avoids duplicate or outdated comments
+    concurrency:
+      group: pixi-lock-diff-${{ github.event.pull_request.number }}-${{ inputs.lockfile-path }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      LOCKFILE_PATH: ${{ inputs.lockfile-path }}
+      MANIFEST_PATH: ${{ inputs.manifest-path }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # PR head rather than the merge commit, and the full history to find the merge base
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get base lock file
+        id: base
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # merge base: ignore base branch changes made after the PR branched off
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+          if ! git show "$base:$LOCKFILE_PATH" > "$RUNNER_TEMP/base.lock" 2> /dev/null; then
+            echo "::notice::'$LOCKFILE_PATH' does not exist at $base: reporting all packages as added"
+            printf 'version: 6\nenvironments: {}\npackages: []\n' > "$RUNNER_TEMP/base.lock"
+          fi
+
+      - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+        with:
+          pixi-version: ${{ inputs.pixi-version }}
+          run-install: false
+          cache: false
+
+      - name: Compute diff
+        run: |
+          manifest_args=()
+          if [ -f "$MANIFEST_PATH" ]; then
+            manifest_args=(--manifest-path "$MANIFEST_PATH")
+          else
+            echo "::warning::Manifest '$MANIFEST_PATH' not found: explicit dependencies will not be identified"
+          fi
+          pixi exec -s "pixi-diff==$PIXI_DIFF_VERSION" pixi-diff \
+            --before "$RUNNER_TEMP/base.lock" --after "$LOCKFILE_PATH" "${manifest_args[@]}" > "$RUNNER_TEMP/diff.json"
+          pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
+            --merge-dependencies yes < "$RUNNER_TEMP/diff.json" > "$RUNNER_TEMP/dependencies.md"
+
+      - name: Build report
+        shell: python
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_ID: ${{ job.check_run_id }}
+        run: |
+          """Job summary and PR comment: change counts and explicit dependency changes (with git commits, which
+          pixi-diff-to-markdown shows as 'unknown'), then all changes in the summary only."""
+          from __future__ import annotations
+
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import parse_qs, urlsplit
+
+          COMMENT_MAX_CHARS = 60000  # GitHub limit: 65536
+          PRIORITY = ["downgraded", "major", "minor", "patch", "updated", "rebuilt", "added", "removed"]
+          LABELS = {"downgraded": "⚠️ Downgrade", "major": "Major upgrade", "minor": "Minor upgrade", "patch": "Patch upgrade",
+                    "updated": "Update", "rebuilt": "New commit", "added": "Added", "removed": "Removed"}
+
+          env = os.environ
+          temp = Path(env["RUNNER_TEMP"])
+          diff = json.loads((temp / "diff.json").read_text(encoding="utf-8"))
+
+          def git_ref(package: dict) -> tuple[str, str, str] | None:
+              """Repo, ref and commit of 'git+<repo>[?rev=|branch=|tag=<ref>][&subdirectory=...]#<sha>'."""
+              url = package.get("pypi", "")
+              parts = urlsplit(url.removeprefix("git+"))
+              if not url.startswith("git+") or not re.fullmatch(r"[0-9a-f]{7,40}", parts.fragment):
+                  return None
+              query = parse_qs(parts.query)
+              rev = next((query[key][0] for key in ("rev", "branch", "tag") if key in query), "")
+              return f"{parts.scheme}://{parts.netloc}{parts.path}".removesuffix(".git"), rev, parts.fragment
+
+          def version(package: dict) -> str:
+              """Conda: from the file name '<name>-<version>-<build>.conda'. PyPI: version field."""
+              if "conda" in package:
+                  parts = package["conda"].rsplit("/", 1)[-1].removesuffix(".conda").removesuffix(".tar.bz2").rsplit("-", 2)
+                  if len(parts) == 3:
+                      return parts[1]
+              return package.get("version", "")
+
+          def release(text: str) -> tuple[int, ...] | None:
+              """Numeric release without epoch, padded for comparison: '1!2.10rc1' -> (2, 10, 0, ...)."""
+              match = re.match(r"\d+(?:\.\d+)*", text.split("!")[-1])
+              return tuple(map(int, match.group().split("."))) + (0,) * 8 if match else None
+
+          def classify(before: dict | None, after: dict | None) -> str:
+              if before is None or after is None:
+                  return "added" if before is None else "removed"
+              if version(before) == version(after):
+                  return "rebuilt"
+              old, new = release(version(before)), release(version(after))
+              if old is None or new is None or old == new:
+                  return "updated"  # e.g. pre-release change
+              if new < old:
+                  return "downgraded"
+              return "major" if new[0] != old[0] else "minor" if new[1] != old[1] else "patch"
+
+          def cell(package: dict | None) -> str:
+              if package is None:
+                  return ""
+              if ref := git_ref(package):
+                  repo, rev, sha = ref
+                  return f"{f'`{rev}` @ ' if rev else ''}[`{sha[:8]}`]({repo}/commit/{sha}) ({package.get('version', '')})"
+              return version(package)
+
+          # one status per package name (the most significant across environments and platforms),
+          # one row per distinct explicit change (environments may resolve different versions)
+          status, rows = {}, {}
+          for platforms in diff["environment"].values():
+              for packages in platforms.values():
+                  for package in packages:
+                      name, before, after = package["name"], package.get("before"), package.get("after")
+                      change = classify(before, after)
+                      if name not in status or PRIORITY.index(change) < PRIORITY.index(status[name]):
+                          status[name] = change
+                      if package.get("explicit") and cell(before) != cell(after):
+                          label = LABELS[change]
+                          old_ref, new_ref = before and git_ref(before), after and git_ref(after)
+                          if old_ref and new_ref and old_ref[0] == new_ref[0] and "github.com" in new_ref[0]:
+                              label += f" ([compare]({new_ref[0]}/compare/{old_ref[2]}...{new_ref[2]}))"
+                          rows.setdefault((name, cell(before), cell(after)), label)
+
+          counts = {change: list(status.values()).count(change) for change in PRIORITY}
+          parts = [
+              (counts["major"] + counts["minor"] + counts["patch"], "upgraded" + (f" ({counts['major']} major)" if counts["major"] else "")),
+              (counts["downgraded"], "⚠️ downgraded"),
+              (counts["updated"], "other version changes"),
+              (counts["rebuilt"], "rebuilt (same version)"),
+              (counts["added"], "added"),
+              (counts["removed"], "removed"),
+          ]
+          stats = f"**{len(status)}** package{'s' if len(status) > 1 else ''} changed: {', '.join(f'{n} {label}' for n, label in parts if n)}." if status else "*No package changes.*"
+
+          table = []
+          if rows:
+              lines = ["|Dependency|Before|After|Change|", "|-|-|-|-|"] + [f"|{n}|{b}|{a}|{c}|" for (n, b, a), c in sorted(rows.items())]
+              # collapse long tables
+              table = ["### Explicit dependencies", "", *lines, ""] if len(rows) <= 15 else [
+                  "<details>", f"<summary><b>Explicit dependencies</b> ({len(rows)} changes)</summary>", "", *lines, "", "</details>", ""]
+
+          head = [
+              env["COMMENT_MARKER"],
+              f"## 📦 Changes in `{env['LOCKFILE_PATH']}`",
+              "",
+              f"Comparing [`{env['BASE_SHA'][:8]}`]({env['REPO_URL']}/commit/{env['BASE_SHA']}) to "
+              f"[`{env['HEAD_SHA'][:8]}`]({env['REPO_URL']}/commit/{env['HEAD_SHA']}) ([workflow run]({env['RUN_URL']})).",
+              "",
+              stats,
+              "",
+          ]
+          everything = (temp / "dependencies.md").read_text(encoding="utf-8")
+          summary = head + table + (["### All changes", "", everything] if everything.strip() != "No diff" else [])
+          with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:
+              file.write("\n".join(summary) + "\n")
+
+          link = f"📋 **[Full report in the job summary]({env['RUN_URL']}{'#summary-' + env['JOB_ID'] if env.get('JOB_ID') else ''})**"
+          comment = "\n".join(head + table + [link])
+          if len(comment) > COMMENT_MAX_CHARS:
+              print(f"::notice::PR comment too large ({len(comment)} characters): leaving out the explicit dependencies")
+              comment = "\n".join(head + ["> [!NOTE]", "> The explicit dependency changes are too large for a comment.", "", link])
+          (temp / "comment.md").write_text(comment + "\n", encoding="utf-8")
+          print(comment)
+
+      - name: Comment on pull request
+        if: inputs.comment-on-pr && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          body="$RUNNER_TEMP/comment.md"
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
+            | head -n 1)
+          if [ -n "$existing" ]; then
+            read -r comment_id node_id <<< "$existing"
+            minimized=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on IssueComment { isMinimized } } }' \
+              -f id="$node_id" --jq '.data.node.isMinimized')
+            if [ "$minimized" == "true" ]; then
+              # replace a hidden comment so the new report is visible
+              echo "Existing comment $comment_id is hidden: replacing it"
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id"
+            else
+              echo "Updating comment $comment_id"
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" -F body=@"$body" > /dev/null
+              exit 0
+            fi
+          fi
+          echo "Creating comment"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@"$body" > /dev/null
