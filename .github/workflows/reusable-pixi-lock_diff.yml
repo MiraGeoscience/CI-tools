@@ -1,4 +1,4 @@
-# Report pixi.lock changes as Markdown in the job summary and in a PR comment (updated on each run).
+# Report pixi.lock changes as Markdown in the job summary, with a short PR comment (updated on each run) linking to it.
 
 name: Pixi lock diff
 
@@ -273,21 +273,33 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_ID: ${{ job.check_run_id }}
         run: |
+          # short comment linking to the job summary: the full tables are not duplicated in the conversation
+          summary_url="$RUN_URL${JOB_ID:+#summary-$JOB_ID}"
+          # one status per package name, across environments and platforms
+          stats=$(jq -r '
+            [.environment[][][]
+             | {name, explicit, status: (if .before == null then "added" elif .after == null then "removed" else "updated" end)}]
+            | group_by(.name)
+            | map({name: .[0].name, explicit: any(.[]; .explicit),
+                   status: (if all(.[]; .status == "added") then "added"
+                            elif all(.[]; .status == "removed") then "removed" else "updated" end)})
+            | if length == 0 then "*No package changes.*" else
+                "**\(length)** packages changed: \(map(select(.status == "added")) | length) added, \(map(select(.status == "removed")) | length) removed, \(map(select(.status == "updated")) | length) updated."
+                + (map(select(.explicit) | "`\(.name)`") | if length > 0 then " Explicit: \(join(", "))." else "" end)
+              end' "$WORK_DIR/diff.json")
+
           body="$WORK_DIR/comment.md"
-          cp "$WORK_DIR/report.md" "$body"
-          # GitHub comment limit: 65536 characters
-          if [ "$(wc -m < "$body")" -gt 60000 ]; then
-            echo "::notice::Report too large for a PR comment: posting the git dependencies only"
-            {
-              sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
-              echo
-              cat "$WORK_DIR/git-dependencies.md"
-              echo
-              echo "> [!NOTE]"
-              echo "> The package changes are too large for a comment: see the [job summary]($RUN_URL)."
-            } > "$body"
-          fi
+          {
+            sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
+            echo
+            echo "$stats"
+            echo
+            cat "$WORK_DIR/git-dependencies.md"
+            echo
+            echo "📋 **[Full report in the job summary]($summary_url)**"
+          } > "$body"
 
           existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
