@@ -172,10 +172,10 @@ jobs:
           pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
             --merge-dependencies "$MERGE_DEPENDENCIES" < "$WORK_DIR/diff.json" > "$WORK_DIR/dependencies.md"
 
-      - name: List git dependency changes
+      - name: Summarize changes
         shell: python
         run: |
-          """Git dependency commits (pixi-diff-to-markdown shows them as 'unknown')."""
+          """Change counts, explicit dependency changes and git dependency commits (pixi-diff-to-markdown shows them as 'unknown')."""
           from __future__ import annotations
 
           import json
@@ -232,6 +232,79 @@ jobs:
           (work_dir / "git-dependencies.md").write_text(markdown, encoding="utf-8")
           print(markdown or "No git dependency changes")
 
+          def version_build(package: dict) -> tuple[str, str]:
+              """Conda: from the file name '<name>-<version>-<build>.conda'. PyPI: version only."""
+              if "conda" in package:
+                  filename = package["conda"].rsplit("/", 1)[-1].removesuffix(".conda").removesuffix(".tar.bz2")
+                  parts = filename.rsplit("-", 2)
+                  if len(parts) == 3:
+                      return parts[1], parts[2]
+              return package.get("version", ""), ""
+
+          def release(version: str) -> tuple[int, ...] | None:
+              """Leading numeric part, without epoch: '1!2.10.0rc1' -> (2, 10, 0)."""
+              match = re.match(r"\d+(?:\.\d+)*", version.split("!")[-1])
+              return tuple(int(part) for part in match.group().split(".")) if match else None
+
+          def classify(before: dict | None, after: dict | None) -> str:
+              if before is None:
+                  return "added"
+              if after is None:
+                  return "removed"
+              before_version, after_version = version_build(before)[0], version_build(after)[0]
+              if before_version == after_version:
+                  return "rebuilt"
+              old, new = release(before_version), release(after_version)
+              if old is None or new is None:
+                  return "updated"
+              size = max(len(old), len(new))
+              old, new = old + (0,) * (size - len(old)), new + (0,) * (size - len(new))
+              if new == old:
+                  return "updated"  # pre-release, post-release or local version change
+              if new < old:
+                  return "downgraded"
+              return "major" if new[0] != old[0] else "upgraded"
+
+          # one status per package name, the most significant across environments and platforms
+          priority = ["downgraded", "major", "upgraded", "updated", "rebuilt", "added", "removed"]
+          status, explicit = {}, set()
+          explicit_diff = {key: value for key, value in diff.items() if key != "environment"}
+          explicit_diff["environment"] = {}
+          for environment, platforms in diff.get("environment", {}).items():
+              for platform, packages in platforms.items():
+                  for package in packages:
+                      name, change = package["name"], classify(package.get("before"), package.get("after"))
+                      if name not in status or priority.index(change) < priority.index(status[name]):
+                          status[name] = change
+                      if package.get("explicit"):
+                          explicit.add(name)
+                          # version changes only: git dependencies have their own table
+                          is_git = parse(package.get("before")) or parse(package.get("after"))
+                          if change != "rebuilt" and not is_git:
+                              explicit_diff["environment"].setdefault(environment, {}).setdefault(platform, []).append(package)
+
+          counts = {change: sum(value == change for value in status.values()) for change in priority}
+          if status:
+              labels = [
+                  ("upgraded", counts["upgraded"] + counts["major"], f" ({counts['major']} major)" if counts["major"] else ""),
+                  ("⚠️ downgraded", counts["downgraded"], ""),
+                  ("other version changes", counts["updated"], ""),
+                  ("rebuilt (same version)", counts["rebuilt"], ""),
+                  ("added", counts["added"], ""),
+                  ("removed", counts["removed"], ""),
+              ]
+              stats = f"**{len(status)}** packages changed: " + ", ".join(
+                  f"{count} {label}{detail}" for label, count, detail in labels if count
+              ) + "."
+          else:
+              stats = "*No package changes.*"
+          (work_dir / "stats.md").write_text(stats + "\n", encoding="utf-8")
+          print(stats)
+
+          names = ", ".join(f"`{name}`" for name in sorted(explicit))
+          (work_dir / "explicit-names.md").write_text(f"Explicit dependencies: {names}.\n\n" if names else "", encoding="utf-8")
+          (work_dir / "explicit-diff.json").write_text(json.dumps(explicit_diff), encoding="utf-8")
+
       - name: Assemble report
         env:
           BEFORE: ${{ steps.commits.outputs.before }}
@@ -253,54 +326,97 @@ jobs:
               echo "> \`$LOCKFILE_PATH\` is new: all packages are reported as added."
               echo
             fi
+            cat "$WORK_DIR/stats.md"
+            echo
             cat "$WORK_DIR/git-dependencies.md"
             echo
-            if [ "$(tr -d '[:space:]' < "$WORK_DIR/dependencies.md")" == "Nodiff" ]; then
-              echo "*No package changes.*"
-            else
+            if [ "$(tr -d '[:space:]' < "$WORK_DIR/dependencies.md")" != "Nodiff" ]; then
               # nest headings under the report title
               sed -E 's/^# /### /' "$WORK_DIR/dependencies.md"
             fi
           } > "$report"
           cat "$report" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Comment on pull request
+      - name: Assemble PR comment
+        id: comment
         if: >
           inputs.comment-on-pr &&
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository
         env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           JOB_ID: ${{ job.check_run_id }}
+          # GitHub comment limit: 65536 characters
+          COMMENT_MAX_CHARS: 60000
         run: |
-          # short comment linking to the job summary: the full tables are not duplicated in the conversation
+          # short comment linking to the job summary: the implicit dependencies are not duplicated in the conversation
           summary_url="$RUN_URL${JOB_ID:+#summary-$JOB_ID}"
-          # one status per package name, across environments and platforms
-          stats=$(jq -r '
-            [.environment[][][]
-             | {name, explicit, status: (if .before == null then "added" elif .after == null then "removed" else "updated" end)}]
-            | group_by(.name)
-            | map({name: .[0].name, explicit: any(.[]; .explicit),
-                   status: (if all(.[]; .status == "added") then "added"
-                            elif all(.[]; .status == "removed") then "removed" else "updated" end)})
-            | if length == 0 then "*No package changes.*" else
-                "**\(length)** packages changed: \(map(select(.status == "added")) | length) added, \(map(select(.status == "removed")) | length) removed, \(map(select(.status == "updated")) | length) updated."
-                + (map(select(.explicit) | "`\(.name)`") | if length > 0 then " Explicit: \(join(", "))." else "" end)
-              end' "$WORK_DIR/diff.json")
 
+          explicit="$WORK_DIR/explicit.md"
+          pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
+            --merge-dependencies yes --hide-tables no < "$WORK_DIR/explicit-diff.json" > "$explicit.tmp"
+          if [ "$(tr -d '[:space:]' < "$explicit.tmp")" == "Nodiff" ]; then
+            : > "$explicit"
+          else
+            rows=$(grep -c '^|\[\?\*\*' "$explicit.tmp" || true)
+            {
+              # collapse long tables
+              if [ "$rows" -le 15 ]; then
+                echo "### Explicit dependencies"
+                echo
+              else
+                echo "<details>"
+                echo "<summary><b>Explicit dependencies</b> ($rows changes)</summary>"
+                echo
+              fi
+              # all rows are explicit: drop the bold footnote, and the downgrade footnote when unused
+              unused_footnotes=(-e '/^\[^2\]:/d')
+              if grep -q '^|.*\[^2\]' "$explicit.tmp"; then
+                unused_footnotes=()
+              fi
+              sed -e 's/^|Dependency\[^1\]|/|Dependency|/' -e '/^\[^1\]:/d' "${unused_footnotes[@]}" "$explicit.tmp"
+              if [ "$rows" -gt 15 ]; then
+                echo "</details>"
+                echo
+              fi
+            } > "$explicit"
+          fi
+
+          # drop details until the comment fits
           body="$WORK_DIR/comment.md"
-          {
-            sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
-            echo
-            echo "$stats"
-            echo
-            cat "$WORK_DIR/git-dependencies.md"
-            echo
-            echo "📋 **[Full report in the job summary]($summary_url)**"
-          } > "$body"
+          for level in full names minimal; do
+            {
+              sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
+              echo
+              cat "$WORK_DIR/stats.md"
+              echo
+              case "$level" in
+                full) cat "$explicit" "$WORK_DIR/git-dependencies.md" ;;
+                names) cat "$WORK_DIR/explicit-names.md" "$WORK_DIR/git-dependencies.md" ;;
+              esac
+              echo
+              if [ "$level" != "full" ]; then
+                echo "> [!NOTE]"
+                echo "> Some details are too large for a comment: see the full report."
+                echo
+              fi
+              echo "📋 **[Full report in the job summary]($summary_url)**"
+            } > "$body"
+            size=$(wc -m < "$body")
+            echo "Comment with '$level' details: $size characters"
+            if [ "$size" -le "$COMMENT_MAX_CHARS" ]; then
+              break
+            fi
+            echo "::notice::PR comment too large with '$level' details ($size characters): removing details"
+          done
 
+      - name: Comment on pull request
+        if: steps.comment.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          body="$WORK_DIR/comment.md"
           existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
             | head -n 1)
