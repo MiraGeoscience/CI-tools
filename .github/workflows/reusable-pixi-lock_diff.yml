@@ -1,4 +1,4 @@
-# Report pixi.lock changes as Markdown in the job summary, with a short PR comment (updated on each run) linking to it.
+# Report pull request changes to pixi.lock in the job summary, with a short PR comment (updated on each run) linking to it.
 
 name: Pixi lock diff
 
@@ -15,16 +15,6 @@ on:
         required: false
         type: string
         default: pixi.toml
-      merge-dependencies:
-        description: pixi-diff-to-markdown table merging ('no', 'yes' or 'split-explicit')
-        required: false
-        type: string
-        default: split-explicit
-      environments:
-        description: Comma-separated environments to report on (all if empty)
-        required: false
-        type: string
-        default: ''
       comment-on-pr:
         description: Post the report as a PR comment
         required: false
@@ -51,11 +41,12 @@ env:
 jobs:
   pixi-lock-diff:
     name: pixi.lock diff
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
-    # one run at a time per PR (or branch): avoids duplicate or outdated comments
+    # one run at a time per PR: avoids duplicate or outdated comments
     concurrency:
-      group: pixi-lock-diff-${{ github.event.pull_request.number || github.ref }}-${{ inputs.lockfile-path }}
+      group: pixi-lock-diff-${{ github.event.pull_request.number }}-${{ inputs.lockfile-path }}
       cancel-in-progress: true
     permissions:
       contents: read
@@ -69,72 +60,22 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          # no sparse-checkout: its partial clone cannot fetch old lock files without credentials
+          # PR head rather than the merge commit, and the full history to find the merge base
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Select commits to compare
-        id: commits
+      - name: Get base lock file
+        id: base
         env:
-          EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            # merge base: ignore base branch changes made after the PR branched off
-            after="$PR_HEAD_SHA"
-            before=$(git merge-base "origin/$BASE_REF" "$after")
-          elif [[ "$EVENT_NAME" == "push" ]]; then
-            after="$GITHUB_SHA"
-            if [[ -n "$PUSH_BEFORE" && ! "$PUSH_BEFORE" =~ ^0+$ ]] && git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
-              before="$PUSH_BEFORE"
-            else
-              # new branch, or previous head no longer available (force push)
-              echo "::notice::Previous commit of the push is not available: comparing to the merge base with '$DEFAULT_BRANCH'"
-              before=$(git merge-base "origin/$DEFAULT_BRANCH" "$after")
-            fi
-          else
-            echo "::error::Unsupported event '$EVENT_NAME': expected pull_request or push"
-            exit 1
-          fi
-          echo "before: $before"
-          echo "after: $after"
-          echo "before=$before" >> "$GITHUB_OUTPUT"
-          echo "after=$after" >> "$GITHUB_OUTPUT"
-
-      - name: Extract lock files
-        id: files
-        env:
-          BEFORE: ${{ steps.commits.outputs.before }}
-          AFTER: ${{ steps.commits.outputs.after }}
-        run: |
-          WORK_DIR="$RUNNER_TEMP/pixi-lock-diff"
-          echo "WORK_DIR=$WORK_DIR" >> "$GITHUB_ENV"
-          mkdir -p "$WORK_DIR/before" "$WORK_DIR/after"
-          if ! git show "$AFTER:$LOCKFILE_PATH" > "$WORK_DIR/after/pixi.lock"; then
-            echo "::error::Lock file '$LOCKFILE_PATH' not found at $AFTER"
-            exit 1
-          fi
-          if [ -n "$(git ls-tree "$BEFORE" -- "$LOCKFILE_PATH")" ]; then
-            if ! git show "$BEFORE:$LOCKFILE_PATH" > "$WORK_DIR/before/pixi.lock"; then
-              echo "::error::Could not read lock file '$LOCKFILE_PATH' at $BEFORE"
-              exit 1
-            fi
-            echo "new-lockfile=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::Lock file '$LOCKFILE_PATH' does not exist at $BEFORE: reporting all packages as added"
-            printf 'version: 6\nenvironments: {}\npackages: []\n' > "$WORK_DIR/before/pixi.lock"
-            echo "new-lockfile=true" >> "$GITHUB_OUTPUT"
-          fi
-          # keep the file name: pixi.toml and pyproject.toml are parsed differently
-          manifest="$WORK_DIR/after/$(basename "$MANIFEST_PATH")"
-          if git show "$AFTER:$MANIFEST_PATH" > "$manifest" 2>/dev/null; then
-            echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Manifest '$MANIFEST_PATH' not found at $AFTER: explicit dependencies will not be identified"
-            rm -f "$manifest"
+          # merge base: ignore base branch changes made after the PR branched off
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+          if ! git show "$base:$LOCKFILE_PATH" > "$RUNNER_TEMP/base.lock" 2> /dev/null; then
+            echo "::notice::'$LOCKFILE_PATH' does not exist at $base: reporting all packages as added"
+            printf 'version: 6\nenvironments: {}\npackages: []\n' > "$RUNNER_TEMP/base.lock"
           fi
 
       - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
@@ -144,38 +85,29 @@ jobs:
           cache: false
 
       - name: Compute diff
-        env:
-          MANIFEST: ${{ steps.files.outputs.manifest }}
-          ENVIRONMENTS: ${{ inputs.environments }}
         run: |
           manifest_args=()
-          if [ -n "$MANIFEST" ]; then
-            manifest_args=(--manifest-path "$MANIFEST")
+          if [ -f "$MANIFEST_PATH" ]; then
+            manifest_args=(--manifest-path "$MANIFEST_PATH")
+          else
+            echo "::warning::Manifest '$MANIFEST_PATH' not found: explicit dependencies will not be identified"
           fi
           pixi exec -s "pixi-diff==$PIXI_DIFF_VERSION" pixi-diff \
-            --before "$WORK_DIR/before/pixi.lock" --after "$WORK_DIR/after/pixi.lock" \
-            "${manifest_args[@]}" > "$WORK_DIR/diff.json"
-
-          if [ -n "$ENVIRONMENTS" ]; then
-            echo "Keeping environments: $ENVIRONMENTS"
-            jq --arg envs "$ENVIRONMENTS" \
-              '($envs | split(",") | map(gsub(" "; ""))) as $keep
-               | .environment |= with_entries(select(.key as $k | $keep | index($k)))' \
-              "$WORK_DIR/diff.json" > "$WORK_DIR/diff-filtered.json"
-            mv "$WORK_DIR/diff-filtered.json" "$WORK_DIR/diff.json"
-          fi
-
-      - name: Convert diff to Markdown
-        env:
-          MERGE_DEPENDENCIES: ${{ inputs.merge-dependencies }}
-        run: |
+            --before "$RUNNER_TEMP/base.lock" --after "$LOCKFILE_PATH" "${manifest_args[@]}" > "$RUNNER_TEMP/diff.json"
           pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
-            --merge-dependencies "$MERGE_DEPENDENCIES" < "$WORK_DIR/diff.json" > "$WORK_DIR/dependencies.md"
+            --merge-dependencies yes < "$RUNNER_TEMP/diff.json" > "$RUNNER_TEMP/dependencies.md"
 
-      - name: Summarize changes
+      - name: Build report
         shell: python
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_ID: ${{ job.check_run_id }}
         run: |
-          """Change counts, explicit dependency changes and git dependency commits (pixi-diff-to-markdown shows them as 'unknown')."""
+          """Job summary and PR comment: change counts and explicit dependency changes (with git commits, which
+          pixi-diff-to-markdown shows as 'unknown'), then all changes in the summary only."""
           from __future__ import annotations
 
           import json
@@ -184,239 +116,123 @@ jobs:
           from pathlib import Path
           from urllib.parse import parse_qs, urlsplit
 
-          work_dir = Path(os.environ["WORK_DIR"])
-          diff = json.loads((work_dir / "diff.json").read_text(encoding="utf-8"))
+          COMMENT_MAX_CHARS = 60000  # GitHub limit: 65536
+          PRIORITY = ["downgraded", "major", "minor", "patch", "updated", "rebuilt", "added", "removed"]
+          LABELS = {"downgraded": "⚠️ Downgrade", "major": "Major upgrade", "minor": "Minor upgrade", "patch": "Patch upgrade",
+                    "updated": "Update", "rebuilt": "New commit", "added": "Added", "removed": "Removed"}
 
-          def parse(package: dict | None) -> dict | None:
-              """Parse 'git+<repo>[?rev=|branch=|tag=<ref>][&subdirectory=...]#<sha>'."""
-              url = (package or {}).get("pypi", "")
-              if not url.startswith("git+"):
-                  return None
+          env = os.environ
+          temp = Path(env["RUNNER_TEMP"])
+          diff = json.loads((temp / "diff.json").read_text(encoding="utf-8"))
+
+          def git_ref(package: dict) -> tuple[str, str, str] | None:
+              """Repo, ref and commit of 'git+<repo>[?rev=|branch=|tag=<ref>][&subdirectory=...]#<sha>'."""
+              url = package.get("pypi", "")
               parts = urlsplit(url.removeprefix("git+"))
-              if not re.fullmatch(r"[0-9a-f]{7,40}", parts.fragment):
+              if not url.startswith("git+") or not re.fullmatch(r"[0-9a-f]{7,40}", parts.fragment):
                   return None
               query = parse_qs(parts.query)
               rev = next((query[key][0] for key in ("rev", "branch", "tag") if key in query), "")
-              repo = f"{parts.scheme}://{parts.netloc}{parts.path}".removesuffix(".git")
-              return {"repo": repo, "rev": rev, "sha": parts.fragment, "version": package.get("version", "")}
+              return f"{parts.scheme}://{parts.netloc}{parts.path}".removesuffix(".git"), rev, parts.fragment
 
-          def describe(ref: dict | None) -> str:
-              if ref is None:
-                  return ""
-              rev = f"`{ref['rev']}` @ " if ref["rev"] else ""
-              return f"{rev}[`{ref['sha'][:8]}`]({ref['repo']}/commit/{ref['sha']}) ({ref['version']})"
-
-          changes = {}
-          for platforms in diff.get("environment", {}).values():
-              for packages in platforms.values():
-                  for package in packages:
-                      before, after = parse(package.get("before")), parse(package.get("after"))
-                      if before or after:
-                          # one row per distinct change: environments may resolve different commits
-                          key = (package["name"], (before or {}).get("sha", ""), (after or {}).get("sha", ""))
-                          changes.setdefault(key, (before, after))
-
-          rows = []
-          for (name, _, _), (before, after) in sorted(changes.items()):
-              if before and after and before["repo"] == after["repo"] and "github.com" in after["repo"]:
-                  compare = f"[compare]({after['repo']}/compare/{before['sha']}...{after['sha']})"
-              else:
-                  compare = ""
-              rows.append(f"|{name}|{describe(before)}|{describe(after)}|{compare}|")
-
-          markdown = ""
-          if rows:
-              markdown = "\n".join(
-                  ["### Git dependencies", "", "|Dependency|Before|After|Changes|", "|-|-|-|-|", *rows, ""]
-              )
-          (work_dir / "git-dependencies.md").write_text(markdown, encoding="utf-8")
-          print(markdown or "No git dependency changes")
-
-          def version_build(package: dict) -> tuple[str, str]:
-              """Conda: from the file name '<name>-<version>-<build>.conda'. PyPI: version only."""
+          def version(package: dict) -> str:
+              """Conda: from the file name '<name>-<version>-<build>.conda'. PyPI: version field."""
               if "conda" in package:
-                  filename = package["conda"].rsplit("/", 1)[-1].removesuffix(".conda").removesuffix(".tar.bz2")
-                  parts = filename.rsplit("-", 2)
+                  parts = package["conda"].rsplit("/", 1)[-1].removesuffix(".conda").removesuffix(".tar.bz2").rsplit("-", 2)
                   if len(parts) == 3:
-                      return parts[1], parts[2]
-              return package.get("version", ""), ""
+                      return parts[1]
+              return package.get("version", "")
 
-          def release(version: str) -> tuple[int, ...] | None:
-              """Leading numeric part, without epoch: '1!2.10.0rc1' -> (2, 10, 0)."""
-              match = re.match(r"\d+(?:\.\d+)*", version.split("!")[-1])
-              return tuple(int(part) for part in match.group().split(".")) if match else None
+          def release(text: str) -> tuple[int, ...] | None:
+              """Numeric release without epoch, padded for comparison: '1!2.10rc1' -> (2, 10, 0, ...)."""
+              match = re.match(r"\d+(?:\.\d+)*", text.split("!")[-1])
+              return tuple(map(int, match.group().split("."))) + (0,) * 8 if match else None
 
           def classify(before: dict | None, after: dict | None) -> str:
-              if before is None:
-                  return "added"
-              if after is None:
-                  return "removed"
-              before_version, after_version = version_build(before)[0], version_build(after)[0]
-              if before_version == after_version:
+              if before is None or after is None:
+                  return "added" if before is None else "removed"
+              if version(before) == version(after):
                   return "rebuilt"
-              old, new = release(before_version), release(after_version)
-              if old is None or new is None:
-                  return "updated"
-              size = max(len(old), len(new))
-              old, new = old + (0,) * (size - len(old)), new + (0,) * (size - len(new))
-              if new == old:
-                  return "updated"  # pre-release, post-release or local version change
+              old, new = release(version(before)), release(version(after))
+              if old is None or new is None or old == new:
+                  return "updated"  # e.g. pre-release change
               if new < old:
                   return "downgraded"
-              return "major" if new[0] != old[0] else "upgraded"
+              return "major" if new[0] != old[0] else "minor" if new[1] != old[1] else "patch"
 
-          # one status per package name, the most significant across environments and platforms
-          priority = ["downgraded", "major", "upgraded", "updated", "rebuilt", "added", "removed"]
-          status, explicit = {}, set()
-          explicit_diff = {key: value for key, value in diff.items() if key != "environment"}
-          explicit_diff["environment"] = {}
-          for environment, platforms in diff.get("environment", {}).items():
-              for platform, packages in platforms.items():
+          def cell(package: dict | None) -> str:
+              if package is None:
+                  return ""
+              if ref := git_ref(package):
+                  repo, rev, sha = ref
+                  return f"{f'`{rev}` @ ' if rev else ''}[`{sha[:8]}`]({repo}/commit/{sha}) ({package.get('version', '')})"
+              return version(package)
+
+          # one status per package name (the most significant across environments and platforms),
+          # one row per distinct explicit change (environments may resolve different versions)
+          status, rows = {}, {}
+          for platforms in diff["environment"].values():
+              for packages in platforms.values():
                   for package in packages:
-                      name, change = package["name"], classify(package.get("before"), package.get("after"))
-                      if name not in status or priority.index(change) < priority.index(status[name]):
+                      name, before, after = package["name"], package.get("before"), package.get("after")
+                      change = classify(before, after)
+                      if name not in status or PRIORITY.index(change) < PRIORITY.index(status[name]):
                           status[name] = change
-                      if package.get("explicit"):
-                          explicit.add(name)
-                          # version changes only: git dependencies have their own table
-                          is_git = parse(package.get("before")) or parse(package.get("after"))
-                          if change != "rebuilt" and not is_git:
-                              explicit_diff["environment"].setdefault(environment, {}).setdefault(platform, []).append(package)
+                      if package.get("explicit") and cell(before) != cell(after):
+                          label = LABELS[change]
+                          old_ref, new_ref = before and git_ref(before), after and git_ref(after)
+                          if old_ref and new_ref and old_ref[0] == new_ref[0] and "github.com" in new_ref[0]:
+                              label += f" ([compare]({new_ref[0]}/compare/{old_ref[2]}...{new_ref[2]}))"
+                          rows.setdefault((name, cell(before), cell(after)), label)
 
-          counts = {change: sum(value == change for value in status.values()) for change in priority}
-          if status:
-              labels = [
-                  ("upgraded", counts["upgraded"] + counts["major"], f" ({counts['major']} major)" if counts["major"] else ""),
-                  ("⚠️ downgraded", counts["downgraded"], ""),
-                  ("other version changes", counts["updated"], ""),
-                  ("rebuilt (same version)", counts["rebuilt"], ""),
-                  ("added", counts["added"], ""),
-                  ("removed", counts["removed"], ""),
-              ]
-              stats = f"**{len(status)}** packages changed: " + ", ".join(
-                  f"{count} {label}{detail}" for label, count, detail in labels if count
-              ) + "."
-          else:
-              stats = "*No package changes.*"
-          (work_dir / "stats.md").write_text(stats + "\n", encoding="utf-8")
-          print(stats)
+          counts = {change: list(status.values()).count(change) for change in PRIORITY}
+          parts = [
+              (counts["major"] + counts["minor"] + counts["patch"], "upgraded" + (f" ({counts['major']} major)" if counts["major"] else "")),
+              (counts["downgraded"], "⚠️ downgraded"),
+              (counts["updated"], "other version changes"),
+              (counts["rebuilt"], "rebuilt (same version)"),
+              (counts["added"], "added"),
+              (counts["removed"], "removed"),
+          ]
+          stats = f"**{len(status)}** packages changed: {', '.join(f'{n} {label}' for n, label in parts if n)}." if status else "*No package changes.*"
 
-          names = ", ".join(f"`{name}`" for name in sorted(explicit))
-          (work_dir / "explicit-names.md").write_text(f"Explicit dependencies: {names}.\n\n" if names else "", encoding="utf-8")
-          (work_dir / "explicit-diff.json").write_text(json.dumps(explicit_diff), encoding="utf-8")
-
-      - name: Assemble report
-        env:
-          BEFORE: ${{ steps.commits.outputs.before }}
-          AFTER: ${{ steps.commits.outputs.after }}
-          NEW_LOCKFILE: ${{ steps.files.outputs.new-lockfile }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          ENVIRONMENTS: ${{ inputs.environments }}
-        run: |
-          report="$WORK_DIR/report.md"
-          {
-            echo "$COMMENT_MARKER"
-            echo "## 📦 Changes in \`$LOCKFILE_PATH\`"
-            echo
-            echo "Comparing [\`${BEFORE:0:8}\`]($REPO_URL/commit/$BEFORE) to [\`${AFTER:0:8}\`]($REPO_URL/commit/$AFTER)${ENVIRONMENTS:+, environments: \`$ENVIRONMENTS\`} ([workflow run]($RUN_URL))."
-            echo
-            if [ "$NEW_LOCKFILE" == "true" ]; then
-              echo "> [!NOTE]"
-              echo "> \`$LOCKFILE_PATH\` is new: all packages are reported as added."
-              echo
-            fi
-            cat "$WORK_DIR/stats.md"
-            echo
-            cat "$WORK_DIR/git-dependencies.md"
-            echo
-            if [ "$(tr -d '[:space:]' < "$WORK_DIR/dependencies.md")" != "Nodiff" ]; then
-              # nest headings under the report title
-              sed -E 's/^# /### /' "$WORK_DIR/dependencies.md"
-            fi
-          } > "$report"
-          cat "$report" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Assemble PR comment
-        id: comment
-        if: >
-          inputs.comment-on-pr &&
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          JOB_ID: ${{ job.check_run_id }}
-          # GitHub comment limit: 65536 characters
-          COMMENT_MAX_CHARS: 60000
-        run: |
-          # short comment linking to the job summary: the implicit dependencies are not duplicated in the conversation
-          summary_url="$RUN_URL${JOB_ID:+#summary-$JOB_ID}"
-
-          explicit="$WORK_DIR/explicit.md"
-          pixi exec -s "pixi-diff-to-markdown==$PIXI_DIFF_TO_MARKDOWN_VERSION" pixi-diff-to-markdown \
-            --merge-dependencies yes --hide-tables no < "$WORK_DIR/explicit-diff.json" > "$explicit.tmp"
-          if [ "$(tr -d '[:space:]' < "$explicit.tmp")" == "Nodiff" ]; then
-            : > "$explicit"
-          else
-            rows=$(grep -c '^|\[\?\*\*' "$explicit.tmp" || true)
-            {
+          table = []
+          if rows:
+              lines = ["|Dependency|Before|After|Change|", "|-|-|-|-|"] + [f"|{n}|{b}|{a}|{c}|" for (n, b, a), c in sorted(rows.items())]
               # collapse long tables
-              if [ "$rows" -le 15 ]; then
-                echo "### Explicit dependencies"
-                echo
-              else
-                echo "<details>"
-                echo "<summary><b>Explicit dependencies</b> ($rows changes)</summary>"
-                echo
-              fi
-              # all rows are explicit: drop the bold footnote, and the downgrade footnote when unused
-              unused_footnotes=(-e '/^\[^2\]:/d')
-              if grep -q '^|.*\[^2\]' "$explicit.tmp"; then
-                unused_footnotes=()
-              fi
-              sed -e 's/^|Dependency\[^1\]|/|Dependency|/' -e '/^\[^1\]:/d' "${unused_footnotes[@]}" "$explicit.tmp"
-              if [ "$rows" -gt 15 ]; then
-                echo "</details>"
-                echo
-              fi
-            } > "$explicit"
-          fi
+              table = ["### Explicit dependencies", "", *lines, ""] if len(rows) <= 15 else [
+                  "<details>", f"<summary><b>Explicit dependencies</b> ({len(rows)} changes)</summary>", "", *lines, "", "</details>", ""]
 
-          # drop details until the comment fits
-          body="$WORK_DIR/comment.md"
-          for level in full names minimal; do
-            {
-              sed -n '1,/^Comparing /p' "$WORK_DIR/report.md"
-              echo
-              cat "$WORK_DIR/stats.md"
-              echo
-              case "$level" in
-                full) cat "$explicit" "$WORK_DIR/git-dependencies.md" ;;
-                names) cat "$WORK_DIR/explicit-names.md" "$WORK_DIR/git-dependencies.md" ;;
-              esac
-              echo
-              if [ "$level" != "full" ]; then
-                echo "> [!NOTE]"
-                echo "> Some details are too large for a comment: see the full report."
-                echo
-              fi
-              echo "📋 **[Full report in the job summary]($summary_url)**"
-            } > "$body"
-            size=$(wc -m < "$body")
-            echo "Comment with '$level' details: $size characters"
-            if [ "$size" -le "$COMMENT_MAX_CHARS" ]; then
-              break
-            fi
-            echo "::notice::PR comment too large with '$level' details ($size characters): removing details"
-          done
+          head = [
+              env["COMMENT_MARKER"],
+              f"## 📦 Changes in `{env['LOCKFILE_PATH']}`",
+              "",
+              f"Comparing [`{env['BASE_SHA'][:8]}`]({env['REPO_URL']}/commit/{env['BASE_SHA']}) to "
+              f"[`{env['HEAD_SHA'][:8]}`]({env['REPO_URL']}/commit/{env['HEAD_SHA']}) ([workflow run]({env['RUN_URL']})).",
+              "",
+              stats,
+              "",
+          ]
+          everything = (temp / "dependencies.md").read_text(encoding="utf-8")
+          summary = head + table + (["### All changes", "", everything] if everything.strip() != "No diff" else [])
+          with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:
+              file.write("\n".join(summary) + "\n")
+
+          link = f"📋 **[Full report in the job summary]({env['RUN_URL']}{'#summary-' + env['JOB_ID'] if env.get('JOB_ID') else ''})**"
+          comment = "\n".join(head + table + [link])
+          if len(comment) > COMMENT_MAX_CHARS:
+              print(f"::notice::PR comment too large ({len(comment)} characters): leaving out the explicit dependencies")
+              comment = "\n".join(head + ["> [!NOTE]", "> The explicit dependency changes are too large for a comment.", "", link])
+          (temp / "comment.md").write_text(comment + "\n", encoding="utf-8")
+          print(comment)
 
       - name: Comment on pull request
-        if: steps.comment.outcome == 'success'
+        if: inputs.comment-on-pr && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          body="$WORK_DIR/comment.md"
+          body="$RUNNER_TEMP/comment.md"
           existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
             | head -n 1)
