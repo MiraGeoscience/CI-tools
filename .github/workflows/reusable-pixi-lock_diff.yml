@@ -194,7 +194,7 @@ jobs:
               (counts["added"], "added"),
               (counts["removed"], "removed"),
           ]
-          stats = f"**{len(status)}** packages changed: {', '.join(f'{n} {label}' for n, label in parts if n)}." if status else "*No package changes.*"
+          stats = f"**{len(status)}** package{'s' if len(status) > 1 else ''} changed: {', '.join(f'{n} {label}' for n, label in parts if n)}." if status else "*No package changes.*"
 
           table = []
           if rows:
