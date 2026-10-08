@@ -33,6 +33,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       is_allowed_group: ${{ steps.check.outputs.is_allowed_group }}
+      group: ${{ steps.check.outputs.group }}
     steps:
       - name: Check Dependabot group
         id: check
@@ -44,15 +45,18 @@ jobs:
           # e.g. "dependabot/pre_commit/main/pre-commit-hooks-251825f045".
           branch_suffix="${HEAD_REF##*/}"
           allowed=false
+          matched_group=''
           IFS=',' read -ra groups <<< "$GROUPS"
           for group in "${groups[@]}"; do
             group=$(echo "$group" | xargs)
             if [ -n "$group" ] && [[ "$branch_suffix" =~ ^${group}-[0-9a-f]+$ ]]; then
               allowed=true
+              matched_group="$group"
               break
             fi
           done
           echo "is_allowed_group=$allowed" >> "$GITHUB_OUTPUT"
+          echo "group=$matched_group" >> "$GITHUB_OUTPUT"
 
   auto-merge:
     needs: validate-group
@@ -66,6 +70,21 @@ jobs:
       uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Decide whether to auto-merge
+      id: policy
+      env:
+        UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        GROUP: ${{ needs.validate-group.outputs.group }}
+      run: |
+        # Majors only for pre-commit-hooks: the PR's own pre-commit run validates the new hook versions.
+        should_merge=false
+        case "$UPDATE_TYPE" in
+          version-update:semver-patch|version-update:semver-minor) should_merge=true ;;
+          version-update:semver-major) [ "$GROUP" = "pre-commit-hooks" ] && should_merge=true ;;
+        esac
+        echo "Update type: ${UPDATE_TYPE:-unknown}, group: $GROUP, auto-merge: $should_merge"
+        echo "should_merge=$should_merge" >> "$GITHUB_OUTPUT"
 
     - name: Validate checks-to-skip are not GitHub Actions checks
       if: inputs.checks-to-skip != ''
@@ -91,10 +110,7 @@ jobs:
         done
 
     - name: Mark skipped external checks as passed
-      if: >
-        inputs.checks-to-skip != '' &&
-        (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-         steps.metadata.outputs.update-type == 'version-update:semver-minor')
+      if: inputs.checks-to-skip != '' && steps.policy.outputs.should_merge == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         CHECKS_TO_SKIP: ${{ inputs.checks-to-skip }}
@@ -117,9 +133,7 @@ jobs:
         done
 
     - name: Approve and enable auto-merge
-      if: >
-        steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-        steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      if: steps.policy.outputs.should_merge == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_URL: ${{ github.event.pull_request.html_url }}
