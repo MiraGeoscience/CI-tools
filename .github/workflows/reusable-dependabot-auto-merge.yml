@@ -77,7 +77,8 @@ jobs:
         UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
         GROUP: ${{ needs.validate-group.outputs.group }}
       run: |
-        # Majors only for pre-commit-hooks: the PR's own pre-commit run validates the new hook versions.
+        # Allow major version bumps for pre-commit hooks only:
+        # the PR's pre-commit run validates the updated hook versions.
         should_merge=false
         case "$UPDATE_TYPE" in
           version-update:semver-patch|version-update:semver-minor) should_merge=true ;;
