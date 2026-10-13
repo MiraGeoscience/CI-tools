@@ -5,6 +5,12 @@ name: Jira issue jobs
 
 on:
   workflow_call:
+    inputs:
+      resolved_grace_days:
+        type: number
+        required: false
+        default: 7
+        description: Number of days (whole, 0 disables) a Jira issue resolved while the PR was open still passes the status check
     secrets:
       JIRA_BASE_URL:
         required: true
@@ -180,13 +186,18 @@ jobs:
 
     - name: Check issue status
       if: ${{ needs.get_issue_key.outputs.issue_key && needs.get_issue_key.outputs.is_exempt_bot_pr != 'true' }}
+      env:
+        PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
+        # An issue resolved while this PR was open stays accepted for this many days,
+        # so follow-up pushes (merge from main, lint fixes...) don't turn the check red.
+        RESOLVED_GRACE_DAYS: ${{ inputs.resolved_grace_days }}
       run: |
         issue_key=${{ needs.get_issue_key.outputs.issue_key }}
         jql="Sprint in (openSprints(), futureSprints()) and issue=$issue_key"
 
         jqlencoded=$(jq -R -r @uri <<<"$jql")
         response=$(curl -fsS --request GET \
-                   --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory" \
+                   --url "$JIRA_BASE_URL/rest/api/3/search/jql?jql=$jqlencoded&fields=statusCategory,statuscategorychangedate,resolution" \
                    --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
                    --header 'Accept: application/json' \
                    --header 'Content-Type: application/json')
@@ -211,7 +222,15 @@ jobs:
         status=$(echo $response| jq -r '.issues[0].fields.statusCategory.name')
         echo "status: $status"
         if [ "$status" != "In Progress" ]; then
-            error="$error\nError: Jira issue is not In Progress"
+            resolved=$(date -d "$(echo $response | jq -r '.issues[0].fields.statuscategorychangedate // "@0"')" +%s)
+            pr_opened=$(date -d "$PR_CREATED_AT" +%s)
+            grace_start=$(date -d "-${RESOLVED_GRACE_DAYS%.*} days" +%s)
+            resolution=$(echo $response | jq -r '.issues[0].fields.resolution.name // empty')
+            if [ "$status" == "Done" ] && [ "$resolution" == "Done" ] && (( resolved > pr_opened && resolved > grace_start )); then
+                echo "::warning::Jira issue was resolved while this PR was open (less than $RESOLVED_GRACE_DAYS days ago): accepted"
+            else
+                error="$error\nError: Jira issue is not In Progress"
+            fi
         fi
 
         if [[ ! -z "$error" ]]; then
