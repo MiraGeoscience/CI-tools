@@ -1,0 +1,137 @@
+# Report pull request changes to pixi.lock in the job summary, with a short PR comment (updated on each run) linking to it.
+
+name: Pixi lock diff
+
+on:
+  workflow_call:
+    inputs:
+      lockfile-path:
+        description: Lock file path
+        required: false
+        type: string
+        default: pixi.lock
+      manifest-path:
+        description: Manifest path, to identify explicit dependencies
+        required: false
+        type: string
+        default: pixi.toml
+      comment-on-pr:
+        description: Post the report as a PR comment
+        required: false
+        type: boolean
+        default: true
+      pixi-version:
+        description: Pixi version
+        required: false
+        type: string
+        default: v0.67.2  # last version before lock file v7
+      timeout-minutes:
+        description: Job timeout in minutes
+        required: false
+        type: number
+        default: 10
+
+permissions: {}
+
+env:
+  PIXI_DIFF_VERSION: 0.1.8
+  PIXI_DIFF_TO_MARKDOWN_VERSION: 0.3.9
+  COMMENT_MARKER: <!-- pixi-lock-diff -->
+
+jobs:
+  pixi-lock-diff:
+    name: pixi.lock diff
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    # one run at a time per PR: avoids duplicate or outdated comments
+    concurrency:
+      group: pixi-lock-diff-${{ github.event.pull_request.number }}-${{ inputs.lockfile-path }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      LOCKFILE_PATH: ${{ inputs.lockfile-path }}
+      MANIFEST_PATH: ${{ inputs.manifest-path }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # PR head rather than the merge commit, and the full history to find the merge base
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get base lock file
+        id: base
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # merge base: ignore base branch changes made after the PR branched off
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+          if ! git show "$base:$LOCKFILE_PATH" > "$RUNNER_TEMP/base.lock" 2> /dev/null; then
+            echo "::notice::'$LOCKFILE_PATH' does not exist at $base: reporting all packages as added"
+            printf 'version: 6\nenvironments: {}\npackages: []\n' > "$RUNNER_TEMP/base.lock"
+          fi
+
+      - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+        with:
+          pixi-version: ${{ inputs.pixi-version }}
+          run-install: false
+          cache: false
+          # pinned: the global cache key hashes this list, so a version bump refreshes the cache
+          global-environments: |
+            pixi-diff==${{ env.PIXI_DIFF_VERSION }}
+            pixi-diff-to-markdown==${{ env.PIXI_DIFF_TO_MARKDOWN_VERSION }}
+          global-cache: true
+
+      - name: Compute diff
+        run: |
+          manifest_args=()
+          if [ -f "$MANIFEST_PATH" ]; then
+            manifest_args=(--manifest-path "$MANIFEST_PATH")
+          else
+            echo "::warning::Manifest '$MANIFEST_PATH' not found: explicit dependencies will not be identified"
+          fi
+          pixi-diff --before "$RUNNER_TEMP/base.lock" --after "$LOCKFILE_PATH" "${manifest_args[@]}" > "$RUNNER_TEMP/diff.json"
+          pixi-diff-to-markdown --merge-dependencies yes < "$RUNNER_TEMP/diff.json" > "$RUNNER_TEMP/dependencies.md"
+
+      - name: Build report
+        uses: $/.github/actions/pixi-lock-diff
+        with:
+          lockfile-path: ${{ inputs.lockfile-path }}
+          base-sha: ${{ steps.base.outputs.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          comment-marker: ${{ env.COMMENT_MARKER }}
+          job-id: ${{ job.check_run_id }}
+
+      - name: Comment on pull request
+        if: inputs.comment-on-pr && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          body="$RUNNER_TEMP/comment.md"
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$COMMENT_MARKER\"))) | \"\(.id) \(.node_id)\"" \
+            | head -n 1)
+          if [ -n "$existing" ]; then
+            read -r comment_id node_id <<< "$existing"
+            minimized=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on IssueComment { isMinimized } } }' \
+              -f id="$node_id" --jq '.data.node.isMinimized')
+            if [ "$minimized" == "true" ]; then
+              # replace a hidden comment so the new report is visible
+              echo "Existing comment $comment_id is hidden: replacing it"
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id"
+            else
+              echo "Updating comment $comment_id"
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" -F body=@"$body" > /dev/null
+              exit 0
+            fi
+          fi
+          echo "Creating comment"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@"$body" > /dev/null
