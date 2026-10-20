@@ -1,0 +1,36 @@
+name: Pixi lock diff report
+description: |
+  Builds the pixi.lock diff report from the pixi-diff output ($RUNNER_TEMP/diff.json) and its
+  pixi-diff-to-markdown rendering ($RUNNER_TEMP/dependencies.md). Appends it to the job summary
+  and writes the PR comment body to $RUNNER_TEMP/comment.md.
+inputs:
+  lockfile-path:
+    description: Lock file path, shown in the report title
+    required: true
+  base-sha:
+    description: Commit compared from
+    required: true
+  head-sha:
+    description: Commit compared to
+    required: true
+  comment-marker:
+    description: Hidden marker starting the comment, to find it on later runs
+    required: true
+  job-id:
+    description: Check run ID of the calling job, to link the comment to its job summary
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Build report
+      shell: bash
+      env:
+        LOCKFILE_PATH: ${{ inputs.lockfile-path }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        COMMENT_MARKER: ${{ inputs.comment-marker }}
+        JOB_ID: ${{ inputs.job-id }}
+        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: python3 "$GITHUB_ACTION_PATH/pixi_lock_diff.py"
