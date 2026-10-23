@@ -87,7 +87,7 @@ jobs:
           global-environments: |
             pixi-diff==${{ env.PIXI_DIFF_VERSION }}
             pixi-diff-to-markdown==${{ env.PIXI_DIFF_TO_MARKDOWN_VERSION }}
-          global-cache: true
+          global-cache: false
 
       - name: Compute diff
         run: |
