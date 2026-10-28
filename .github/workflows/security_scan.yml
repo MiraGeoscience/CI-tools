@@ -28,7 +28,6 @@ jobs:
     name: Zizmor analysis
     permissions:
       security-events: write
-      checks: write
       contents: read
       actions: read
     uses: ./.github/workflows/reusable-zizmor.yml
