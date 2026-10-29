@@ -25,9 +25,9 @@ jobs:
     if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     permissions:
-      checks: write
       contents: read
       actions: read
+      security-events: write
 
     steps:
       - name: Checkout repository
@@ -41,8 +41,8 @@ jobs:
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
-          advanced-security: false
-          annotations: true
+          advanced-security: ${{ github.event_name != 'pull_request' && github.event.repository.visibility == 'public' }}
+          annotations: ${{ github.event_name == 'pull_request' || github.event.repository.visibility == 'private' }}
           persona: ${{ inputs.persona }}
           min-severity: ${{ inputs.min_severity }}
           min-confidence: ${{ inputs.min_confidence }}
