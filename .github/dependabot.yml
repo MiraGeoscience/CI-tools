@@ -27,3 +27,14 @@ updates:
       pre-commit-hooks:
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    directory: "/.github/actions/reusable-python-setup_poetry/tooling"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 4
+    ignore:
+      - dependency-name: "poetry"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
