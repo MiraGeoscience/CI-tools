@@ -29,14 +29,23 @@ runs:
       id: full-python-version
       shell: bash
       run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@a783c322200f0519c7926aa6faa857c4e23e9263 # v1.4.2
+    - name: Set up uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
-        version: 2.5.1
-        plugins: poetry-dynamic-versioning
-        virtualenvs-in-project: true
-        virtualenvs-path: .venv
-        installer-parallel: true
+        enable-cache: true
+        cache-dependency-glob: ${{ github.action_path }}/tooling/uv.lock
+    - name: Install Poetry
+      shell: bash
+      run: |
+        uv export --project "$GITHUB_ACTION_PATH/tooling" --locked \
+          --no-emit-project --output-file "$RUNNER_TEMP/poetry-requirements.txt" > /dev/null
+        uv tool install --with-requirements "$RUNNER_TEMP/poetry-requirements.txt" poetry
+    - name: Configure Poetry
+      shell: bash
+      run: |
+        poetry config virtualenvs.in-project true
+        poetry config virtualenvs.path .venv
+        poetry config installer.parallel true
     - name: Config repos for Poetry
       shell: bash
       env:
@@ -54,7 +63,7 @@ runs:
       id: cache
       with:
         path: .venv
-        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-{{ inputs.cache-number }}
+        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}-${{ inputs.cache-number }}
     - name: Ensure cache is healthy
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
