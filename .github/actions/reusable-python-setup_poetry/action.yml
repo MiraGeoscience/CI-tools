@@ -29,17 +29,10 @@ runs:
       id: full-python-version
       shell: bash
       run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-    - name: Set up uv
-      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-      with:
-        enable-cache: true
-        cache-dependency-glob: ${{ github.action_path }}/tooling/uv.lock
     - name: Install Poetry
-      shell: bash
-      run: |
-        uv export --project "$GITHUB_ACTION_PATH/tooling" --locked \
-          --no-emit-project --output-file "$RUNNER_TEMP/poetry-requirements.txt" > /dev/null
-        uv tool install --with-requirements "$RUNNER_TEMP/poetry-requirements.txt" poetry
+      uses: $/.github/actions/setup-ci-tool
+      with:
+        package: poetry
     - name: Configure Poetry
       shell: bash
       run: |

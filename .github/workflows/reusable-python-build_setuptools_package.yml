@@ -103,10 +103,16 @@ jobs:
                     done
                     export PIP_EXTRA_INDEX_URL
                     pip install .
-            -   name: Pip install build
-                run: pip install build
+            -   name: Install build
+                id: build-tool
+                uses: $/.github/actions/setup-ci-tool
+                with:
+                    package: build
+                    mode: python
             -   name: Build package
-                run: python -m build
+                env:
+                    BUILD_PYTHON: ${{ steps.build-tool.outputs.python-path }}
+                run: '"$BUILD_PYTHON" -m build'
             -   name: Define build path
                 id: define-build-path
                 run: |

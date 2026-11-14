@@ -8,6 +8,13 @@ ci:
     autoupdate_schedule: quarterly
 
 repos:
+-   repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.8
+    hooks:
+    -   id: uv-lock
+        name: Check CI tools uv.lock is up to date
+        args: [--check, --project, .github/actions/setup-ci-tool/tooling]
+        files: ^\.github/actions/setup-ci-tool/tooling/(pyproject\.toml|uv\.lock)$
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.4.3
     hooks:

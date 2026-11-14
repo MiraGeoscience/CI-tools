@@ -13,20 +13,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Get full Python version
-      id: full-python-version
-      shell: bash
-      run: echo "version=$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")" >> $GITHUB_OUTPUT
-    - name: Set up cache
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-      id: cache
+    - name: Install Hatch
+      uses: $/.github/actions/setup-ci-tool
       with:
-        path: ~/.cache/pip
-        key: venv-${{ inputs.runner-os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('piproject.toml') }}-${{ inputs.cache-number }}
-    - name: Ensure cache is healthy
-      if: steps.cache.outputs.cache-hit == 'true'
-      shell: bash
-      run: timeout 10s poetry run pip --version || rm -rf .venv
-    - name: Install hatch
-      shell: bash
-      run: pip install hatch
+        package: hatch
+        cache-suffix: ${{ inputs.cache-number }}
