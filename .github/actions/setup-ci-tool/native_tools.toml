@@ -2,6 +2,8 @@ schema = 1
 
 [[tools]]
 name = "Pixi"
+version_command = "pixi"
+runtime_prefix = "v"
 package = "pkg:github/prefix-dev/pixi"
 advisories = "prefix-dev/pixi"
 source = ".github/workflows/reusable-pixi-lock_diff.yml"
@@ -17,6 +19,8 @@ pattern = 'micromamba_version=([\d.-]+)'
 
 [[tools]]
 name = "rattler-build"
+version_command = "rattler-build"
+runtime_prefix = "v"
 package = "pkg:github/prefix-dev/rattler-build"
 advisories = "prefix-dev/rattler-build"
 source = ".github/workflows/reusable-python-publish_rattler_package.yml"
@@ -40,6 +44,7 @@ qualifiers = "channel=conda-forge"
 
 [[tools]]
 name = "JFrog CLI"
+version_command = "jf"
 package = "pkg:github/jfrog/jfrog-cli"
 advisories = "jfrog/jfrog-cli"
 source = ".github/**/*.yml"

@@ -23,6 +23,11 @@ Every CI-tools-owned tool must use one of these paths:
   Inventory submission and private DevOps monitoring both consume this catalog.
   Release monitoring defaults to the advisory repository unless `releases`
   overrides it.
+  Native installers also call `record-native-tools` after installation for
+  caller inventories. Supply the existing fixed pin, or add a `version_command`
+  executable and optional `runtime_prefix` in the catalog to resolve the CLI's
+  `--version` output. Do not duplicate pins. DevOps reads this metadata as data;
+  it never executes the catalog commands.
   New entries using the existing extraction rules need no separate DevOps
   tool-list change; a new catalog schema or extraction mechanism requires
   updating both consumers and their tests.

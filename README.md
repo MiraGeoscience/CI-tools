@@ -112,12 +112,30 @@ updated; this is not independent CLI version tracking.
 
 See [GitHub's dependency submission requirements](https://docs.github.com/en/rest/dependency-graph/dependency-submission#about-dependency-submissions).
 
+### Caller native inventories
+
+On default-branch pushes, schedules, and manual runs, native installers record
+the effective versions as small workflow artifacts. Floating Pixi versions and
+JFrog CLI defaults are resolved from the installed CLI; fixed micromamba release
+pins retain their build suffix. Caller Python and token permissions are unchanged.
+
+A separate publisher in the **private DevOps repository**, once configured,
+imports completed runs into each participating caller's dependency graph as
+direct development dependencies. Matrix jobs are combined per caller workflow,
+without overriding other workflows, action dependencies, or uv manifests.
+PRs and tags are excluded; the PR-only Pixi diff workflow does not contribute
+default-branch inventory. Collection failures do not fail caller builds.
+
+Callers only need the normal CI-tools commit-pin update, not extra workflow
+steps, secrets, or permission declarations. The private DevOps repository
+documents the dedicated GitHub App, repository allowlist, and operational limits.
+
 ### Private native advisory monitoring
 
-A daily monitor in **private `MiraGeoscience/DevOps`** reports published upstream
+A daily monitor in the **private DevOps repository** reports published upstream
 advisories and new stable releases with security-keyword matches as private
 issues. Applicability and fixes require human triage; this is not Dependabot
 alerting or a binary audit.
 
-See the [DevOps monitoring guide](https://github.com/MiraGeoscience/DevOps/blob/main/README.md#private-ci-tools-advisory-monitoring)
-for setup, notifications, privacy, and coverage limitations.
+The private DevOps repository documents setup, notifications, privacy, and
+coverage limitations.

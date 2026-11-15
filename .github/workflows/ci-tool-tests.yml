@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - .github/actions/setup-ci-tool/**
+      - .github/actions/record-native-tools/**
       - .github/actions/reusable-*/**
       - .github/workflows/reusable-*
       - .github/workflows/native-tool-inventory.yml
@@ -11,6 +12,7 @@ on:
   push:
     paths:
       - .github/actions/setup-ci-tool/**
+      - .github/actions/record-native-tools/**
       - .github/actions/reusable-*/**
       - .github/workflows/reusable-*
       - .github/workflows/native-tool-inventory.yml

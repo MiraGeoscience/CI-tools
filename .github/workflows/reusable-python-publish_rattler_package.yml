@@ -137,6 +137,7 @@ jobs:
 
                     echo "BUILD_ARGS=$BUILD_ARGS" >> "$GITHUB_OUTPUT"
             -   name: Build package
+                id: rattler-build
                 uses: prefix-dev/rattler-build-action@1ca5f45832f419a46d1326ccc5861d7e14d67c44 # v0.2.39
                 with:
                     rattler-build-version: 'v0.74.0'
@@ -149,6 +150,12 @@ jobs:
                 env:
                     RATTLER_AUTH_FILE: ${{ runner.temp }}/credentials.json
                     RATTLER_BUILD_EXPERIMENTAL: ${{ inputs.build-experimental && 'true' || 'false' }}
+            -   name: Record native tool inventory
+                if: ${{ !cancelled() && steps.rattler-build.outcome != 'skipped' }}
+                continue-on-error: true
+                uses: $/.github/actions/record-native-tools
+                with:
+                    tools: '{"rattler-build": ""}'
             -   name: Archive build artifact
                 uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
                 with:
