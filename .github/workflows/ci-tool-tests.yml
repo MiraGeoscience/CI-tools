@@ -4,10 +4,16 @@ on:
   pull_request:
     paths:
       - .github/actions/setup-ci-tool/**
+      - .github/actions/reusable-*/**
+      - .github/workflows/reusable-*
+      - .github/workflows/native-tool-inventory.yml
       - .github/workflows/ci-tool-tests.yml
   push:
     paths:
       - .github/actions/setup-ci-tool/**
+      - .github/actions/reusable-*/**
+      - .github/workflows/reusable-*
+      - .github/workflows/native-tool-inventory.yml
       - .github/workflows/ci-tool-tests.yml
   workflow_dispatch:
 
@@ -26,14 +32,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - uses: $/.github/actions/setup-ci-tool
         with:
-          python-version: "3.10"
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          version-file: .github/actions/setup-ci-tool/tooling/uv.lock
-          enable-cache: false
+          package: pytest
       - name: Check lockfile freshness
         run: uv lock --check --project .github/actions/setup-ci-tool/tooling
       - name: Run CI tool tests
-        run: python -m unittest discover -s .github/actions/setup-ci-tool/tests -v
+        run: pytest -c .github/actions/setup-ci-tool/tooling/pyproject.toml .github/actions/setup-ci-tool/tests -v

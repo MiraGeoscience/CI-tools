@@ -21,6 +21,13 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Set up tooling Python
+      if: inputs.mode == 'tool'
+      id: python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.15"
+        update-environment: false
     - name: Set up uv
       uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
@@ -34,6 +41,7 @@ runs:
       env:
         CI_TOOL_PACKAGE: ${{ inputs.package }}
         CI_TOOL_MODE: ${{ inputs.mode }}
+        CI_TOOL_PYTHON: ${{ steps.python.outputs.python-path || 'python' }}
         UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/ci-tools-${{ inputs.package }}
       run: |
         if [[ ! "$CI_TOOL_PACKAGE" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
@@ -51,7 +59,7 @@ runs:
         uv export --project "$GITHUB_ACTION_PATH/tooling" --locked \
           --only-group "$CI_TOOL_PACKAGE" --no-emit-project \
           --output-file "$requirements" > /dev/null
-        version=$(python - "$requirements" "$CI_TOOL_PACKAGE" <<'PY'
+        version=$("$CI_TOOL_PYTHON" - "$requirements" "$CI_TOOL_PACKAGE" <<'PY'
         import sys
 
         prefix = sys.argv[2] + "=="
@@ -65,7 +73,8 @@ runs:
         echo "version=$version" >> "$GITHUB_OUTPUT"
         case "$CI_TOOL_MODE" in
           tool)
-            uv tool install --with-requirements "$requirements" "$CI_TOOL_PACKAGE==$version"
+            uv tool install --python "$CI_TOOL_PYTHON" \
+              --with-requirements "$requirements" "$CI_TOOL_PACKAGE==$version"
             ;;
           python)
             uv sync --project "$GITHUB_ACTION_PATH/tooling" --locked \

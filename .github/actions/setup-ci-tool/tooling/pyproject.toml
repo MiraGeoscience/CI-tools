@@ -15,6 +15,10 @@ packaging = ["packaging~=26.3.0"]
 uv = ["uv~=0.13.8"]
 zizmor = ["zizmor~=1.32.0; python_version >= '3.11'"]
 codecov-cli = ["codecov-cli~=11.3.2"]
+pytest = ["pytest~=9.2.0"]
 
 [tool.uv]
 package = false
+
+[tool.pytest.ini_options]
+testpaths = ["../tests"]
