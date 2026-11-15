@@ -48,7 +48,7 @@ runs:
           exit 1
         fi
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
-    - uses: prefix-dev/setup-pixi@v0.9.6
+    - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
       with:
         pixi-version: ${{ inputs.pixi-version }}
         environments: ${{ steps.get-env-name.outputs.pixi-env }}
