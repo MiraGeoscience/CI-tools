@@ -82,7 +82,7 @@ jobs:
                         exit 1
                     fi
                     echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            -   uses: jfrog/setup-jfrog-cli@1e584506871998c267b7c100c02628a5b9c81db6 # v5.3.0
+            -   uses: jfrog/setup-jfrog-cli@ae385c7164244e984cd20a58674e5b57f53596d7 # v5.3.4
                 name: Setup JFrog CLI
                 with:
                     disable-auto-build-publish: true
