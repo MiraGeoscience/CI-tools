@@ -33,3 +33,15 @@ syntax, for example `uses: $/.github/actions/setup-zizmor-config`. `$/` resolves
 exact commit that is running, so a caller pinned to a commit SHA runs every nested workflow and
 action from that same commit, and internal references never need a SHA or tag update.
 Do not use `MiraGeoscience/CI-tools/...@<ref>` for internal references.
+
+## Updating Poetry tooling
+
+From the repository root, refresh Poetry, its dynamic-versioning plugin, and
+their dependencies within the tooling manifest's version constraints:
+
+```powershell
+uv lock --project .github\actions\reusable-python-setup_poetry\tooling --upgrade
+```
+
+Review and commit the updated `uv.lock`. To change the allowed version range,
+edit `pyproject.toml` in the same directory before running the command.
