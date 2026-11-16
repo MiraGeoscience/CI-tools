@@ -64,10 +64,13 @@ dependencies are outside this repository's tooling coverage.
 
 ### Python tooling
 
-CI-owned PyPI tools use patch-compatible constraints in
+CI-owned PyPI tools declare version constraints in
 `.github/actions/setup-ci-tool/tooling/pyproject.toml` and exact versions in
-`uv.lock`. For example, `poetry~=2.5.1` permits patches below `2.6`, but
-installation always uses the exact lock. uv itself is declared in this
+`uv.lock`. Whether updates allow only patches or also minor releases is chosen
+per tool, based on compatibility guarantees and CI impact. Dependabot uses
+`lockfile-only` updates within those constraints; changing the constraints
+requires manual review. Installation always uses the exact lock.
+uv itself is declared in this
 manifest; `setup-uv` reads its exact version from the same lockfile.
 
 The shared `setup-ci-tool` action exports and installs only the requested

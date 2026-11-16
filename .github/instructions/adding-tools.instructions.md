@@ -12,9 +12,14 @@ not make its installed tool auditable or automatically updateable.
 
 Every CI-tools-owned tool must use one of these paths:
 
-- PyPI: declare a patch-compatible dependency group named after the primary
+- PyPI: declare a dependency group named after the primary
   package in `.github/actions/setup-ci-tool/tooling/pyproject.toml`, commit its
   exact `uv.lock`, and use `setup-ci-tool` to install it or resolve its version.
+  Choose patch-only or patch-and-minor updates per tool, based on compatibility
+  guarantees and CI impact; do not assume minor releases are nonbreaking,
+  especially before 1.0. Express that choice in manifest constraints and keep
+  Dependabot's `lockfile-only` strategy so constraint changes require manual
+  review, while retaining exact installation locks.
 - Other tools: declare the package identity, verified advisory repository,
   release repository when different, and actual production pin source in
   `.github/actions/setup-ci-tool/native_tools.toml`. Keep version pins in the

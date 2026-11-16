@@ -476,7 +476,7 @@ codecov-cli = [{ name = "codecov-cli", specifier = "~=11.3.2" }]
 hatch = [{ name = "hatch", specifier = "~=1.18.2" }]
 packaging = [{ name = "packaging", specifier = "~=26.3.0" }]
 poetry = [
-    { name = "poetry", specifier = "~=2.5.1" },
+    { name = "poetry", specifier = ">=2.5.1,<3" },
     { name = "poetry-dynamic-versioning", specifier = "~=1.10.1" },
 ]
 pre-commit = [{ name = "pre-commit", marker = "python_full_version >= '3.11'", specifier = "~=4.7.0" }]

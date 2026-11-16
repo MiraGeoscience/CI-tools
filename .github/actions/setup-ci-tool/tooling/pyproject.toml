@@ -5,7 +5,7 @@ requires-python = ">=3.10,<4"
 
 [dependency-groups]
 poetry = [
-    "poetry~=2.5.1",
+    "poetry>=2.5.1,<3",
     "poetry-dynamic-versioning~=1.10.1",
 ]
 pre-commit = ["pre-commit~=4.7.0; python_version >= '3.11'"]
