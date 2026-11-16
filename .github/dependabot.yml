@@ -27,3 +27,10 @@ updates:
       pre-commit-hooks:
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    directory: "/.github/actions/reusable-python-setup_poetry/tooling"
+    versioning-strategy: lockfile-only
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 4
