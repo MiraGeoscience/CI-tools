@@ -29,12 +29,8 @@ updates:
           - "*"
   - package-ecosystem: "uv"
     directory: "/.github/actions/reusable-python-setup_poetry/tooling"
+    versioning-strategy: lockfile-only
     schedule:
       interval: "weekly"
     cooldown:
       default-days: 4
-    ignore:
-      - dependency-name: "poetry"
-        update-types:
-          - "version-update:semver-major"
-          - "version-update:semver-minor"
