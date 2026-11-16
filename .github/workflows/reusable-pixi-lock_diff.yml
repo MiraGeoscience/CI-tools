@@ -78,7 +78,7 @@ jobs:
             printf 'version: 6\nenvironments: {}\npackages: []\n' > "$RUNNER_TEMP/base.lock"
           fi
 
-      - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+      - uses: prefix-dev/setup-pixi@9936258fee697aff89b3fed6ca1f80a382ef694e # v0.11.3
         with:
           pixi-version: ${{ inputs.pixi-version }}
           run-install: false
