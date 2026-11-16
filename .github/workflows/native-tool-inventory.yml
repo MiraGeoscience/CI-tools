@@ -1,0 +1,42 @@
+name: Submit native tool version inventory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/actions/**
+      - .github/workflows/**
+  schedule:
+    - cron: "37 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-tool-inventory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare direct-version inventory
+        run: python .github/actions/setup-ci-tool/tool_inventory.py --output "$RUNNER_TEMP/tool-inventory.json"
+      - name: Submit dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh api --method POST "repos/$GH_REPO/dependency-graph/snapshots" \
+            --input "$RUNNER_TEMP/tool-inventory.json"

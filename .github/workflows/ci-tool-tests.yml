@@ -1,0 +1,43 @@
+name: CI tool tests
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/setup-ci-tool/**
+      - .github/actions/record-native-tools/**
+      - .github/actions/reusable-*/**
+      - .github/workflows/reusable-*
+      - .github/workflows/native-tool-inventory.yml
+      - .github/workflows/ci-tool-tests.yml
+  push:
+    paths:
+      - .github/actions/setup-ci-tool/**
+      - .github/actions/record-native-tools/**
+      - .github/actions/reusable-*/**
+      - .github/workflows/reusable-*
+      - .github/workflows/native-tool-inventory.yml
+      - .github/workflows/ci-tool-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-ci-tool
+        with:
+          package: pytest
+      - name: Check lockfile freshness
+        run: uv lock --check --project .github/actions/setup-ci-tool/tooling
+      - name: Run CI tool tests
+        run: pytest -c .github/actions/setup-ci-tool/tooling/pyproject.toml .github/actions/setup-ci-tool/tests -v

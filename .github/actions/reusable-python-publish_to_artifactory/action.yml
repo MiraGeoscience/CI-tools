@@ -28,6 +28,11 @@ runs:
       env:
         JF_URL: https://${{ inputs.JFROG_ARTIFACTORY_URL }}
         JF_ACCESS_TOKEN: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
+    - name: Record native tool inventory
+      continue-on-error: true
+      uses: $/.github/actions/record-native-tools
+      with:
+        tools: '{"JFrog CLI": ""}'
     - name: Publish package to Artifactory
       shell: bash
       env:

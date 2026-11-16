@@ -49,6 +49,11 @@ runs:
         cache-downloads-key: micromamba-dl${{ inputs.cache-number }}
         environment-name: ""
         post-cleanup: none
+    - name: Record native tool inventory
+      continue-on-error: true
+      uses: $/.github/actions/record-native-tools
+      with:
+        tools: ${{ format('{{"micromamba":"{0}"}}', env.micromamba_version) }}
     - name: Authenticate to Artifactory
       if: ${{ inputs.JFROG_ARTIFACTORY_URL && inputs.JFROG_ARTIFACTORY_TOKEN }}
       shell: 'bash -l {0}'

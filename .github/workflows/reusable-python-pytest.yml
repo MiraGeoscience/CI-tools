@@ -237,10 +237,25 @@ jobs:
             hatch run pytest --cov --cov-report=xml
           fi
 
+      - name: Record empty native tool inventory
+        # Remove stale native graph entries after a package-manager switch.
+        if: ${{ !cancelled() && inputs.package-manager != 'pixi' && inputs.package-manager != 'conda' }}
+        continue-on-error: true
+        uses: $/.github/actions/record-native-tools
+
+      - name: Resolve Codecov version
+        id: codecov-tool
+        if: ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
+        uses: $/.github/actions/setup-ci-tool
+        with:
+          package: codecov-cli
+          mode: version
+
       - name: Codecov
         if: ${{ (inputs.codecov-reference-python-version) && (matrix.python-version == inputs.codecov-reference-python-version) && contains(inputs.codecov-reference-os, matrix.os) && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
+          version: v${{ steps.codecov-tool.outputs.version }}
           name: GitHub
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}

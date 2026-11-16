@@ -1,0 +1,53 @@
+schema = 1
+
+[[tools]]
+name = "Pixi"
+version_command = "pixi"
+runtime_prefix = "v"
+package = "pkg:github/prefix-dev/pixi"
+advisories = "prefix-dev/pixi"
+source = ".github/workflows/reusable-pixi-lock_diff.yml"
+pattern = '^\s*default:\s*(v\d+\.\d+\.\d+)\b'
+
+[[tools]]
+name = "micromamba"
+package = "pkg:github/mamba-org/micromamba-releases"
+advisories = "mamba-org/mamba"
+releases = "mamba-org/micromamba-releases"
+source = ".github/actions/reusable-python-setup_conda/action.yml"
+pattern = 'micromamba_version=([\d.-]+)'
+
+[[tools]]
+name = "rattler-build"
+version_command = "rattler-build"
+runtime_prefix = "v"
+package = "pkg:github/prefix-dev/rattler-build"
+advisories = "prefix-dev/rattler-build"
+source = ".github/workflows/reusable-python-publish_rattler_package.yml"
+pattern = '''rattler-build-version:\s*["']?(v\d+\.\d+\.\d+)'''
+
+[[tools]]
+name = "pixi-diff"
+package = "pkg:conda/pixi-diff"
+advisories = "pavelzw/pixi-diff"
+source = ".github/workflows/reusable-pixi-lock_diff.yml"
+pattern = '^\s*PIXI_DIFF_VERSION:\s*(\d+\.\d+\.\d+)\b'
+qualifiers = "channel=conda-forge"
+
+[[tools]]
+name = "pixi-diff-to-markdown"
+package = "pkg:conda/pixi-diff-to-markdown"
+advisories = "pavelzw/pixi-diff-to-markdown"
+source = ".github/workflows/reusable-pixi-lock_diff.yml"
+pattern = '^\s*PIXI_DIFF_TO_MARKDOWN_VERSION:\s*(\d+\.\d+\.\d+)\b'
+qualifiers = "channel=conda-forge"
+
+[[tools]]
+name = "JFrog CLI"
+version_command = "jf"
+package = "pkg:github/jfrog/jfrog-cli"
+advisories = "jfrog/jfrog-cli"
+source = ".github/**/*.yml"
+installer = "jfrog/setup-jfrog-cli"
+pattern = '''^\s*default:\s*["']?(\d+\.\d+\.\d+)["']?\s*$'''
+version_prefix = "v"

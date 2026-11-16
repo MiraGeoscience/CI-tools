@@ -38,9 +38,17 @@ jobs:
       - name: Setup Zizmor Config
         uses: $/.github/actions/setup-zizmor-config
 
+      - name: Resolve Zizmor version
+        id: zizmor-tool
+        uses: $/.github/actions/setup-ci-tool
+        with:
+          package: zizmor
+          mode: version
+
       - name: Run Zizmor Security Scan
         uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
         with:
+          version: ${{ steps.zizmor-tool.outputs.version }}
           advanced-security: ${{ github.event_name != 'pull_request' && github.event.repository.visibility == 'public' }}
           annotations: ${{ github.event_name == 'pull_request' || github.event.repository.visibility == 'private' }}
           persona: ${{ inputs.persona }}

@@ -244,6 +244,12 @@ jobs:
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
+      - name: Record empty native tool inventory
+        # Remove stale native graph entries after a package-manager switch.
+        if: ${{ inputs.package-manager != 'pixi' && inputs.package-manager != 'conda' }}
+        continue-on-error: true
+        uses: $/.github/actions/record-native-tools
+
       - name: Validate pixi task
         if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task }}
         env:

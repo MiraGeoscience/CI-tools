@@ -1,0 +1,89 @@
+name: Setup CI tool
+description: Install a tool or resolve an action's tool version from the shared CI lockfile
+inputs:
+  package:
+    description: Package name and matching dependency group in the tooling manifest
+    required: true
+  mode:
+    description: "tool: install CLI; python: create a library environment; version: resolve only"
+    default: tool
+  cache-suffix:
+    description: Optional suffix to reset the tooling cache
+    default: ""
+outputs:
+  version:
+    description: Locked version of the requested package
+    value: ${{ steps.install.outputs.version }}
+  python-path:
+    description: Interpreter path when mode is python; not added to PATH
+    value: ${{ steps.install.outputs.python-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up tooling Python
+      if: inputs.mode == 'tool'
+      id: python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.15"
+        update-environment: false
+    - name: Set up uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        version-file: ${{ github.action_path }}/tooling/uv.lock
+        enable-cache: ${{ inputs.mode != 'version' }}
+        cache-dependency-glob: ${{ github.action_path }}/tooling/uv.lock
+        cache-suffix: ${{ inputs.cache-suffix }}
+    - name: Resolve and install tool
+      id: install
+      shell: bash
+      env:
+        CI_TOOL_PACKAGE: ${{ inputs.package }}
+        CI_TOOL_MODE: ${{ inputs.mode }}
+        CI_TOOL_PYTHON: ${{ steps.python.outputs.python-path || 'python' }}
+        UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/ci-tools-${{ inputs.package }}
+      run: |
+        if [[ ! "$CI_TOOL_PACKAGE" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+          echo "::error::Invalid CI tool package name"
+          exit 1
+        fi
+        case "$CI_TOOL_MODE" in
+          tool|python|version) ;;
+          *)
+            echo "::error::Unknown CI tool mode: $CI_TOOL_MODE"
+            exit 1
+            ;;
+        esac
+        requirements="$RUNNER_TEMP/ci-tools-$CI_TOOL_PACKAGE.txt"
+        uv export --project "$GITHUB_ACTION_PATH/tooling" --locked \
+          --only-group "$CI_TOOL_PACKAGE" --no-emit-project \
+          --output-file "$requirements" > /dev/null
+        version=$("$CI_TOOL_PYTHON" - "$requirements" "$CI_TOOL_PACKAGE" <<'PY'
+        import sys
+
+        prefix = sys.argv[2] + "=="
+        with open(sys.argv[1], encoding="utf-8") as requirements:
+            versions = {line[len(prefix):].split()[0] for line in requirements if line.startswith(prefix)}
+        if len(versions) != 1:
+            raise ValueError(f"Expected one locked version of {sys.argv[2]}, got {sorted(versions)}")
+        print(versions.pop())
+        PY
+        )
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        case "$CI_TOOL_MODE" in
+          tool)
+            uv tool install --python "$CI_TOOL_PYTHON" \
+              --with-requirements "$requirements" "$CI_TOOL_PACKAGE==$version"
+            ;;
+          python)
+            uv sync --project "$GITHUB_ACTION_PATH/tooling" --locked \
+              --only-group "$CI_TOOL_PACKAGE" --python "$(python -c 'import sys; print(sys.executable)')"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              echo "python-path=$UV_PROJECT_ENVIRONMENT/Scripts/python.exe" >> "$GITHUB_OUTPUT"
+            else
+              echo "python-path=$UV_PROJECT_ENVIRONMENT/bin/python" >> "$GITHUB_OUTPUT"
+            fi
+            ;;
+          version) ;;
+        esac

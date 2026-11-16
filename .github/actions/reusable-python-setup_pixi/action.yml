@@ -48,7 +48,8 @@ runs:
           exit 1
         fi
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
-    - uses: prefix-dev/setup-pixi@v0.9.6
+    - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+      id: setup-pixi
       with:
         pixi-version: ${{ inputs.pixi-version }}
         environments: ${{ steps.get-env-name.outputs.pixi-env }}
@@ -61,3 +62,9 @@ runs:
         auth-password: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       env:
         GIT_LFS_SKIP_SMUDGE: 1
+    - name: Record native tool inventory
+      if: ${{ !cancelled() && steps.setup-pixi.outcome != 'skipped' }}
+      continue-on-error: true
+      uses: $/.github/actions/record-native-tools
+      with:
+        tools: '{"Pixi": ""}'

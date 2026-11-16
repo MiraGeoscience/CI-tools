@@ -24,33 +24,23 @@ jobs:
     outputs:
       is-publishable: ${{ steps.check-version.outputs.is-publishable }}
     steps:
-      - name: Create pyproject.toml
-        working-directory: ${{ runner.temp }}
-        run: |
-          mkdir version-check
-          cat > version-check/pyproject.toml << EOF
-          [project]
-          name = "version-check"
-          version = "0.1.0"
-          dependencies = ["packaging"]
-          requires-python = ">=3.12"
-          EOF
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - name: Set up uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Install packaging
+        id: packaging-tool
+        uses: $/.github/actions/setup-ci-tool
         with:
-          enable-cache: true
-          working-directory: ${{ runner.temp }}/version-check
+          package: packaging
+          mode: python
       - name: Check if version is publishable
         id: check-version
-        working-directory: ${{ runner.temp }}/version-check
         env:
           VERSION_TAG: ${{ inputs.version-tag }}
+          TOOL_PYTHON: ${{ steps.packaging-tool.outputs.python-path }}
         run: |
-          uv run python -c "
+          "$TOOL_PYTHON" -c "
           from packaging.version import parse
           import os
 

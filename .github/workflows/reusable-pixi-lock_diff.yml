@@ -83,11 +83,16 @@ jobs:
           pixi-version: ${{ inputs.pixi-version }}
           run-install: false
           cache: false
-          # pinned: the global cache key hashes this list, so a version bump refreshes the cache
           global-environments: |
             pixi-diff==${{ env.PIXI_DIFF_VERSION }}
             pixi-diff-to-markdown==${{ env.PIXI_DIFF_TO_MARKDOWN_VERSION }}
           global-cache: false
+
+      - name: Record native tool inventory
+        continue-on-error: true
+        uses: $/.github/actions/record-native-tools
+        with:
+          tools: ${{ format('{{"Pixi":"","pixi-diff":"{0}","pixi-diff-to-markdown":"{1}"}}', env.PIXI_DIFF_VERSION, env.PIXI_DIFF_TO_MARKDOWN_VERSION) }}
 
       - name: Compute diff
         run: |

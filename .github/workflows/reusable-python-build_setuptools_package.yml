@@ -89,6 +89,11 @@ jobs:
                 env:
                     JF_URL: https://${{ secrets.JFROG_ARTIFACTORY_URL }}
                     JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
+            -   name: Record native tool inventory
+                continue-on-error: true
+                uses: $/.github/actions/record-native-tools
+                with:
+                    tools: '{"JFrog CLI": ""}'
             -   name: Set up Python version
                 uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
                 with:
@@ -103,10 +108,16 @@ jobs:
                     done
                     export PIP_EXTRA_INDEX_URL
                     pip install .
-            -   name: Pip install build
-                run: pip install build
+            -   name: Install build
+                id: build-tool
+                uses: $/.github/actions/setup-ci-tool
+                with:
+                    package: build
+                    mode: python
             -   name: Build package
-                run: python -m build
+                env:
+                    BUILD_PYTHON: ${{ steps.build-tool.outputs.python-path }}
+                run: '"$BUILD_PYTHON" -m build'
             -   name: Define build path
                 id: define-build-path
                 run: |
