@@ -34,3 +34,7 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 4
+    groups:
+      ci-tools-tooling:
+        patterns:
+          - "*"
