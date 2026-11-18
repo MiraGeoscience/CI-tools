@@ -195,7 +195,6 @@ jobs:
 
       - uses: $/.github/actions/reusable-python-setup_pixi
         name: Setup pixi env
-        id: pixi
         if: ${{ inputs.package-manager == 'pixi' }}
         with:
           cache-number: ${{ inputs.cache-number }}
@@ -210,10 +209,9 @@ jobs:
         if: ${{ inputs.package-manager == 'pixi' && inputs.pixi-task }}
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
-          PIXI_ENVIRONMENT: ${{ steps.pixi.outputs.environment-name }}
         run: |
           jq_filter='any(.. | objects; .name == $task and (has("cmd") or has("depends_on") or has("cwd") or has("clean_env")))'
-          if ! pixi task list --environment "$PIXI_ENVIRONMENT" --json | jq -e --arg task "$PIXI_TASK" "$jq_filter"; then
+          if ! pixi task list --json | jq -e --arg task "$PIXI_TASK" "$jq_filter"; then
             echo "::error::Pixi task '$PIXI_TASK' is not defined in pixi.toml."
             exit 1
           fi
@@ -222,7 +220,6 @@ jobs:
         env:
           PIXI_TASK: ${{ inputs.pixi-task }}
           PIXI_TASK_ARGS: ${{ inputs.pixi-task-args }}
-          PIXI_ENVIRONMENT: ${{ steps.pixi.outputs.environment-name }}
         run: |
           if ${{ inputs.package-manager == 'conda' }}; then
             pytest --cov --cov-report=xml
@@ -235,12 +232,12 @@ jobs:
                   echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."
                   exit 1
                 fi
-                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run --frozen --environment "$PIXI_ENVIRONMENT" "$PIXI_TASK" --
+                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run --frozen "$PIXI_TASK" --
               else
-                pixi run --frozen --environment "$PIXI_ENVIRONMENT" "$PIXI_TASK"
+                pixi run --frozen "$PIXI_TASK"
               fi
             else
-              pixi run --frozen --environment "$PIXI_ENVIRONMENT" pytest --cov --cov-report=xml
+              pixi run --frozen pytest --cov --cov-report=xml
             fi
           else
             hatch run pytest --cov --cov-report=xml

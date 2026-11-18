@@ -33,11 +33,6 @@ inputs:
     required: false
     type: string
 
-outputs:
-  environment-name:
-    description: Selected Pixi environment name
-    value: ${{ steps.get-env-name.outputs.pixi-env }}
-
 runs:
   using: composite
   steps:
@@ -78,5 +73,4 @@ runs:
       shell: bash
       env:
         PIXI_SETUP_TASK: ${{ inputs.setup-task }}
-        PIXI_ENVIRONMENT: ${{ steps.get-env-name.outputs.pixi-env }}
-      run: pixi run --frozen --environment "$PIXI_ENVIRONMENT" "$PIXI_SETUP_TASK"
+      run: pixi run --frozen "$PIXI_SETUP_TASK"

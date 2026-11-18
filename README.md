@@ -38,11 +38,11 @@ Do not use `MiraGeoscience/CI-tools/...@<ref>` for internal references.
 
 Use the existing `reusable-python-pytest.yml` and
 `reusable-python-static_analysis.yml` workflows with `package-manager: pixi`.
-They check lock freshness and run tasks frozen in the explicitly selected
+They check lock freshness and run tasks frozen in the activated
 environment. `pixi-version` can pin Pixi independently of the action version.
 
-The optional `pixi-setup-task` input runs a project task once during environment
-setup, before tests or linting. For example, an `install` task can perform
+The pytest workflow's optional `pixi-setup-task` input runs a project task once
+during environment setup, before tests. For example, an `install` task can perform
 `uv pip install --no-deps --editable .` followed by `uv pip check`. Leave it
 unset when the workflow only needs the source checkout. Test and lint tasks
 do not need to depend on installation.
@@ -62,9 +62,8 @@ jobs:
 The standard workflows run pytest and pylint directly. Set `pixi-task` only
 when a project needs a nonstandard command or working directory.
 
-`reusable-python-setup_pixi` also exposes the selected name as the
-`environment-name` output and accepts the corresponding `setup-task` input
-when used directly.
+`reusable-python-setup_pixi` accepts the corresponding `setup-task` input when
+used directly.
 
 ## Updating Poetry tooling
 
