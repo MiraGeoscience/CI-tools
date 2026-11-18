@@ -34,6 +34,38 @@ exact commit that is running, so a caller pinned to a commit SHA runs every nest
 action from that same commit, and internal references never need a SHA or tag update.
 Do not use `MiraGeoscience/CI-tools/...@<ref>` for internal references.
 
+## Pixi testing and static analysis
+
+Use the existing `reusable-python-pytest.yml` and
+`reusable-python-static_analysis.yml` workflows with `package-manager: pixi`.
+They check lock freshness and run tasks frozen in the explicitly selected
+environment. `pixi-version` can pin Pixi independently of the action version.
+
+The optional `pixi-setup-task` input runs a project task once during environment
+setup, before tests or linting. For example, an `install` task can perform
+`uv pip install --no-deps --editable .` followed by `uv pip check`. Leave it
+unset when the workflow only needs the source checkout. Test and lint tasks
+do not need to depend on installation.
+
+```yaml
+jobs:
+  pytest:
+    uses: MiraGeoscience/CI-tools/.github/workflows/reusable-python-pytest.yml@<full_commit_sha>
+    with:
+      package-manager: pixi
+      pixi-version: v0.67.2
+      python-versions: '["3.12", "3.13", "3.14"]'
+      pixi-setup-task: install
+      os: '["ubuntu-latest", "windows-latest"]'
+```
+
+The standard workflows run pytest and pylint directly. Set `pixi-task` only
+when a project needs a nonstandard command or working directory.
+
+`reusable-python-setup_pixi` also exposes the selected name as the
+`environment-name` output and accepts the corresponding `setup-task` input
+when used directly.
+
 ## Updating Poetry tooling
 
 From the repository root, refresh Poetry, its dynamic-versioning plugin, and

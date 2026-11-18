@@ -20,6 +20,10 @@ inputs:
       the name derived from python-version (py<version-without-dots>).
     required: false
     type: string
+  setup-task:
+    description: Optional Pixi task to run once after environment setup (for example install)
+    required: false
+    default: ""
   JFROG_ARTIFACTORY_URL:
     description: JFrog Artifactory URL (secret)
     required: true
@@ -28,6 +32,11 @@ inputs:
     description: JFrog Artifactory Token (secret)
     required: false
     type: string
+
+outputs:
+  environment-name:
+    description: Selected Pixi environment name
+    value: ${{ steps.get-env-name.outputs.pixi-env }}
 
 runs:
   using: composite
@@ -48,7 +57,7 @@ runs:
           exit 1
         fi
         echo "pixi-env=$pixi_env" >> "$GITHUB_OUTPUT"
-    - uses: prefix-dev/setup-pixi@v0.9.6
+    - uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
       with:
         pixi-version: ${{ inputs.pixi-version }}
         environments: ${{ steps.get-env-name.outputs.pixi-env }}
@@ -61,3 +70,13 @@ runs:
         auth-password: ${{ inputs.JFROG_ARTIFACTORY_TOKEN }}
       env:
         GIT_LFS_SKIP_SMUDGE: 1
+    - name: Check Pixi lock freshness
+      shell: bash
+      run: pixi lock --check
+    - name: Run workspace setup task
+      if: ${{ inputs.setup-task != '' }}
+      shell: bash
+      env:
+        PIXI_SETUP_TASK: ${{ inputs.setup-task }}
+        PIXI_ENVIRONMENT: ${{ steps.get-env-name.outputs.pixi-env }}
+      run: pixi run --frozen --environment "$PIXI_ENVIRONMENT" "$PIXI_SETUP_TASK"
