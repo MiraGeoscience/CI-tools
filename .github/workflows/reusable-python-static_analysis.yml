@@ -222,6 +222,7 @@ jobs:
           client-id: ${{ secrets.GH_CLIENT_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           repositories: ${{ inputs.private-github-repos }}
+          permission-contents: read
 
       - name: Register the personal access token
         if: ${{ inputs.private-github-repos != '' }}
@@ -300,12 +301,12 @@ jobs:
             if [ -n "$PIXI_TASK" ]; then
               if [ -n "$PIXI_TASK_ARGS" ]; then
                 readarray -t args < <(echo "$PIXI_TASK_ARGS" | jq -r '.[]')
-                pixi run "$PIXI_TASK" -- "${args[@]}" "${files[@]}"
+                pixi run --frozen "$PIXI_TASK" -- "${args[@]}" "${files[@]}"
               else
-                pixi run "$PIXI_TASK" -- "${files[@]}"
+                pixi run --frozen "$PIXI_TASK" -- "${files[@]}"
               fi
             else
-              pixi run pylint "${files[@]}"
+              pixi run --frozen pylint "${files[@]}"
             fi
           else
             hatch run pylint "${files[@]}"
@@ -335,12 +336,12 @@ jobs:
                 [ -n "$test_dir" ] && args+=("$test_dir")
               fi
               if [ ${#args[@]} -gt 0 ]; then
-                pixi run "$PIXI_TASK" -- "${args[@]}"
+                pixi run --frozen "$PIXI_TASK" -- "${args[@]}"
               else
-                pixi run "$PIXI_TASK"
+                pixi run --frozen "$PIXI_TASK"
               fi
             else
-              pixi run pylint --verbose "${targets[@]}"
+              pixi run --frozen pylint --verbose "${targets[@]}"
             fi
           else
             hatch run pylint --verbose "${targets[@]}"

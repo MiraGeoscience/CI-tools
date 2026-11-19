@@ -65,6 +65,11 @@ on:
           defined in pixi.toml. Validated against available tasks before execution.
         required: false
         type: string
+      pixi-setup-task:
+        description: Optional task to run once during Pixi setup (for example install to install/check the local package)
+        required: false
+        type: string
+        default: ""
       pixi-task-args:
         description: >
           JSON list of extra arguments to pass to the pixi task after '--'
@@ -177,6 +182,7 @@ jobs:
           client-id: ${{ secrets.GH_CLIENT_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           repositories: ${{ inputs.private-github-repos }}
+          permission-contents: read
 
       - name: Register the personal access token
         if: ${{ inputs.private-github-repos != '' }}
@@ -196,6 +202,7 @@ jobs:
           python-version: ${{ inputs.pixi-environments && '' || matrix.python-version }}
           pixi-version: ${{ inputs.pixi-version }}
           environment-name: ${{ inputs.pixi-environments && matrix.python-version || '' }}
+          setup-task: ${{ inputs.pixi-setup-task }}
           JFROG_ARTIFACTORY_URL: ${{ secrets.JFROG_ARTIFACTORY_URL }}
           JFROG_ARTIFACTORY_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_TOKEN }}
 
@@ -226,12 +233,12 @@ jobs:
                   echo "::error::Invalid pixi-task-args. Must be a JSON array of strings."
                   exit 1
                 fi
-                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run "$PIXI_TASK" --
+                echo "$PIXI_TASK_ARGS" | jq -r '.[]' | xargs -d '\n' pixi run --frozen "$PIXI_TASK" --
               else
-                pixi run "$PIXI_TASK"
+                pixi run --frozen "$PIXI_TASK"
               fi
             else
-              pixi run pytest --cov --cov-report=xml
+              pixi run --frozen pytest --cov --cov-report=xml
             fi
           else
             hatch run pytest --cov --cov-report=xml
