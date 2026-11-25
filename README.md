@@ -65,6 +65,16 @@ when a project needs a nonstandard command or working directory.
 `reusable-python-setup_pixi` accepts the corresponding `setup-task` input when
 used directly.
 
+## Jira test labels
+
+`reusable-jira-pr_actions.yml` labels the Jira issue `has-test` or `no-tests`, depending on
+whether the PR changes test files. Pass the optional `JIRA_API_TOKEN_WRITE` secret to enable it.
+
+```yaml
+    secrets:
+      JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+```
+
 ## Updating Poetry tooling
 
 From the repository root, refresh Poetry, its dynamic-versioning plugin, and

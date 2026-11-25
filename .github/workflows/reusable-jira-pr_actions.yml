@@ -11,6 +11,11 @@ on:
         required: false
         default: 7
         description: Number of days (whole, 0 disables) a Jira issue resolved while the PR was open still passes the status check
+      test_file_pattern:
+        type: string
+        required: false
+        default: '(^|/)tests?/|(^|/)test_[^/]*\.py$|_test\.py$'
+        description: Case-insensitive regex for test file paths (has-test/no-tests Jira label)
     secrets:
       JIRA_BASE_URL:
         required: true
@@ -21,6 +26,9 @@ on:
       JIRA_API_TOKEN:
         required: true
         description: The API token for your JIRA account
+      JIRA_API_TOKEN_WRITE:
+        required: false
+        description: JIRA_USER_EMAIL token with "Edit Issues", to set the has-test/no-tests label (skipped if unset)
 
 env:
   JIRA_PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
@@ -240,6 +248,96 @@ jobs:
             echo -e $error
             exit 1
         fi
+
+  label_jira_tests:
+    name: Label Jira issue with test status
+    # Only after check_jira_issue passes
+    if: ${{ needs.check_jira_issue.result == 'success' &&
+            needs.get_issue_key.outputs.issue_key &&
+            needs.get_issue_key.outputs.is_exempt_bot_pr != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [get_issue_key, check_jira_issue]
+    concurrency:
+      group: jira-test-label-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+
+    - name: Check write token
+      id: token
+      env:
+        JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+      run: |
+        if [ -z "$JIRA_API_TOKEN_WRITE" ]; then
+          echo "::warning::JIRA_API_TOKEN_WRITE not provided, skipping Jira test label"
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Detect test changes
+      id: tests
+      if: ${{ steps.token.outputs.available == 'true' }}
+      uses: $/.github/actions/detect-test-changes
+      with:
+        test-file-pattern: ${{ inputs.test_file_pattern }}
+
+    - name: Update Jira test label
+      if: ${{ steps.token.outputs.available == 'true' }}
+      env:
+        ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
+        HAS_TESTS: ${{ steps.tests.outputs.has-tests }}
+        JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+      run: |
+        if [[ ! "$ISSUE_KEY" =~ ^[A-Z]+-[0-9]+$ ]]; then
+          echo "::error::Invalid Jira issue key: $ISSUE_KEY"
+          exit 1
+        fi
+
+        if [ "$HAS_TESTS" == "true" ]; then
+          want="has-test"; other="no-tests"
+        else
+          want="no-tests"; other="has-test"
+        fi
+
+        url="${JIRA_BASE_URL%/}/rest/api/3/issue/$ISSUE_KEY"
+
+        response=$(curl -sS -w '\n%{http_code}' -X GET \
+          -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN_WRITE}" \
+          -H "Accept: application/json" \
+          "$url?fields=labels")
+        http_status=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        if [[ "$http_status" -lt 200 || "$http_status" -ge 300 ]]; then
+          echo "::error::Jira API returned HTTP $http_status reading $ISSUE_KEY labels: $body"
+          exit 1
+        fi
+
+        labels=$(echo "$body" | jq -c '.fields.labels // []')
+        echo "current labels: $labels"
+        if jq -e --arg want "$want" --arg other "$other" \
+             'index($want) != null and index($other) == null' <<< "$labels" > /dev/null; then
+          echo "::notice::Jira $ISSUE_KEY already labelled $want"
+          exit 0
+        fi
+
+        payload=$(jq -nc --arg add "$want" --arg remove "$other" \
+          '{update: {labels: [{add: $add}, {remove: $remove}]}}')
+        response=$(curl -sS -w '\n%{http_code}' -X PUT \
+          -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN_WRITE}" \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -d "$payload" \
+          "$url")
+        http_status=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        if [[ "$http_status" -lt 200 || "$http_status" -ge 300 ]]; then
+          echo "::error::Jira API returned HTTP $http_status updating $ISSUE_KEY labels: $body"
+          exit 1
+        fi
+
+        echo "::notice::Labelled Jira $ISSUE_KEY as $want"
 
   notify_force_push:
     name: Notify force push on PR

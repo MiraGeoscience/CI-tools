@@ -1,0 +1,33 @@
+name: Detect test changes
+description: Detects PR test files (matching test-file-pattern) that add a non-blank, non-comment line.
+inputs:
+  github-token:
+    description: Token to list the PR files
+    required: false
+    default: ${{ github.token }}
+  pr-number:
+    description: Pull request number
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  test-file-pattern:
+    description: Case-insensitive regex for test file paths
+    required: false
+    default: '(^|/)tests?/|(^|/)test_[^/]*\.py$|_test\.py$'
+outputs:
+  has-tests:
+    description: "'true' if any test file has concrete changes"
+    value: ${{ steps.detect.outputs.has-tests }}
+  test-files:
+    description: Newline-separated test files with concrete changes
+    value: ${{ steps.detect.outputs.test-files }}
+runs:
+  using: composite
+  steps:
+    - name: Detect test changes
+      id: detect
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        TEST_FILE_PATTERN: ${{ inputs.test-file-pattern }}
+      run: python3 "$GITHUB_ACTION_PATH/detect_test_changes.py"
