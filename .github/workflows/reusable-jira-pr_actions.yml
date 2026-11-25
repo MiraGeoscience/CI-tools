@@ -15,7 +15,7 @@ on:
         type: string
         required: false
         default: '(^|/)tests?/|(^|/)test_[^/]*\.py$|_test\.py$'
-        description: Case-insensitive regex for test file paths (has-test/no-tests Jira label)
+        description: Case-insensitive regex for test file paths (has-tests/no-tests Jira label)
     secrets:
       JIRA_BASE_URL:
         required: true
@@ -28,7 +28,7 @@ on:
         description: The API token for your JIRA account
       JIRA_API_TOKEN_WRITE:
         required: false
-        description: Token with "Edit Issues", to set the has-test/no-tests label (skipped if unset)
+        description: Token with "Edit Issues", to set the has-tests/no-tests label (skipped if unset)
       JIRA_USER_EMAIL_WRITE:
         required: false
         description: Account email of JIRA_API_TOKEN_WRITE (defaults to JIRA_USER_EMAIL)
@@ -300,9 +300,9 @@ jobs:
         fi
 
         if [ "$HAS_TESTS" == "true" ]; then
-          want="has-test"; other="no-tests"
+          want="has-tests"; other="no-tests"
         else
-          want="no-tests"; other="has-test"
+          want="no-tests"; other="has-tests"
         fi
 
         url="${JIRA_BASE_URL%/}/rest/api/3/issue/$ISSUE_KEY"
