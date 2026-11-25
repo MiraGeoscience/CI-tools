@@ -15,3 +15,4 @@ jobs:
       JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
       JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+      JIRA_USER_EMAIL_WRITE: ${{ secrets.JIRA_USER_EMAIL_WRITE }}

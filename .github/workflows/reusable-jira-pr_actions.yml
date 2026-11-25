@@ -28,7 +28,10 @@ on:
         description: The API token for your JIRA account
       JIRA_API_TOKEN_WRITE:
         required: false
-        description: JIRA_USER_EMAIL token with "Edit Issues", to set the has-test/no-tests label (skipped if unset)
+        description: Token with "Edit Issues", to set the has-test/no-tests label (skipped if unset)
+      JIRA_USER_EMAIL_WRITE:
+        required: false
+        description: Account email of JIRA_API_TOKEN_WRITE (defaults to JIRA_USER_EMAIL)
 
 env:
   JIRA_PATTERN: "([A-Z]+)[-# ]*([0-9]+)"
@@ -289,6 +292,7 @@ jobs:
         ISSUE_KEY: ${{ needs.get_issue_key.outputs.issue_key }}
         HAS_TESTS: ${{ steps.tests.outputs.has-tests }}
         JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+        JIRA_USER_EMAIL_WRITE: ${{ secrets.JIRA_USER_EMAIL_WRITE || secrets.JIRA_USER_EMAIL }}
       run: |
         if [[ ! "$ISSUE_KEY" =~ ^[A-Z]+-[0-9]+$ ]]; then
           echo "::error::Invalid Jira issue key: $ISSUE_KEY"
@@ -304,7 +308,7 @@ jobs:
         url="${JIRA_BASE_URL%/}/rest/api/3/issue/$ISSUE_KEY"
 
         response=$(curl -sS -w '\n%{http_code}' -X GET \
-          -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN_WRITE}" \
+          -u "${JIRA_USER_EMAIL_WRITE}:${JIRA_API_TOKEN_WRITE}" \
           -H "Accept: application/json" \
           "$url?fields=labels")
         http_status=$(echo "$response" | tail -n1)
@@ -325,7 +329,7 @@ jobs:
         payload=$(jq -nc --arg add "$want" --arg remove "$other" \
           '{update: {labels: [{add: $add}, {remove: $remove}]}}')
         response=$(curl -sS -w '\n%{http_code}' -X PUT \
-          -u "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN_WRITE}" \
+          -u "${JIRA_USER_EMAIL_WRITE}:${JIRA_API_TOKEN_WRITE}" \
           -H "Accept: application/json" \
           -H "Content-Type: application/json" \
           -d "$payload" \

@@ -68,11 +68,13 @@ used directly.
 ## Jira test labels
 
 `reusable-jira-pr_actions.yml` labels the Jira issue `has-test` or `no-tests`, depending on
-whether the PR changes test files. Pass the optional `JIRA_API_TOKEN_WRITE` secret to enable it.
+whether the PR changes test files. Pass the optional `JIRA_API_TOKEN_WRITE` secret to enable it,
+and `JIRA_USER_EMAIL_WRITE` if that token belongs to another account than `JIRA_USER_EMAIL`.
 
 ```yaml
     secrets:
       JIRA_API_TOKEN_WRITE: ${{ secrets.JIRA_API_TOKEN_WRITE }}
+      JIRA_USER_EMAIL_WRITE: ${{ secrets.JIRA_USER_EMAIL_WRITE }}
 ```
 
 ## Updating Poetry tooling
